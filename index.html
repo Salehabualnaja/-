@@ -18,6 +18,7 @@
       --run: #16a34a;
       --run-soft: #dcfce7;
       --danger: #dc2626;
+      --track: #e2e8f0;
       --shadow: 0 1px 3px rgba(15, 23, 42, .08), 0 8px 24px rgba(15, 23, 42, .06);
     }
     @media (prefers-color-scheme: dark) {
@@ -33,6 +34,7 @@
         --run: #22c55e;
         --run-soft: #14311f;
         --danger: #ef4444;
+        --track: #1f2937;
         --shadow: 0 1px 3px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35);
       }
     }
@@ -55,14 +57,25 @@
       background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 80%, #000 12%));
       color: #fff;
       border-radius: 20px;
-      padding: 22px 20px;
-      margin: 14px 0 18px;
+      padding: 20px 20px 18px;
+      margin: 14px 0 16px;
       box-shadow: var(--shadow);
       text-align: center;
     }
     .summary .label { font-size: 13px; opacity: .9; }
-    .summary .total { font-size: 46px; font-weight: 800; margin: 4px 0; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+    .summary .total { font-size: 44px; font-weight: 800; margin: 2px 0; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
     .summary .sub { font-size: 13px; opacity: .9; }
+    .goalwrap { margin-top: 14px; }
+    .goalbar { height: 10px; border-radius: 999px; background: rgba(255,255,255,.25); overflow: hidden; }
+    .goalfill { height: 100%; background: #fff; border-radius: 999px; width: 0; transition: width .4s ease; }
+    .goalfill.done { background: #bbf7d0; }
+    .goaltext { font-size: 12px; opacity: .95; margin-top: 7px; display: flex; justify-content: space-between; align-items: center; }
+    .goaltext button { background: rgba(255,255,255,.2); color: #fff; border: none; border-radius: 8px; padding: 4px 10px; font-size: 12px; font-family: inherit; cursor: pointer; }
+
+    /* التبويبات */
+    .tabs { display: flex; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 16px; gap: 4px; }
+    .tabs button { flex: 1; border: none; background: transparent; color: var(--muted); font-family: inherit; font-size: 14px; font-weight: 700; padding: 9px 0; border-radius: 9px; cursor: pointer; }
+    .tabs button.active { background: var(--panel); color: var(--accent); box-shadow: var(--shadow); }
 
     .section-title { font-size: 13px; color: var(--muted); margin: 4px 4px 10px; font-weight: 600; }
 
@@ -75,7 +88,7 @@
       box-shadow: var(--shadow);
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 10px;
       transition: border-color .2s;
     }
     .project.running { border-color: var(--run); }
@@ -87,7 +100,7 @@
     .btn {
       border: none; cursor: pointer; font-family: inherit;
       border-radius: 12px; font-weight: 700; font-size: 15px;
-      padding: 10px 0; width: 84px; text-align: center; flex: none;
+      padding: 10px 0; width: 78px; text-align: center; flex: none;
       transition: transform .06s, background .2s;
     }
     .btn:active { transform: scale(.96); }
@@ -96,11 +109,27 @@
 
     .iconbtn {
       background: transparent; border: none; cursor: pointer; color: var(--muted);
-      font-size: 18px; padding: 6px; border-radius: 8px; flex: none; line-height: 1;
+      font-size: 17px; padding: 5px; border-radius: 8px; flex: none; line-height: 1;
     }
     .iconbtn:active { background: var(--border); }
 
     .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 14px; }
+
+    /* التقارير */
+    .report-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow); }
+    .report-card h4 { margin: 0 0 12px; font-size: 14px; color: var(--muted); font-weight: 700; }
+    .rrow { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 13px; }
+    .rrow .rlabel { width: 92px; flex: none; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .rrow .rtrack { flex: 1; height: 20px; background: var(--track); border-radius: 6px; overflow: hidden; position: relative; }
+    .rrow .rfill { height: 100%; background: var(--accent); border-radius: 6px; width: 0; min-width: 2px; transition: width .3s; }
+    .rrow .rfill.met { background: var(--run); }
+    .rrow .rgoal { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--danger); opacity: .55; }
+    .rrow .rval { width: 62px; flex: none; text-align: left; font-variant-numeric: tabular-nums; font-weight: 600; }
+    .report-total { text-align: center; font-size: 14px; color: var(--muted); }
+    .report-total b { color: var(--text); font-size: 22px; display: block; font-variant-numeric: tabular-nums; }
+
+    .footer-tools { text-align: center; margin-top: 8px; }
+    .linkbtn { background: none; border: none; color: var(--muted); font-size: 12px; cursor: pointer; text-decoration: underline; font-family: inherit; }
 
     .addbar {
       position: fixed; bottom: 0; left: 0; right: 0;
@@ -119,12 +148,10 @@
       background: var(--accent); color: #fff; border: none; border-radius: 12px;
       padding: 0 20px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; flex: none;
     }
-
-    .footer-tools { text-align: center; margin-top: 8px; }
-    .linkbtn { background: none; border: none; color: var(--muted); font-size: 12px; cursor: pointer; text-decoration: underline; font-family: inherit; }
+    .addbar.hidden { display: none; }
 
     dialog {
-      border: none; border-radius: 16px; padding: 0; max-width: 92vw; width: 380px;
+      border: none; border-radius: 16px; padding: 0; max-width: 92vw; width: 400px;
       background: var(--panel); color: var(--text); box-shadow: var(--shadow);
     }
     dialog::backdrop { background: rgba(15,23,42,.5); }
@@ -132,12 +159,32 @@
     .dlg h3 { margin: 0 0 6px; font-size: 17px; }
     .dlg p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
     .dlg .rows { display: flex; flex-direction: column; gap: 10px; }
-    .dlg input { border: 1px solid var(--border); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 15px; font-family: inherit; }
+    .dlg label { font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px; }
+    .dlg input, .dlg select { width: 100%; border: 1px solid var(--border); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 15px; font-family: inherit; }
+    .dlg .inline { display: flex; gap: 10px; }
+    .dlg .inline > div { flex: 1; }
     .dlg .actions { display: flex; gap: 10px; margin-top: 16px; }
     .dlg .actions button { flex: 1; border: none; border-radius: 10px; padding: 11px 0; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
     .dlg .ok { background: var(--accent); color: #fff; }
     .dlg .ok.danger { background: var(--danger); }
     .dlg .cancel { background: var(--border); color: var(--text); }
+
+    .seg { display: flex; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .seg button { flex: 1; border: none; background: var(--panel-2); color: var(--muted); font-family: inherit; font-weight: 700; padding: 9px 0; cursor: pointer; font-size: 14px; }
+    .seg button.active { background: var(--accent); color: #fff; }
+
+    .loghdr { display: flex; justify-content: space-between; align-items: center; margin: 18px 0 8px; }
+    .loghdr h4 { margin: 0; font-size: 14px; color: var(--muted); }
+    .logbox { max-height: 240px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; }
+    .logitem { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); font-size: 13px; }
+    .logitem:last-child { border-bottom: none; }
+    .logitem .lmain { flex: 1; min-width: 0; }
+    .logitem .lday { font-weight: 600; }
+    .logitem .lsub { color: var(--muted); font-size: 12px; margin-top: 1px; }
+    .logitem .ldur { font-variant-numeric: tabular-nums; font-weight: 700; }
+    .logitem .ldur.neg { color: var(--danger); }
+    .logempty { padding: 18px; text-align: center; color: var(--muted); font-size: 13px; }
+    .tag { font-size: 11px; background: var(--accent-soft); color: var(--accent); border-radius: 6px; padding: 1px 6px; margin-inline-start: 6px; }
   </style>
 </head>
 <body>
@@ -148,13 +195,25 @@
     </header>
 
     <div class="summary">
-      <div class="label">مجموع ساعات العمل اليوم</div>
-      <div class="total" id="totalToday">00:00:00</div>
+      <div class="label" id="summaryLabel">مجموع ساعات العمل اليوم</div>
+      <div class="total" id="totalClock">00:00:00</div>
       <div class="sub" id="totalHours">0.00 ساعة</div>
+      <div class="goalwrap" id="goalWrap">
+        <div class="goalbar"><div class="goalfill" id="goalFill"></div></div>
+        <div class="goaltext">
+          <span id="goalText">الهدف اليومي</span>
+          <button id="editGoalBtn">🎯 تعديل الهدف</button>
+        </div>
+      </div>
     </div>
 
-    <div class="section-title">المشاريع</div>
-    <div id="projects"></div>
+    <div class="tabs">
+      <button data-view="today" class="active">اليوم</button>
+      <button data-view="week">آخر ٧ أيام</button>
+      <button data-view="month">آخر ٣٠ يوماً</button>
+    </div>
+
+    <div id="content"></div>
 
     <div class="footer-tools">
       <button class="linkbtn" id="exportBtn">تصدير البيانات</button>
@@ -163,22 +222,35 @@
     </div>
   </div>
 
-  <div class="addbar">
+  <div class="addbar" id="addbar">
     <div class="row">
       <input id="newName" type="text" placeholder="اسم مشروع جديد…" autocomplete="off" />
       <button id="addBtn">إضافة</button>
     </div>
   </div>
 
-  <!-- تعديل / تسمية -->
+  <!-- تعديل اسم المشروع -->
   <dialog id="editDlg">
     <form method="dialog" class="dlg">
-      <h3 id="editTitle">تعديل المشروع</h3>
+      <h3>تعديل اسم المشروع</h3>
+      <div class="rows"><input id="editName" type="text" placeholder="اسم المشروع" /></div>
+      <div class="actions">
+        <button class="ok" value="save">حفظ</button>
+        <button class="cancel" value="cancel" formnovalidate>إلغاء</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- الهدف اليومي -->
+  <dialog id="goalDlg">
+    <form method="dialog" class="dlg">
+      <h3>الهدف اليومي</h3>
+      <p>كم ساعة تريد إنجازها كل يوم؟</p>
       <div class="rows">
-        <input id="editName" type="text" placeholder="اسم المشروع" />
+        <input id="goalInput" type="number" min="0" max="24" step="0.5" placeholder="مثال: 8" />
       </div>
       <div class="actions">
-        <button class="ok" value="save" id="editSave">حفظ</button>
+        <button class="ok" value="save">حفظ</button>
         <button class="cancel" value="cancel" formnovalidate>إلغاء</button>
       </div>
     </form>
@@ -187,12 +259,45 @@
   <!-- تأكيد الحذف -->
   <dialog id="confirmDlg">
     <div class="dlg">
-      <h3 id="confirmTitle">تأكيد</h3>
+      <h3>تأكيد الحذف</h3>
       <p id="confirmMsg"></p>
       <div class="actions">
-        <button class="ok danger" id="confirmYes">نعم</button>
+        <button class="ok danger" id="confirmYes">نعم، احذف</button>
         <button class="cancel" id="confirmNo">إلغاء</button>
       </div>
+    </div>
+  </dialog>
+
+  <!-- تعديل الوقت اليدوي + سجل الجلسات -->
+  <dialog id="timeDlg">
+    <div class="dlg">
+      <h3 id="timeTitle">تعديل الوقت</h3>
+      <label>إضافة أو طرح وقت</label>
+      <div class="seg" style="margin-bottom:10px">
+        <button type="button" id="segAdd" class="active">إضافة (+)</button>
+        <button type="button" id="segSub">طرح (−)</button>
+      </div>
+      <div class="inline">
+        <div>
+          <label>التاريخ</label>
+          <input id="manualDate" type="date" />
+        </div>
+        <div>
+          <label>ساعات</label>
+          <input id="manualH" type="number" min="0" max="23" step="1" placeholder="0" />
+        </div>
+        <div>
+          <label>دقائق</label>
+          <input id="manualM" type="number" min="0" max="59" step="1" placeholder="0" />
+        </div>
+      </div>
+      <div class="actions" style="margin-top:12px">
+        <button class="ok" id="manualApply">تطبيق</button>
+        <button class="cancel" id="timeClose">إغلاق</button>
+      </div>
+
+      <div class="loghdr"><h4>سجل الجلسات</h4></div>
+      <div class="logbox" id="logBox"></div>
     </div>
   </dialog>
 
@@ -200,100 +305,93 @@
   (function () {
     "use strict";
 
-    const STORAGE_KEY = "project-time-tracker.v1";
-    const DAY_START_HOUR = 5;          // يبدأ اليوم الساعة 5 صباحاً
-    const DAY_MS = 24 * 60 * 60 * 1000; // وينتهي بعد 24 ساعة
+    const STORAGE_KEY = "project-time-tracker.v2";
+    const OLD_KEY = "project-time-tracker.v1";
+    const DAY_START_HOUR = 5;             // يبدأ اليوم الساعة 5 صباحاً
+    const DAY_MS = 24 * 60 * 60 * 1000;   // وينتهي بعد 24 ساعة
 
     // ---------- الحالة ----------
-    // state.projects: [{ id, name, sessions: [{start, end|null}] }]
+    // state.projects[]: { id, name, sessions: [] }
+    //   جلسة مؤقت: { start, end|null }
+    //   إدخال يدوي: { manual:true, day:<بداية يوم العمل ms>, ms:<موجب/سالب>, created }
+    // state.settings: { dailyGoalHours }
     let state = load();
+    let currentView = "today";
 
     function load() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          if (parsed && Array.isArray(parsed.projects)) return parsed;
-        }
-      } catch (e) { /* تجاهل */ }
-      return { projects: [] };
+        if (raw) { const p = JSON.parse(raw); if (p && Array.isArray(p.projects)) return withDefaults(p); }
+        const old = localStorage.getItem(OLD_KEY);
+        if (old) { const p = JSON.parse(old); if (p && Array.isArray(p.projects)) return withDefaults(p); }
+      } catch (e) {}
+      return withDefaults({ projects: [] });
     }
-
-    function save() {
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-      catch (e) { /* الذاكرة ممتلئة */ }
+    function withDefaults(p) {
+      if (!p.settings) p.settings = {};
+      if (typeof p.settings.dailyGoalHours !== "number") p.settings.dailyGoalHours = 8;
+      return p;
     }
-
-    function uid() {
-      return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
-    }
+    function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} }
+    function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
     // ---------- حدود يوم العمل (يبدأ 5 صباحاً) ----------
-    function currentDayStart(now) {
-      now = now || new Date();
-      const start = new Date(now);
+    function dayStartOf(dateLike) {
+      const d = new Date(dateLike);
+      const start = new Date(d);
       start.setHours(DAY_START_HOUR, 0, 0, 0);
-      // إذا كنا قبل الساعة 5 صباحاً فما زلنا ضمن يوم الأمس
-      if (now.getTime() < start.getTime()) start.setDate(start.getDate() - 1);
+      if (d.getTime() < start.getTime()) start.setDate(start.getDate() - 1);
       return start.getTime();
     }
+    // بداية يوم العمل قبل n أيام من يوم اليوم
+    function dayStartAgo(n) {
+      const base = new Date(dayStartOf(Date.now()));
+      base.setDate(base.getDate() - n);
+      return base.getTime();
+    }
 
-    // مقدار تداخل جلسة مع نافذة يوم العمل الحالي (بالمللي ثانية)
-    function overlapToday(session, dayStart, nowMs) {
-      const s = Math.max(session.start, dayStart);
+    // مساهمة جلسة في نافذة يوم عمل [winStart, winStart+DAY_MS]
+    function sessionMsInDay(session, winStart, nowMs) {
+      if (session.manual) return session.day === winStart ? session.ms : 0;
+      const s = Math.max(session.start, winStart);
       const end = session.end == null ? nowMs : session.end;
-      const e = Math.min(end, dayStart + DAY_MS, nowMs);
+      const e = Math.min(end, winStart + DAY_MS, nowMs);
       return Math.max(0, e - s);
     }
-
-    function projectMsToday(project, dayStart, nowMs) {
+    function projectMsInDay(project, winStart, nowMs) {
       let ms = 0;
-      for (const ses of project.sessions) ms += overlapToday(ses, dayStart, nowMs);
-      return ms;
+      for (const ses of project.sessions) ms += sessionMsInDay(ses, winStart, nowMs);
+      return ms; // قد يكون سالباً بسبب الطرح اليدوي؛ التصفير عند العرض
     }
-
-    function isRunning(project) {
-      return project.sessions.some(s => s.end == null);
-    }
+    function isRunning(project) { return project.sessions.some(s => !s.manual && s.end == null); }
 
     // ---------- منطق المؤقتات ----------
     function startProject(id) {
       const now = Date.now();
       for (const p of state.projects) {
-        if (p.id === id) {
-          if (!isRunning(p)) p.sessions.push({ start: now, end: null });
-        } else {
-          // مؤقت واحد نشط في نفس الوقت — أوقف الباقي
-          stopSessions(p, now);
-        }
+        if (p.id === id) { if (!isRunning(p)) p.sessions.push({ start: now, end: null }); }
+        else stopSessions(p, now);
       }
       save(); render();
     }
-
     function stopProject(id) {
       const now = Date.now();
       const p = state.projects.find(x => x.id === id);
       if (p) { stopSessions(p, now); save(); render(); }
     }
-
     function stopSessions(project, now) {
-      for (const s of project.sessions) if (s.end == null) s.end = now;
+      for (const s of project.sessions) if (!s.manual && s.end == null) s.end = now;
     }
-
     function addProject(name) {
-      name = (name || "").trim();
-      if (!name) return;
+      name = (name || "").trim(); if (!name) return;
       state.projects.push({ id: uid(), name, sessions: [] });
       save(); render();
     }
-
     function renameProject(id, name) {
-      name = (name || "").trim();
-      if (!name) return;
+      name = (name || "").trim(); if (!name) return;
       const p = state.projects.find(x => x.id === id);
       if (p) { p.name = name; save(); render(); }
     }
-
     function deleteProject(id) {
       state.projects = state.projects.filter(x => x.id !== id);
       save(); render();
@@ -301,37 +399,71 @@
 
     // ---------- التنسيق ----------
     function pad(n) { return String(n).padStart(2, "0"); }
-
     function fmtClock(ms) {
+      const neg = ms < 0; ms = Math.abs(ms);
       const t = Math.floor(ms / 1000);
-      return pad(Math.floor(t / 3600)) + ":" + pad(Math.floor((t % 3600) / 60)) + ":" + pad(t % 60);
+      return (neg ? "−" : "") + pad(Math.floor(t / 3600)) + ":" + pad(Math.floor((t % 3600) / 60)) + ":" + pad(t % 60);
     }
-
-    function fmtHours(ms) {
-      return (ms / 3600000).toFixed(2) + " ساعة";
+    function fmtHM(ms) {
+      const neg = ms < 0; ms = Math.abs(ms);
+      const t = Math.floor(ms / 60000);
+      const h = Math.floor(t / 60), m = t % 60;
+      return (neg ? "−" : "") + (h > 0 ? h + " س " : "") + m + " د";
     }
+    function fmtHours(ms) { return (ms / 3600000).toFixed(2) + " ساعة"; }
 
     const AR_DAYS = ["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
     const AR_MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
-    function fmtDayLabel(dayStartMs) {
-      const d = new Date(dayStartMs);
-      return AR_DAYS[d.getDay()] + "، " + d.getDate() + " " + AR_MONTHS[d.getMonth()] + " " + d.getFullYear();
-    }
+    function fmtDayLong(ms) { const d = new Date(ms); return AR_DAYS[d.getDay()] + "، " + d.getDate() + " " + AR_MONTHS[d.getMonth()] + " " + d.getFullYear(); }
+    function fmtDayShort(ms) { const d = new Date(ms); return AR_DAYS[d.getDay()] + " " + d.getDate() + "/" + (d.getMonth() + 1); }
+    function toDateInput(ms) { const d = new Date(ms); return d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate()); }
+    function dateInputToDayStart(val) { const d = new Date(val + "T00:00:00"); d.setHours(DAY_START_HOUR, 0, 0, 0); return d.getTime(); }
 
-    // ---------- العرض ----------
+    // ---------- عناصر ----------
     const els = {
-      projects: document.getElementById("projects"),
-      total: document.getElementById("totalToday"),
+      content: document.getElementById("content"),
+      clock: document.getElementById("totalClock"),
       totalHours: document.getElementById("totalHours"),
       dayLabel: document.getElementById("dayLabel"),
+      summaryLabel: document.getElementById("summaryLabel"),
       newName: document.getElementById("newName"),
+      addbar: document.getElementById("addbar"),
+      goalWrap: document.getElementById("goalWrap"),
+      goalFill: document.getElementById("goalFill"),
+      goalText: document.getElementById("goalText"),
     };
 
+    // ---------- الرأس والملخص ----------
+    function goalMs() { return state.settings.dailyGoalHours * 3600000; }
+
+    function renderSummary(totalMs, labelText) {
+      els.summaryLabel.textContent = labelText;
+      els.clock.textContent = fmtClock(Math.max(0, totalMs));
+      els.totalHours.textContent = fmtHours(Math.max(0, totalMs));
+      const g = goalMs();
+      if (g > 0) {
+        els.goalWrap.style.display = "";
+        const pct = Math.min(100, Math.round((totalMs / g) * 100));
+        els.goalFill.style.width = Math.max(0, pct) + "%";
+        const done = totalMs >= g;
+        els.goalFill.classList.toggle("done", done);
+        els.goalText.textContent = (done ? "✅ " : "") + fmtHours(Math.max(0, totalMs)) + " / " + state.settings.dailyGoalHours + " ساعة (" + Math.max(0, pct) + "٪)";
+      } else {
+        els.goalWrap.style.display = "none";
+      }
+    }
+
+    // ---------- العرض الرئيسي ----------
     function render() {
       const now = Date.now();
-      const dayStart = currentDayStart(new Date(now));
-      els.dayLabel.textContent = fmtDayLabel(dayStart) + " · يبدأ اليوم ٥ صباحاً";
+      const today = dayStartOf(now);
+      els.dayLabel.textContent = fmtDayLong(today) + " · يبدأ اليوم ٥ صباحاً";
 
+      if (currentView === "today") { els.addbar.classList.remove("hidden"); renderToday(now, today); }
+      else { els.addbar.classList.add("hidden"); renderReport(now, currentView === "week" ? 7 : 30); }
+    }
+
+    function renderToday(now, today) {
       let totalMs = 0;
       const frag = document.createDocumentFragment();
 
@@ -339,10 +471,15 @@
         const div = document.createElement("div");
         div.className = "empty";
         div.textContent = "لا توجد مشاريع بعد. أضف مشروعاً من الأسفل لتبدأ القياس.";
-        els.projects.replaceChildren(div);
+        frag.append(div);
       } else {
+        const title = document.createElement("div");
+        title.className = "section-title"; title.textContent = "المشاريع";
+        frag.append(title);
+
         for (const p of state.projects) {
-          const ms = projectMsToday(p, dayStart, now);
+          const raw = projectMsInDay(p, today, now);
+          const ms = Math.max(0, raw);
           totalMs += ms;
           const running = isRunning(p);
 
@@ -352,76 +489,152 @@
           const info = document.createElement("div");
           info.className = "info";
           const name = document.createElement("div");
-          name.className = "name";
-          name.textContent = p.name;
+          name.className = "name"; name.textContent = p.name;
           const time = document.createElement("div");
-          time.className = "time";
-          time.dataset.pid = p.id;
-          time.textContent = fmtClock(ms) + " · " + fmtHours(ms) + (running ? " · يعمل الآن" : "");
+          time.className = "time"; time.dataset.pid = p.id;
+          time.textContent = clockLine(ms, running);
           info.append(name, time);
 
-          const edit = document.createElement("button");
-          edit.className = "iconbtn";
-          edit.title = "تعديل";
-          edit.textContent = "✏️";
-          edit.onclick = () => openEdit(p);
-
-          const del = document.createElement("button");
-          del.className = "iconbtn";
-          del.title = "حذف";
-          del.textContent = "🗑️";
-          del.onclick = () => openDelete(p);
+          const timeEdit = mkIcon("🕐", "تعديل الوقت", () => openTimeEditor(p));
+          const edit = mkIcon("✏️", "تعديل الاسم", () => openEdit(p));
+          const del = mkIcon("🗑️", "حذف", () => openDelete(p));
 
           const toggle = document.createElement("button");
           toggle.className = "btn " + (running ? "stop" : "start");
           toggle.textContent = running ? "إيقاف" : "بدء";
           toggle.onclick = () => running ? stopProject(p.id) : startProject(p.id);
 
-          card.append(info, edit, del, toggle);
+          card.append(info, timeEdit, edit, del, toggle);
           frag.append(card);
         }
-        els.projects.replaceChildren(frag);
       }
-
-      els.total.textContent = fmtClock(totalMs);
-      els.totalHours.textContent = fmtHours(totalMs);
+      els.content.replaceChildren(frag);
+      renderSummary(totalMs, "مجموع ساعات العمل اليوم");
     }
 
-    // تحديث حي كل ثانية دون إعادة بناء كامل الواجهة
+    function clockLine(ms, running) {
+      return fmtClock(ms) + " · " + fmtHours(ms) + (running ? " · يعمل الآن" : "");
+    }
+    function mkIcon(txt, title, onclick) {
+      const b = document.createElement("button");
+      b.className = "iconbtn"; b.textContent = txt; b.title = title; b.onclick = onclick;
+      return b;
+    }
+
+    // ---------- تقرير أسبوعي / شهري ----------
+    function renderReport(now, days) {
+      const frag = document.createDocumentFragment();
+
+      // مجاميع الأيام + مجاميع المشاريع
+      const dayStarts = [];
+      for (let i = days - 1; i >= 0; i--) dayStarts.push(dayStartAgo(i));
+
+      const dayTotals = dayStarts.map(ds => {
+        let t = 0;
+        for (const p of state.projects) t += Math.max(0, projectMsInDay(p, ds, now));
+        return t;
+      });
+      const rangeTotal = dayTotals.reduce((a, b) => a + b, 0);
+
+      const projTotals = state.projects.map(p => {
+        let t = 0;
+        for (const ds of dayStarts) t += Math.max(0, projectMsInDay(p, ds, now));
+        return { name: p.name, ms: t };
+      }).filter(x => x.ms > 0).sort((a, b) => b.ms - a.ms);
+
+      const g = goalMs();
+      const maxDay = Math.max(g, ...dayTotals, 1);
+      const daysMet = g > 0 ? dayTotals.filter(t => t >= g).length : 0;
+      const avg = rangeTotal / days;
+
+      // بطاقة الإجمالي
+      const tot = document.createElement("div");
+      tot.className = "report-card report-total";
+      tot.innerHTML = "<span>الإجمالي خلال " + (days === 7 ? "٧ أيام" : "٣٠ يوماً") + "</span>" +
+        "<b>" + fmtHours(rangeTotal) + "</b>" +
+        "<span>المعدل اليومي: " + fmtHours(avg) + (g > 0 ? " · أيام تحقّق الهدف: " + daysMet + " من " + days : "") + "</span>";
+      frag.append(tot);
+
+      // مخطط الأيام
+      const dc = document.createElement("div");
+      dc.className = "report-card";
+      dc.innerHTML = "<h4>حسب اليوم</h4>";
+      for (let i = dayStarts.length - 1; i >= 0; i--) {
+        const t = dayTotals[i];
+        const met = g > 0 && t >= g;
+        const row = document.createElement("div");
+        row.className = "rrow";
+        const goalMarker = g > 0 ? '<span class="rgoal" style="inset-inline-start:' + Math.min(100, (g / maxDay) * 100) + '%"></span>' : "";
+        row.innerHTML =
+          '<span class="rlabel">' + fmtDayShort(dayStarts[i]) + '</span>' +
+          '<span class="rtrack"><span class="rfill ' + (met ? "met" : "") + '" style="width:' + (t / maxDay * 100) + '%"></span>' + goalMarker + '</span>' +
+          '<span class="rval">' + fmtHM(t) + '</span>';
+        dc.append(row);
+      }
+      frag.append(dc);
+
+      // حسب المشروع
+      const pc = document.createElement("div");
+      pc.className = "report-card";
+      pc.innerHTML = "<h4>حسب المشروع</h4>";
+      if (projTotals.length === 0) {
+        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا يوجد وقت مسجّل في هذه الفترة."; pc.append(e);
+      } else {
+        const maxP = Math.max(...projTotals.map(x => x.ms), 1);
+        for (const it of projTotals) {
+          const row = document.createElement("div");
+          row.className = "rrow";
+          row.innerHTML =
+            '<span class="rlabel" style="width:110px;color:var(--text)">' + escapeHtml(it.name) + '</span>' +
+            '<span class="rtrack"><span class="rfill" style="width:' + (it.ms / maxP * 100) + '%"></span></span>' +
+            '<span class="rval">' + fmtHours(it.ms).replace(" ساعة", "س") + '</span>';
+          pc.append(row);
+        }
+      }
+      frag.append(pc);
+
+      els.content.replaceChildren(frag);
+      renderSummary(dayTotals[dayTotals.length - 1], "ساعات اليوم");
+    }
+
+    function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+    // ---------- التحديث الحي ----------
     function tick() {
+      if (currentView !== "today") return;
       const now = Date.now();
-      const dayStart = currentDayStart(new Date(now));
+      const today = dayStartOf(now);
       let totalMs = 0;
-      let anyRunning = false;
       for (const p of state.projects) {
-        const ms = projectMsToday(p, dayStart, now);
+        const ms = Math.max(0, projectMsInDay(p, today, now));
         totalMs += ms;
-        const running = isRunning(p);
-        if (running) anyRunning = true;
-        const el = els.projects.querySelector('.time[data-pid="' + p.id + '"]');
-        if (el) el.textContent = fmtClock(ms) + " · " + fmtHours(ms) + (running ? " · يعمل الآن" : "");
+        const el = els.content.querySelector('.time[data-pid="' + p.id + '"]');
+        if (el) el.textContent = clockLine(ms, isRunning(p));
       }
-      els.total.textContent = fmtClock(totalMs);
-      els.totalHours.textContent = fmtHours(totalMs);
-      // عند عبور منتصف الليل / حدود اليوم أعِد الرسم الكامل لتحديث التاريخ
-      if (tick._lastDay !== dayStart) { tick._lastDay = dayStart; render(); }
+      renderSummary(totalMs, "مجموع ساعات العمل اليوم");
+      if (tick._lastDay !== today) { tick._lastDay = today; render(); }
     }
 
-    // ---------- نوافذ الحوار ----------
+    // ---------- نافذة تعديل الاسم ----------
     const editDlg = document.getElementById("editDlg");
     const editName = document.getElementById("editName");
     let editingId = null;
-    function openEdit(p) {
-      editingId = p.id;
-      editName.value = p.name;
-      editDlg.showModal();
-      editName.focus(); editName.select();
-    }
-    editDlg.addEventListener("close", () => {
-      if (editDlg.returnValue === "save" && editingId) renameProject(editingId, editName.value);
-      editingId = null;
+    function openEdit(p) { editingId = p.id; editName.value = p.name; editDlg.showModal(); editName.focus(); editName.select(); }
+    editDlg.addEventListener("close", () => { if (editDlg.returnValue === "save" && editingId) renameProject(editingId, editName.value); editingId = null; });
+
+    // ---------- نافذة الهدف ----------
+    const goalDlg = document.getElementById("goalDlg");
+    const goalInput = document.getElementById("goalInput");
+    document.getElementById("editGoalBtn").onclick = () => { goalInput.value = state.settings.dailyGoalHours; goalDlg.showModal(); goalInput.focus(); goalInput.select(); };
+    goalDlg.addEventListener("close", () => {
+      if (goalDlg.returnValue === "save") {
+        let v = parseFloat(goalInput.value);
+        if (!isFinite(v) || v < 0) v = 0; if (v > 24) v = 24;
+        state.settings.dailyGoalHours = v; save(); render();
+      }
     });
 
+    // ---------- نافذة الحذف ----------
     const confirmDlg = document.getElementById("confirmDlg");
     const confirmMsg = document.getElementById("confirmMsg");
     const confirmYes = document.getElementById("confirmYes");
@@ -436,28 +649,121 @@
       confirmNo.addEventListener("click", onNo);
     }
 
+    // ---------- نافذة تعديل الوقت اليدوي + السجل ----------
+    const timeDlg = document.getElementById("timeDlg");
+    const timeTitle = document.getElementById("timeTitle");
+    const manualDate = document.getElementById("manualDate");
+    const manualH = document.getElementById("manualH");
+    const manualM = document.getElementById("manualM");
+    const segAdd = document.getElementById("segAdd");
+    const segSub = document.getElementById("segSub");
+    const logBox = document.getElementById("logBox");
+    let timeProjectId = null;
+    let manualSign = 1;
+
+    function setSign(s) {
+      manualSign = s;
+      segAdd.classList.toggle("active", s === 1);
+      segSub.classList.toggle("active", s === -1);
+    }
+    segAdd.onclick = () => setSign(1);
+    segSub.onclick = () => setSign(-1);
+
+    function openTimeEditor(p) {
+      timeProjectId = p.id;
+      timeTitle.textContent = "⏱ " + p.name;
+      manualDate.value = toDateInput(dayStartOf(Date.now()));
+      manualH.value = ""; manualM.value = "";
+      setSign(1);
+      renderLog();
+      timeDlg.showModal();
+    }
+
+    document.getElementById("manualApply").onclick = () => {
+      const p = state.projects.find(x => x.id === timeProjectId); if (!p) return;
+      const h = parseInt(manualH.value, 10) || 0;
+      const m = parseInt(manualM.value, 10) || 0;
+      const ms = (h * 3600 + m * 60) * 1000 * manualSign;
+      if (ms === 0) return;
+      const day = dateInputToDayStart(manualDate.value || toDateInput(dayStartOf(Date.now())));
+      p.sessions.push({ manual: true, day, ms, created: Date.now() });
+      save();
+      manualH.value = ""; manualM.value = "";
+      renderLog(); render();
+    };
+    document.getElementById("timeClose").onclick = () => timeDlg.close();
+
+    function renderLog() {
+      const p = state.projects.find(x => x.id === timeProjectId);
+      logBox.replaceChildren();
+      if (!p) return;
+      const now = Date.now();
+      // بناء عناصر السجل مع مفتاح الترتيب
+      const items = p.sessions.map((s, idx) => {
+        if (s.manual) return { idx, day: s.day, sort: s.created || s.day, node: manualNode(s) };
+        const dayS = dayStartOf(s.start);
+        return { idx, day: dayS, sort: s.start, node: timerNode(s, now) };
+      }).sort((a, b) => b.sort - a.sort);
+
+      if (items.length === 0) {
+        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد جلسات بعد."; logBox.append(e); return;
+      }
+      for (const it of items) {
+        const del = mkIcon("🗑️", "حذف", () => {
+          p.sessions.splice(p.sessions.indexOf(referenceOf(p, it.idx, items)), 1);
+          save(); renderLog(); render();
+        });
+        it.node.append(del);
+        logBox.append(it.node);
+      }
+    }
+    // نستخدم الفهرس الأصلي المخزّن على العنصر لضمان الحذف الصحيح بعد الفرز
+    function referenceOf(p, idx) { return p.sessions[idx]; }
+
+    function manualNode(s) {
+      const row = document.createElement("div"); row.className = "logitem";
+      const main = document.createElement("div"); main.className = "lmain";
+      const day = document.createElement("div"); day.className = "lday";
+      day.innerHTML = fmtDayShort(s.day) + '<span class="tag">يدوي</span>';
+      const sub = document.createElement("div"); sub.className = "lsub"; sub.textContent = s.ms < 0 ? "طرح وقت" : "إضافة وقت";
+      main.append(day, sub);
+      const dur = document.createElement("div"); dur.className = "ldur" + (s.ms < 0 ? " neg" : "");
+      dur.textContent = (s.ms < 0 ? "−" : "+") + fmtHM(Math.abs(s.ms));
+      row.append(main, dur);
+      return row;
+    }
+    function timerNode(s, now) {
+      const row = document.createElement("div"); row.className = "logitem";
+      const main = document.createElement("div"); main.className = "lmain";
+      const day = document.createElement("div"); day.className = "lday"; day.textContent = fmtDayShort(dayStartOf(s.start));
+      const running = s.end == null;
+      const st = new Date(s.start), en = new Date(running ? now : s.end);
+      const sub = document.createElement("div"); sub.className = "lsub";
+      sub.textContent = pad(st.getHours()) + ":" + pad(st.getMinutes()) + " ← " + (running ? "الآن" : pad(en.getHours()) + ":" + pad(en.getMinutes()));
+      main.append(day, sub);
+      const dur = document.createElement("div"); dur.className = "ldur";
+      dur.textContent = fmtHM((running ? now : s.end) - s.start);
+      row.append(main, dur);
+      return row;
+    }
+
     // ---------- تصدير / استيراد ----------
     document.getElementById("exportBtn").onclick = () => {
       const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url; a.download = "project-time-backup.json";
-      a.click();
+      const a = document.createElement("a"); a.href = url; a.download = "project-time-backup.json"; a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     };
     document.getElementById("importBtn").onclick = () => {
-      const input = document.createElement("input");
-      input.type = "file"; input.accept = "application/json,.json";
+      const input = document.createElement("input"); input.type = "file"; input.accept = "application/json,.json";
       input.onchange = () => {
-        const file = input.files && input.files[0];
-        if (!file) return;
+        const file = input.files && input.files[0]; if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
           try {
             const parsed = JSON.parse(reader.result);
-            if (parsed && Array.isArray(parsed.projects)) {
-              state = parsed; save(); render();
-            } else { alert("ملف غير صالح"); }
+            if (parsed && Array.isArray(parsed.projects)) { state = withDefaults(parsed); save(); render(); }
+            else alert("ملف غير صالح");
           } catch (e) { alert("تعذّر قراءة الملف"); }
         };
         reader.readAsText(file);
@@ -466,19 +772,21 @@
     };
 
     // ---------- الإضافة ----------
-    document.getElementById("addBtn").onclick = () => {
-      addProject(els.newName.value);
-      els.newName.value = "";
-      els.newName.focus();
-    };
-    els.newName.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { addProject(els.newName.value); els.newName.value = ""; }
+    document.getElementById("addBtn").onclick = () => { addProject(els.newName.value); els.newName.value = ""; els.newName.focus(); };
+    els.newName.addEventListener("keydown", e => { if (e.key === "Enter") { addProject(els.newName.value); els.newName.value = ""; } });
+
+    // ---------- التبويبات ----------
+    document.querySelectorAll(".tabs button").forEach(btn => {
+      btn.onclick = () => {
+        currentView = btn.dataset.view;
+        document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("active", b === btn));
+        render();
+      };
     });
 
     // ---------- الإقلاع ----------
     render();
     setInterval(tick, 1000);
-    // أعِد الرسم عند العودة للتبويب لضمان دقة الأرقام
     document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
   })();
   </script>
