@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f172a" />
+  <title>مؤقت المشاريع</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --panel: #ffffff;
+      --panel-2: #f8fafc;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --accent: #2563eb;
+      --accent-soft: #dbeafe;
+      --run: #16a34a;
+      --run-soft: #dcfce7;
+      --danger: #dc2626;
+      --shadow: 0 1px 3px rgba(15, 23, 42, .08), 0 8px 24px rgba(15, 23, 42, .06);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1120;
+        --panel: #111827;
+        --panel-2: #0f172a;
+        --text: #e5e7eb;
+        --muted: #94a3b8;
+        --border: #1f2937;
+        --accent: #3b82f6;
+        --accent-soft: #1e3a5f;
+        --run: #22c55e;
+        --run-soft: #14311f;
+        --danger: #ef4444;
+        --shadow: 0 1px 3px rgba(0,0,0,.4), 0 12px 32px rgba(0,0,0,.35);
+      }
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Kufi Arabic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    }
+    .wrap { max-width: 640px; margin: 0 auto; padding: 16px 16px 96px; }
+
+    header.app { text-align: center; padding: 8px 0 4px; }
+    header.app h1 { font-size: 18px; margin: 0; font-weight: 700; letter-spacing: .2px; }
+    header.app .date { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+    .summary {
+      background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 80%, #000 12%));
+      color: #fff;
+      border-radius: 20px;
+      padding: 22px 20px;
+      margin: 14px 0 18px;
+      box-shadow: var(--shadow);
+      text-align: center;
+    }
+    .summary .label { font-size: 13px; opacity: .9; }
+    .summary .total { font-size: 46px; font-weight: 800; margin: 4px 0; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+    .summary .sub { font-size: 13px; opacity: .9; }
+
+    .section-title { font-size: 13px; color: var(--muted); margin: 4px 4px 10px; font-weight: 600; }
+
+    .project {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      box-shadow: var(--shadow);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      transition: border-color .2s;
+    }
+    .project.running { border-color: var(--run); }
+    .project .info { flex: 1; min-width: 0; }
+    .project .name { font-weight: 700; font-size: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .project .time { color: var(--muted); font-size: 14px; font-variant-numeric: tabular-nums; margin-top: 2px; }
+    .project.running .time { color: var(--run); font-weight: 600; }
+
+    .btn {
+      border: none; cursor: pointer; font-family: inherit;
+      border-radius: 12px; font-weight: 700; font-size: 15px;
+      padding: 10px 0; width: 84px; text-align: center; flex: none;
+      transition: transform .06s, background .2s;
+    }
+    .btn:active { transform: scale(.96); }
+    .btn.start { background: var(--accent-soft); color: var(--accent); }
+    .btn.stop { background: var(--run); color: #fff; }
+
+    .iconbtn {
+      background: transparent; border: none; cursor: pointer; color: var(--muted);
+      font-size: 18px; padding: 6px; border-radius: 8px; flex: none; line-height: 1;
+    }
+    .iconbtn:active { background: var(--border); }
+
+    .empty { text-align: center; color: var(--muted); padding: 30px 10px; font-size: 14px; }
+
+    .addbar {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
+      backdrop-filter: blur(10px);
+      border-top: 1px solid var(--border);
+      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    }
+    .addbar .row { max-width: 640px; margin: 0 auto; display: flex; gap: 10px; }
+    .addbar input {
+      flex: 1; border: 1px solid var(--border); background: var(--panel-2); color: var(--text);
+      border-radius: 12px; padding: 12px 14px; font-size: 15px; font-family: inherit; min-width: 0;
+    }
+    .addbar input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+    .addbar button {
+      background: var(--accent); color: #fff; border: none; border-radius: 12px;
+      padding: 0 20px; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; flex: none;
+    }
+
+    .footer-tools { text-align: center; margin-top: 8px; }
+    .linkbtn { background: none; border: none; color: var(--muted); font-size: 12px; cursor: pointer; text-decoration: underline; font-family: inherit; }
+
+    dialog {
+      border: none; border-radius: 16px; padding: 0; max-width: 92vw; width: 380px;
+      background: var(--panel); color: var(--text); box-shadow: var(--shadow);
+    }
+    dialog::backdrop { background: rgba(15,23,42,.5); }
+    .dlg { padding: 18px; }
+    .dlg h3 { margin: 0 0 6px; font-size: 17px; }
+    .dlg p { margin: 0 0 14px; color: var(--muted); font-size: 14px; }
+    .dlg .rows { display: flex; flex-direction: column; gap: 10px; }
+    .dlg input { border: 1px solid var(--border); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 15px; font-family: inherit; }
+    .dlg .actions { display: flex; gap: 10px; margin-top: 16px; }
+    .dlg .actions button { flex: 1; border: none; border-radius: 10px; padding: 11px 0; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .dlg .ok { background: var(--accent); color: #fff; }
+    .dlg .ok.danger { background: var(--danger); }
+    .dlg .cancel { background: var(--border); color: var(--text); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header class="app">
+      <h1>⏱️ مؤقت المشاريع</h1>
+      <div class="date" id="dayLabel"></div>
+    </header>
+
+    <div class="summary">
+      <div class="label">مجموع ساعات العمل اليوم</div>
+      <div class="total" id="totalToday">00:00:00</div>
+      <div class="sub" id="totalHours">0.00 ساعة</div>
+    </div>
+
+    <div class="section-title">المشاريع</div>
+    <div id="projects"></div>
+
+    <div class="footer-tools">
+      <button class="linkbtn" id="exportBtn">تصدير البيانات</button>
+      &nbsp;·&nbsp;
+      <button class="linkbtn" id="importBtn">استيراد</button>
+    </div>
+  </div>
+
+  <div class="addbar">
+    <div class="row">
+      <input id="newName" type="text" placeholder="اسم مشروع جديد…" autocomplete="off" />
+      <button id="addBtn">إضافة</button>
+    </div>
+  </div>
+
+  <!-- تعديل / تسمية -->
+  <dialog id="editDlg">
+    <form method="dialog" class="dlg">
+      <h3 id="editTitle">تعديل المشروع</h3>
+      <div class="rows">
+        <input id="editName" type="text" placeholder="اسم المشروع" />
+      </div>
+      <div class="actions">
+        <button class="ok" value="save" id="editSave">حفظ</button>
+        <button class="cancel" value="cancel" formnovalidate>إلغاء</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- تأكيد الحذف -->
+  <dialog id="confirmDlg">
+    <div class="dlg">
+      <h3 id="confirmTitle">تأكيد</h3>
+      <p id="confirmMsg"></p>
+      <div class="actions">
+        <button class="ok danger" id="confirmYes">نعم</button>
+        <button class="cancel" id="confirmNo">إلغاء</button>
+      </div>
+    </div>
+  </dialog>
+
+  <script>
+  (function () {
+    "use strict";
+
+    const STORAGE_KEY = "project-time-tracker.v1";
+    const DAY_START_HOUR = 5;          // يبدأ اليوم الساعة 5 صباحاً
+    const DAY_MS = 24 * 60 * 60 * 1000; // وينتهي بعد 24 ساعة
+
+    // ---------- الحالة ----------
+    // state.projects: [{ id, name, sessions: [{start, end|null}] }]
+    let state = load();
+
+    function load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.projects)) return parsed;
+        }
+      } catch (e) { /* تجاهل */ }
+      return { projects: [] };
+    }
+
+    function save() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+      catch (e) { /* الذاكرة ممتلئة */ }
+    }
+
+    function uid() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+    }
+
+    // ---------- حدود يوم العمل (يبدأ 5 صباحاً) ----------
+    function currentDayStart(now) {
+      now = now || new Date();
+      const start = new Date(now);
+      start.setHours(DAY_START_HOUR, 0, 0, 0);
+      // إذا كنا قبل الساعة 5 صباحاً فما زلنا ضمن يوم الأمس
+      if (now.getTime() < start.getTime()) start.setDate(start.getDate() - 1);
+      return start.getTime();
+    }
+
+    // مقدار تداخل جلسة مع نافذة يوم العمل الحالي (بالمللي ثانية)
+    function overlapToday(session, dayStart, nowMs) {
+      const s = Math.max(session.start, dayStart);
+      const end = session.end == null ? nowMs : session.end;
+      const e = Math.min(end, dayStart + DAY_MS, nowMs);
+      return Math.max(0, e - s);
+    }
+
+    function projectMsToday(project, dayStart, nowMs) {
+      let ms = 0;
+      for (const ses of project.sessions) ms += overlapToday(ses, dayStart, nowMs);
+      return ms;
+    }
+
+    function isRunning(project) {
+      return project.sessions.some(s => s.end == null);
+    }
+
+    // ---------- منطق المؤقتات ----------
+    function startProject(id) {
+      const now = Date.now();
+      for (const p of state.projects) {
+        if (p.id === id) {
+          if (!isRunning(p)) p.sessions.push({ start: now, end: null });
+        } else {
+          // مؤقت واحد نشط في نفس الوقت — أوقف الباقي
+          stopSessions(p, now);
+        }
+      }
+      save(); render();
+    }
+
+    function stopProject(id) {
+      const now = Date.now();
+      const p = state.projects.find(x => x.id === id);
+      if (p) { stopSessions(p, now); save(); render(); }
+    }
+
+    function stopSessions(project, now) {
+      for (const s of project.sessions) if (s.end == null) s.end = now;
+    }
+
+    function addProject(name) {
+      name = (name || "").trim();
+      if (!name) return;
+      state.projects.push({ id: uid(), name, sessions: [] });
+      save(); render();
+    }
+
+    function renameProject(id, name) {
+      name = (name || "").trim();
+      if (!name) return;
+      const p = state.projects.find(x => x.id === id);
+      if (p) { p.name = name; save(); render(); }
+    }
+
+    function deleteProject(id) {
+      state.projects = state.projects.filter(x => x.id !== id);
+      save(); render();
+    }
+
+    // ---------- التنسيق ----------
+    function pad(n) { return String(n).padStart(2, "0"); }
+
+    function fmtClock(ms) {
+      const t = Math.floor(ms / 1000);
+      return pad(Math.floor(t / 3600)) + ":" + pad(Math.floor((t % 3600) / 60)) + ":" + pad(t % 60);
+    }
+
+    function fmtHours(ms) {
+      return (ms / 3600000).toFixed(2) + " ساعة";
+    }
+
+    const AR_DAYS = ["الأحد","الإثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+    const AR_MONTHS = ["يناير","فبراير","مارس","أبريل","مايو","يونيو","يوليو","أغسطس","سبتمبر","أكتوبر","نوفمبر","ديسمبر"];
+    function fmtDayLabel(dayStartMs) {
+      const d = new Date(dayStartMs);
+      return AR_DAYS[d.getDay()] + "، " + d.getDate() + " " + AR_MONTHS[d.getMonth()] + " " + d.getFullYear();
+    }
+
+    // ---------- العرض ----------
+    const els = {
+      projects: document.getElementById("projects"),
+      total: document.getElementById("totalToday"),
+      totalHours: document.getElementById("totalHours"),
+      dayLabel: document.getElementById("dayLabel"),
+      newName: document.getElementById("newName"),
+    };
+
+    function render() {
+      const now = Date.now();
+      const dayStart = currentDayStart(new Date(now));
+      els.dayLabel.textContent = fmtDayLabel(dayStart) + " · يبدأ اليوم ٥ صباحاً";
+
+      let totalMs = 0;
+      const frag = document.createDocumentFragment();
+
+      if (state.projects.length === 0) {
+        const div = document.createElement("div");
+        div.className = "empty";
+        div.textContent = "لا توجد مشاريع بعد. أضف مشروعاً من الأسفل لتبدأ القياس.";
+        els.projects.replaceChildren(div);
+      } else {
+        for (const p of state.projects) {
+          const ms = projectMsToday(p, dayStart, now);
+          totalMs += ms;
+          const running = isRunning(p);
+
+          const card = document.createElement("div");
+          card.className = "project" + (running ? " running" : "");
+
+          const info = document.createElement("div");
+          info.className = "info";
+          const name = document.createElement("div");
+          name.className = "name";
+          name.textContent = p.name;
+          const time = document.createElement("div");
+          time.className = "time";
+          time.dataset.pid = p.id;
+          time.textContent = fmtClock(ms) + " · " + fmtHours(ms) + (running ? " · يعمل الآن" : "");
+          info.append(name, time);
+
+          const edit = document.createElement("button");
+          edit.className = "iconbtn";
+          edit.title = "تعديل";
+          edit.textContent = "✏️";
+          edit.onclick = () => openEdit(p);
+
+          const del = document.createElement("button");
+          del.className = "iconbtn";
+          del.title = "حذف";
+          del.textContent = "🗑️";
+          del.onclick = () => openDelete(p);
+
+          const toggle = document.createElement("button");
+          toggle.className = "btn " + (running ? "stop" : "start");
+          toggle.textContent = running ? "إيقاف" : "بدء";
+          toggle.onclick = () => running ? stopProject(p.id) : startProject(p.id);
+
+          card.append(info, edit, del, toggle);
+          frag.append(card);
+        }
+        els.projects.replaceChildren(frag);
+      }
+
+      els.total.textContent = fmtClock(totalMs);
+      els.totalHours.textContent = fmtHours(totalMs);
+    }
+
+    // تحديث حي كل ثانية دون إعادة بناء كامل الواجهة
+    function tick() {
+      const now = Date.now();
+      const dayStart = currentDayStart(new Date(now));
+      let totalMs = 0;
+      let anyRunning = false;
+      for (const p of state.projects) {
+        const ms = projectMsToday(p, dayStart, now);
+        totalMs += ms;
+        const running = isRunning(p);
+        if (running) anyRunning = true;
+        const el = els.projects.querySelector('.time[data-pid="' + p.id + '"]');
+        if (el) el.textContent = fmtClock(ms) + " · " + fmtHours(ms) + (running ? " · يعمل الآن" : "");
+      }
+      els.total.textContent = fmtClock(totalMs);
+      els.totalHours.textContent = fmtHours(totalMs);
+      // عند عبور منتصف الليل / حدود اليوم أعِد الرسم الكامل لتحديث التاريخ
+      if (tick._lastDay !== dayStart) { tick._lastDay = dayStart; render(); }
+    }
+
+    // ---------- نوافذ الحوار ----------
+    const editDlg = document.getElementById("editDlg");
+    const editName = document.getElementById("editName");
+    let editingId = null;
+    function openEdit(p) {
+      editingId = p.id;
+      editName.value = p.name;
+      editDlg.showModal();
+      editName.focus(); editName.select();
+    }
+    editDlg.addEventListener("close", () => {
+      if (editDlg.returnValue === "save" && editingId) renameProject(editingId, editName.value);
+      editingId = null;
+    });
+
+    const confirmDlg = document.getElementById("confirmDlg");
+    const confirmMsg = document.getElementById("confirmMsg");
+    const confirmYes = document.getElementById("confirmYes");
+    const confirmNo = document.getElementById("confirmNo");
+    function openDelete(p) {
+      confirmMsg.textContent = 'سيتم حذف المشروع «' + p.name + '» وكل سجلاته. لا يمكن التراجع.';
+      confirmDlg.showModal();
+      const onYes = () => { deleteProject(p.id); cleanup(); confirmDlg.close(); };
+      const onNo = () => { cleanup(); confirmDlg.close(); };
+      function cleanup() { confirmYes.removeEventListener("click", onYes); confirmNo.removeEventListener("click", onNo); }
+      confirmYes.addEventListener("click", onYes);
+      confirmNo.addEventListener("click", onNo);
+    }
+
+    // ---------- تصدير / استيراد ----------
+    document.getElementById("exportBtn").onclick = () => {
+      const blob = new Blob([JSON.stringify(state, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = "project-time-backup.json";
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    };
+    document.getElementById("importBtn").onclick = () => {
+      const input = document.createElement("input");
+      input.type = "file"; input.accept = "application/json,.json";
+      input.onchange = () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(reader.result);
+            if (parsed && Array.isArray(parsed.projects)) {
+              state = parsed; save(); render();
+            } else { alert("ملف غير صالح"); }
+          } catch (e) { alert("تعذّر قراءة الملف"); }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    };
+
+    // ---------- الإضافة ----------
+    document.getElementById("addBtn").onclick = () => {
+      addProject(els.newName.value);
+      els.newName.value = "";
+      els.newName.focus();
+    };
+    els.newName.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { addProject(els.newName.value); els.newName.value = ""; }
+    });
+
+    // ---------- الإقلاع ----------
+    render();
+    setInterval(tick, 1000);
+    // أعِد الرسم عند العودة للتبويب لضمان دقة الأرقام
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+  })();
+  </script>
+</body>
+</html>
