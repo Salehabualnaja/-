@@ -531,12 +531,12 @@
       <label>وزن هذا المجال في الخطة</label>
       <div class="inline" style="margin-bottom:6px">
         <div>
-          <label>وزن خطة ٢٠٢٦</label>
-          <input id="wDomain2026" type="number" min="0" step="1" placeholder="1" />
+          <label>وزن خطة ٢٠٢٦ (٠–١٠٠)</label>
+          <input id="wDomain2026" type="number" min="0" max="100" step="1" placeholder="1" />
         </div>
         <div>
-          <label>وزن خطة ٢٠٣٠</label>
-          <input id="wDomain2030" type="number" min="0" step="1" placeholder="1" />
+          <label>وزن خطة ٢٠٣٠ (٠–١٠٠)</label>
+          <input id="wDomain2030" type="number" min="0" max="100" step="1" placeholder="1" />
         </div>
       </div>
 
@@ -1434,8 +1434,9 @@
 
     function saveWeights() {
       const w = state.domainWeights[currentDomainId] || {};
-      let a = parseFloat(wDomain2026.value); if (!isFinite(a) || a < 0) a = 0;
-      let b = parseFloat(wDomain2030.value); if (!isFinite(b) || b < 0) b = 0;
+      let a = parseFloat(wDomain2026.value); if (!isFinite(a) || a < 0) a = 0; if (a > 100) a = 100;
+      let b = parseFloat(wDomain2030.value); if (!isFinite(b) || b < 0) b = 0; if (b > 100) b = 100;
+      wDomain2026.value = a; wDomain2030.value = b;
       w.w2026 = a; w.w2030 = b;
       state.domainWeights[currentDomainId] = w;
       save();
