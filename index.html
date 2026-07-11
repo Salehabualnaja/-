@@ -203,6 +203,9 @@
     .goalrow .gmeta { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .gbadge { font-size: 10.5px; font-weight: 700; border-radius: 6px; padding: 1px 7px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
     .gstar { flex: none; background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; padding: 4px; color: var(--dial-gold); }
+    .gstep { display: inline-flex; gap: 4px; }
+    .gstep button { width: 26px; height: 24px; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--accent); border-radius: 7px; font-size: 16px; font-weight: 800; line-height: 1; cursor: pointer; font-family: inherit; }
+    .gstep button:active { background: var(--accent-soft); }
 
     /* صفحة الأهداف */
     .goals-group { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
@@ -525,6 +528,18 @@
         <div class="pb-sub" id="domainSub">٠ من ٠ هدف مُنجَز</div>
       </div>
 
+      <label>وزن هذا المجال في الخطة</label>
+      <div class="inline" style="margin-bottom:6px">
+        <div>
+          <label>وزن خطة ٢٠٢٦</label>
+          <input id="wDomain2026" type="number" min="0" step="1" placeholder="1" />
+        </div>
+        <div>
+          <label>وزن خطة ٢٠٣٠</label>
+          <input id="wDomain2030" type="number" min="0" step="1" placeholder="1" />
+        </div>
+      </div>
+
       <button class="add-goal-btn" id="domainAddGoal">➕ إضافة هدف في هذا المجال</button>
 
       <div class="loghdr"><h4>الأهداف</h4></div>
@@ -556,6 +571,16 @@
               <button type="button" id="itemTHours" class="active">⏱️ ساعات</button>
               <button type="button" id="itemTPoints">⭐ نقاط</button>
             </div>
+          </div>
+        </div>
+        <div class="inline">
+          <div>
+            <label id="itemTargetLabel">الساعات المستهدفة</label>
+            <input id="itemTarget" type="number" min="0" step="1" placeholder="0" />
+          </div>
+          <div>
+            <label>المُنجَز حالياً</label>
+            <input id="itemCurrent" type="number" min="0" step="1" placeholder="0" />
           </div>
         </div>
         <div class="inline">
@@ -626,7 +651,17 @@
         if (typeof g.favorite !== "boolean") g.favorite = false;
         if (typeof g.startDate !== "string") g.startDate = (typeof g.date === "string") ? g.date : "";
         if (typeof g.endDate !== "string") g.endDate = "";
+        if (typeof g.target !== "number") g.target = 0;
+        if (typeof g.current !== "number") g.current = g.done ? (g.target || 0) : 0;
         delete g.date;
+      }
+      // أوزان المجالات في خطتَي 2026 و2030 (افتراضي: متساوٍ = 1)
+      if (!p.domainWeights || typeof p.domainWeights !== "object") p.domainWeights = {};
+      for (const d of DOMAINS) {
+        const w = p.domainWeights[d.id] || {};
+        if (typeof w.w2026 !== "number") w.w2026 = 1;
+        if (typeof w.w2030 !== "number") w.w2030 = 1;
+        p.domainWeights[d.id] = w;
       }
       return p;
     }
@@ -804,29 +839,69 @@
     function toArDigits(s) { return String(s).replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[d]); }
 
     function goalsInDomain(domainId) { return state.goals.filter(g => g.domainId === domainId); }
-    function pctOf(list) { if (!list.length) return 0; return Math.round(list.filter(g => g.done).length / list.length * 100); }
     // انتماء الهدف لخطة سنة: يُشتق من نهاية الفترة (وإلا 2030)
     function planYear(g) {
       if (g.endDate) return parseInt(g.endDate.slice(0, 4), 10);
       if (typeof g.year === "number") return g.year;
       return 2030;
     }
+    // تقدّم الهدف 0..1: من التارجت إن وُجد، وإلا من مربع الإنجاز
+    function goalProgress(g) {
+      if (g.target && g.target > 0) return Math.max(0, Math.min(1, (g.current || 0) / g.target));
+      return g.done ? 1 : 0;
+    }
+    function isComplete(g) { return goalProgress(g) >= 1; }
+    function toggleComplete(g) {
+      if (g.target && g.target > 0) { g.current = isComplete(g) ? 0 : g.target; g.done = isComplete(g); }
+      else g.done = !g.done;
+    }
+    // متوسط تقدّم مجال 0..1 (اختيارياً لأهداف 2026 فقط)
+    function domainProgress(domainId, only2026) {
+      let list = goalsInDomain(domainId);
+      if (only2026) list = list.filter(g => planYear(g) <= 2026);
+      if (!list.length) return 0;
+      let s = 0; for (const g of list) s += goalProgress(g);
+      return s / list.length;
+    }
+    function domainDone(domainId, only2026) {
+      let list = goalsInDomain(domainId);
+      if (only2026) list = list.filter(g => planYear(g) <= 2026);
+      return { done: list.filter(isComplete).length, total: list.length };
+    }
+    function weightOf(domainId, year) {
+      const w = state.domainWeights[domainId] || {};
+      const v = year === 2026 ? w.w2026 : w.w2030;
+      return (typeof v === "number" && v >= 0) ? v : 1;
+    }
+    // نسبة الخطة (متوسط مرجّح لتقدّم المجالات) 0..100
+    function planPct(only2026) {
+      let num = 0, den = 0;
+      for (const d of DOMAINS) {
+        const w = weightOf(d.id, only2026 ? 2026 : 2030);
+        if (w <= 0) continue;
+        num += domainProgress(d.id, only2026) * w;
+        den += w;
+      }
+      return den > 0 ? Math.round(num / den * 100) : 0;
+    }
 
     function renderPlan() {
       els.dayLabel.textContent = "لوحة الخطة الشخصية · ٨ مجالات";
 
-      // البارات الكبيرة
-      const all = state.goals;
-      const y2026 = all.filter(g => planYear(g) <= 2026);
-      setBar(els.fill2030, els.pct2030, els.sub2030, all);
-      setBar(els.fill2026, els.pct2026, els.sub2026, y2026);
+      // البارات الكبيرة (متوسط مرجّح لتقدّم المجالات)
+      const pct30 = planPct(false), pct26 = planPct(true);
+      const d30 = allDone(false), d26 = allDone(true);
+      els.fill2030.style.width = pct30 + "%"; els.pct2030.textContent = toArDigits(pct30) + "٪";
+      els.sub2030.textContent = d30.total ? (toArDigits(d30.done) + " من " + toArDigits(d30.total) + " هدف مكتمل · متوسط مرجّح") : "لا توجد أهداف بعد";
+      els.fill2026.style.width = pct26 + "%"; els.pct2026.textContent = toArDigits(pct26) + "٪";
+      els.sub2026.textContent = d26.total ? (toArDigits(d26.done) + " من " + toArDigits(d26.total) + " هدف مكتمل · متوسط مرجّح") : "لا توجد أهداف لسنة ٢٠٢٦";
 
       // المربعات الثمانية
       const frag = document.createDocumentFragment();
       for (const d of DOMAINS) {
         const list = goalsInDomain(d.id);
-        const pct = pctOf(list);
-        const doneN = list.filter(g => g.done).length;
+        const pct = Math.round(domainProgress(d.id, false) * 100);
+        const dd = domainDone(d.id, false);
 
         const card = document.createElement("button");
         card.className = "domain-card";
@@ -846,7 +921,7 @@
 
         const count = document.createElement("div");
         count.className = "dc-count";
-        count.textContent = list.length ? (toArDigits(doneN) + " من " + toArDigits(list.length)) : "لا أهداف";
+        count.textContent = list.length ? (toArDigits(dd.done) + " من " + toArDigits(dd.total)) : "لا أهداف";
 
         card.append(ring, name, count);
         frag.append(card);
@@ -854,6 +929,12 @@
       els.domainsGrid.replaceChildren(frag);
 
       renderFavorites();
+    }
+
+    function allDone(only2026) {
+      let list = state.goals;
+      if (only2026) list = list.filter(g => planYear(g) <= 2026);
+      return { done: list.filter(isComplete).length, total: list.length };
     }
 
     function domainName(id) { const d = DOMAINS.find(x => x.id === id); return d ? d.name : ""; }
@@ -867,23 +948,25 @@
       if (!favs.length) { favWrap.hidden = true; favList.replaceChildren(); return; }
       favWrap.hidden = false;
       const frag = document.createDocumentFragment();
-      favs.sort((a, b) => (a.done - b.done) || (b.created - a.created));
+      favs.sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
       for (const g of favs) {
+        const complete = isComplete(g);
         const row = document.createElement("div");
-        row.className = "favrow" + (g.done ? " done" : "");
+        row.className = "favrow" + (complete ? " done" : "");
 
         const check = document.createElement("button");
-        check.className = "gcheck" + (g.done ? " done" : "");
-        check.textContent = g.done ? "✓" : "";
-        check.title = "تبديل الإنجاز";
-        check.onclick = () => { g.done = !g.done; save(); renderPlan(); };
+        check.className = "gcheck" + (complete ? " done" : "");
+        check.textContent = complete ? "✓" : "";
+        check.title = "تبديل الإكمال";
+        check.onclick = () => { toggleComplete(g); save(); renderPlan(); };
 
         const main = document.createElement("div");
         main.className = "fav-main";
         const nm = document.createElement("div"); nm.className = "fav-name"; nm.textContent = g.title;
         const mt = document.createElement("div"); mt.className = "fav-meta";
         const per = fmtPeriod(g);
-        mt.textContent = domainIcon(g.domainId) + " " + domainName(g.domainId) + " · " + typeLabel(g.type) + (per ? " · " + per : "");
+        const tg = (g.target && g.target > 0) ? " · " + fmtNum(g.current || 0) + "/" + fmtNum(g.target) : "";
+        mt.textContent = domainIcon(g.domainId) + " " + domainName(g.domainId) + " · " + typeLabel(g.type) + tg + (per ? " · " + per : "");
         main.append(nm, mt);
 
         const star = document.createElement("button");
@@ -896,16 +979,20 @@
       favList.replaceChildren(frag);
     }
 
+    function fmtNum(n) { return toArDigits(Number.isInteger(n) ? n : Math.round(n * 10) / 10); }
+
     // صف هدف مشترك (يُستخدم في صفحة الأهداف ونافذة المجال)
     function buildGoalRow(g) {
+      const complete = isComplete(g);
+      const hasTarget = g.target && g.target > 0;
       const row = document.createElement("div");
-      row.className = "goalrow" + (g.done ? " done" : "");
+      row.className = "goalrow" + (complete ? " done" : "");
 
       const check = document.createElement("button");
-      check.className = "gcheck" + (g.done ? " done" : "");
-      check.textContent = g.done ? "✓" : "";
-      check.title = "تبديل الإنجاز";
-      check.onclick = () => { g.done = !g.done; save(); refreshViews(); };
+      check.className = "gcheck" + (complete ? " done" : "");
+      check.textContent = complete ? "✓" : "";
+      check.title = "تبديل الإكمال";
+      check.onclick = () => { toggleComplete(g); save(); refreshViews(); };
 
       const main = document.createElement("div");
       main.className = "gtitle";
@@ -914,7 +1001,21 @@
       const badges = ['<span class="gbadge">' + typeLabel(g.type) + '</span>'];
       const per = fmtPeriod(g);
       if (per) badges.push('<span class="gbadge">' + per + '</span>');
+      if (hasTarget) {
+        const pct = Math.round(goalProgress(g) * 100);
+        badges.push('<span class="gbadge">' + fmtNum(g.current || 0) + " / " + fmtNum(g.target) + " (" + toArDigits(pct) + "٪)</span>");
+      }
       meta.innerHTML = badges.join(" ");
+      // خطوات زيادة/إنقاص المُنجَز للأهداف ذات التارجت
+      if (hasTarget) {
+        const step = document.createElement("div"); step.className = "gstep";
+        const minus = document.createElement("button"); minus.textContent = "−"; minus.title = "إنقاص";
+        minus.onclick = () => { g.current = Math.max(0, (g.current || 0) - 1); g.done = g.current >= g.target; save(); refreshViews(); };
+        const plus = document.createElement("button"); plus.textContent = "+"; plus.title = "زيادة";
+        plus.onclick = () => { g.current = Math.min(g.target, (g.current || 0) + 1); g.done = g.current >= g.target; save(); refreshViews(); };
+        step.append(minus, plus);
+        meta.append(step);
+      }
       main.append(t, meta);
 
       const star = document.createElement("button");
@@ -958,21 +1059,11 @@
           '<span class="ggcount">' + toArDigits(doneN) + " من " + toArDigits(list.length) + '</span>';
         group.append(head);
 
-        const sorted = list.slice().sort((a, b) => (a.done - b.done) || (b.created - a.created));
+        const sorted = list.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
         for (const g of sorted) group.append(buildGoalRow(g));
         frag.append(group);
       }
       els.goalsPageList.replaceChildren(frag);
-    }
-
-    function setBar(fillEl, pctEl, subEl, list) {
-      const pct = pctOf(list);
-      const doneN = list.filter(g => g.done).length;
-      fillEl.style.width = pct + "%";
-      pctEl.textContent = toArDigits(pct) + "٪";
-      subEl.textContent = list.length
-        ? (toArDigits(doneN) + " من " + toArDigits(list.length) + " هدف مُنجَز")
-        : "لا توجد أهداف بعد";
     }
 
     function renderToday(now, today) {
@@ -1328,28 +1419,45 @@
     const domainClose = document.getElementById("domainClose");
     let currentDomainId = null;
 
+    const wDomain2026 = document.getElementById("wDomain2026");
+    const wDomain2030 = document.getElementById("wDomain2030");
+
     function openDomain(d) {
       currentDomainId = d.id;
       domainTitle.textContent = d.icon + " " + d.name;
+      const w = state.domainWeights[d.id] || {};
+      wDomain2026.value = (typeof w.w2026 === "number") ? w.w2026 : 1;
+      wDomain2030.value = (typeof w.w2030 === "number") ? w.w2030 : 1;
       renderGoals();
       domainDlg.showModal();
     }
 
+    function saveWeights() {
+      const w = state.domainWeights[currentDomainId] || {};
+      let a = parseFloat(wDomain2026.value); if (!isFinite(a) || a < 0) a = 0;
+      let b = parseFloat(wDomain2030.value); if (!isFinite(b) || b < 0) b = 0;
+      w.w2026 = a; w.w2030 = b;
+      state.domainWeights[currentDomainId] = w;
+      save();
+    }
+    wDomain2026.addEventListener("change", saveWeights);
+    wDomain2030.addEventListener("change", saveWeights);
+
     function renderGoals() {
       const d = DOMAINS.find(x => x.id === currentDomainId);
       const list = goalsInDomain(currentDomainId);
-      const pct = pctOf(list);
-      const doneN = list.filter(g => g.done).length;
+      const pct = Math.round(domainProgress(currentDomainId, false) * 100);
+      const dd = domainDone(currentDomainId, false);
       domainFill.style.width = pct + "%";
       domainSub.textContent = list.length
-        ? (toArDigits(doneN) + " من " + toArDigits(list.length) + " هدف مُنجَز · " + toArDigits(pct) + "٪")
+        ? ("التقدّم " + toArDigits(pct) + "٪ · " + toArDigits(dd.done) + " من " + toArDigits(dd.total) + " مكتمل")
         : "لا أهداف بعد — أضِف أول هدف في مجال «" + (d ? d.name : "") + "»";
 
       goalsBox.replaceChildren();
       if (!list.length) {
         const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد أهداف."; goalsBox.append(e); return;
       }
-      const sorted = list.slice().sort((a, b) => (a.done - b.done) || (b.created - a.created));
+      const sorted = list.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
       for (const g of sorted) goalsBox.append(buildGoalRow(g));
     }
 
@@ -1368,6 +1476,9 @@
     const itemFav = document.getElementById("itemFav");
     const itemFavText = document.getElementById("itemFavText");
     const itemDlgTitleEl = document.getElementById("itemDlgTitle");
+    const itemTarget = document.getElementById("itemTarget");
+    const itemCurrent = document.getElementById("itemCurrent");
+    const itemTargetLabel = document.getElementById("itemTargetLabel");
     const itemSave = document.getElementById("itemSave");
     const itemCancel = document.getElementById("itemCancel");
     let niType = "hours", niFav = false, editingGoalId = null;
@@ -1378,7 +1489,12 @@
       opt.value = d.id; opt.textContent = d.icon + " " + d.name;
       itemDomain.append(opt);
     }
-    function setNiType(t) { niType = t; itemTHours.classList.toggle("active", t === "hours"); itemTPoints.classList.toggle("active", t === "points"); }
+    function setNiType(t) {
+      niType = t;
+      itemTHours.classList.toggle("active", t === "hours");
+      itemTPoints.classList.toggle("active", t === "points");
+      itemTargetLabel.textContent = t === "points" ? "النقاط المستهدفة" : "الساعات المستهدفة";
+    }
     function setNiFav(v) { niFav = v; itemFav.classList.toggle("on", v); itemFav.querySelector(".fav-star").textContent = v ? "★" : "☆"; itemFavText.textContent = v ? "مضاف إلى المفضلة" : "إضافة إلى المفضلة"; }
     itemTHours.onclick = () => setNiType("hours");
     itemTPoints.onclick = () => setNiType("points");
@@ -1395,6 +1511,8 @@
         itemEnd.value = goal.endDate || "";
         itemDomain.value = goal.domainId;
         setNiType(goal.type || "hours");
+        itemTarget.value = goal.target ? goal.target : "";
+        itemCurrent.value = goal.current ? goal.current : "";
         setNiFav(!!goal.favorite);
       } else {
         editingGoalId = null;
@@ -1404,6 +1522,7 @@
         itemStart.value = ""; itemEnd.value = "";
         itemDomain.value = presetDomainId || DOMAINS[0].id;
         setNiType("hours"); setNiFav(false);
+        itemTarget.value = ""; itemCurrent.value = "";
       }
       itemDlg.showModal();
       itemName.focus();
@@ -1411,18 +1530,22 @@
     itemSave.onclick = () => {
       const t = itemName.value.trim();
       if (!t) { itemName.focus(); return; }
+      let target = parseFloat(itemTarget.value); if (!isFinite(target) || target < 0) target = 0;
+      let current = parseFloat(itemCurrent.value); if (!isFinite(current) || current < 0) current = 0;
       if (editingGoalId) {
         const g = state.goals.find(x => x.id === editingGoalId);
         if (g) {
           g.title = t; g.domainId = itemDomain.value; g.type = niType; g.favorite = niFav;
           g.startDate = itemStart.value || ""; g.endDate = itemEnd.value || "";
+          g.target = target; g.current = current;
+          g.done = target > 0 ? (current >= target) : g.done;
         }
       } else {
         state.goals.push({
           id: uid(), domainId: itemDomain.value, title: t,
-          done: false, created: Date.now(),
+          done: target > 0 ? (current >= target) : false, created: Date.now(),
           startDate: itemStart.value || "", endDate: itemEnd.value || "",
-          type: niType, favorite: niFav
+          type: niType, favorite: niFav, target: target, current: current
         });
       }
       save();
