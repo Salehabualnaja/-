@@ -204,6 +204,12 @@
     .gbadge { font-size: 10.5px; font-weight: 700; border-radius: 6px; padding: 1px 7px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
     .gstar { flex: none; background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; padding: 4px; color: var(--dial-gold); }
 
+    /* صفحة الأهداف */
+    .goals-group { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
+    .goals-group-title { display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-weight: 800; font-size: 14px; border-bottom: 1px solid var(--border); background: var(--panel-2); }
+    .goals-group-title .ggcount { margin-inline-start: auto; font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .goals-group .goalrow { padding-inline: 14px; }
+
     /* زر إضافة هدف بارز */
     .add-goal-btn { width: 100%; margin-bottom: 14px; border: 1.5px dashed var(--border-strong); background: var(--panel); color: var(--accent); font-family: inherit; font-weight: 800; font-size: 15px; padding: 14px 0; border-radius: var(--radius); cursor: pointer; box-shadow: var(--shadow); transition: border-color .15s, background .15s; }
     .add-goal-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
@@ -364,6 +370,7 @@
 
     <div class="topnav">
       <button data-mode="plan" class="active">🎯 الخطة</button>
+      <button data-mode="goals">📋 الأهداف</button>
       <button data-mode="timer">⏱️ المؤقتات</button>
     </div>
 
@@ -389,6 +396,12 @@
 
       <div class="section-title">المجالات الثمانية</div>
       <div class="domains-grid" id="domainsGrid"></div>
+    </section>
+
+    <!-- ═══ قسم الأهداف ═══ -->
+    <section id="goalsSection" hidden>
+      <button class="add-goal-btn" id="addGoalGoals">➕ إضافة هدف جديد</button>
+      <div id="goalsPageList"></div>
     </section>
 
     <!-- ═══ قسم المؤقتات ═══ -->
@@ -721,6 +734,8 @@
       appTitle: document.getElementById("appTitle"),
       planSection: document.getElementById("planSection"),
       timerSection: document.getElementById("timerSection"),
+      goalsSection: document.getElementById("goalsSection"),
+      goalsPageList: document.getElementById("goalsPageList"),
       domainsGrid: document.getElementById("domainsGrid"),
       pct2030: document.getElementById("pct2030"),
       fill2030: document.getElementById("fill2030"),
@@ -752,18 +767,29 @@
 
     // ---------- التبديل بين الأوضاع ----------
     function render() {
+      els.planSection.hidden = appMode !== "plan";
+      els.goalsSection.hidden = appMode !== "goals";
+      els.timerSection.hidden = appMode !== "timer";
       if (appMode === "plan") {
         els.appTitle.textContent = "🎯 خطتي";
-        els.planSection.hidden = false;
-        els.timerSection.hidden = true;
         els.addbar.classList.add("hidden");
         renderPlan();
+      } else if (appMode === "goals") {
+        els.appTitle.textContent = "📋 أهدافي";
+        els.dayLabel.textContent = "كل الأهداف — أضِف وعدّل بحرية";
+        els.addbar.classList.add("hidden");
+        renderGoalsPage();
       } else {
         els.appTitle.textContent = "⏱️ مؤقت المشاريع";
-        els.planSection.hidden = true;
-        els.timerSection.hidden = false;
         renderTimer();
       }
+    }
+
+    // إعادة رسم ما هو ظاهر حالياً بعد أي تعديل على الأهداف
+    function refreshViews() {
+      if (appMode === "plan") renderPlan();
+      else if (appMode === "goals") renderGoalsPage();
+      if (typeof domainDlg !== "undefined" && domainDlg.open) renderGoals();
     }
 
     // ---------- عرض المؤقتات ----------
@@ -870,6 +896,75 @@
         frag.append(row);
       }
       favList.replaceChildren(frag);
+    }
+
+    // صف هدف مشترك (يُستخدم في صفحة الأهداف ونافذة المجال)
+    function buildGoalRow(g) {
+      const row = document.createElement("div");
+      row.className = "goalrow" + (g.done ? " done" : "");
+
+      const check = document.createElement("button");
+      check.className = "gcheck" + (g.done ? " done" : "");
+      check.textContent = g.done ? "✓" : "";
+      check.title = "تبديل الإنجاز";
+      check.onclick = () => { g.done = !g.done; save(); refreshViews(); };
+
+      const main = document.createElement("div");
+      main.className = "gtitle";
+      const t = document.createElement("div"); t.textContent = g.title;
+      const meta = document.createElement("div"); meta.className = "gmeta";
+      const badges = ['<span class="gbadge">' + typeLabel(g.type) + '</span>'];
+      const per = fmtPeriod(g);
+      if (per) badges.push('<span class="gbadge">' + per + '</span>');
+      meta.innerHTML = badges.join(" ");
+      main.append(t, meta);
+
+      const star = document.createElement("button");
+      star.className = "gstar"; star.textContent = g.favorite ? "★" : "☆";
+      star.title = "المفضلة";
+      star.style.color = g.favorite ? "var(--dial-gold)" : "var(--muted)";
+      star.onclick = () => { g.favorite = !g.favorite; save(); refreshViews(); };
+
+      const edit = document.createElement("button");
+      edit.className = "iconbtn"; edit.textContent = "✏️"; edit.title = "تعديل";
+      edit.onclick = () => openItem(g);
+
+      const del = document.createElement("button");
+      del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
+      del.onclick = () => { state.goals = state.goals.filter(x => x.id !== g.id); save(); refreshViews(); };
+
+      row.append(check, main, star, edit, del);
+      return row;
+    }
+
+    // ---------- صفحة الأهداف ----------
+    function renderGoalsPage() {
+      const frag = document.createDocumentFragment();
+      if (!state.goals.length) {
+        const e = document.createElement("div");
+        e.className = "empty";
+        e.textContent = "لا توجد أهداف بعد. اضغط «إضافة هدف جديد» لتبدأ.";
+        els.goalsPageList.replaceChildren(e);
+        return;
+      }
+      for (const d of DOMAINS) {
+        const list = goalsInDomain(d.id);
+        if (!list.length) continue;
+        const doneN = list.filter(g => g.done).length;
+
+        const group = document.createElement("div");
+        group.className = "goals-group";
+        const head = document.createElement("div");
+        head.className = "goals-group-title";
+        head.innerHTML = '<span>' + d.icon + '</span> <span>' + d.name + '</span>' +
+          '<span class="ggcount">' + toArDigits(doneN) + " من " + toArDigits(list.length) + '</span>';
+        group.append(head);
+
+        const sorted = list.slice().sort((a, b) => (a.done - b.done) || (b.created - a.created));
+        for (const g of sorted) group.append(buildGoalRow(g));
+        frag.append(group);
+      }
+      els.goalsPageList.replaceChildren(frag);
     }
 
     function setBar(fillEl, pctEl, subEl, list) {
@@ -1257,43 +1352,10 @@
         const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد أهداف."; goalsBox.append(e); return;
       }
       const sorted = list.slice().sort((a, b) => (a.done - b.done) || (b.created - a.created));
-      for (const g of sorted) {
-        const row = document.createElement("div");
-        row.className = "goalrow" + (g.done ? " done" : "");
-
-        const check = document.createElement("button");
-        check.className = "gcheck" + (g.done ? " done" : "");
-        check.textContent = g.done ? "✓" : "";
-        check.title = "تبديل الإنجاز";
-        check.onclick = () => { g.done = !g.done; save(); renderGoals(); };
-
-        const main = document.createElement("div");
-        main.className = "gtitle";
-        const t = document.createElement("div"); t.textContent = g.title;
-        const meta = document.createElement("div"); meta.className = "gmeta";
-        const badges = [];
-        badges.push('<span class="gbadge">' + typeLabel(g.type) + '</span>');
-        const per = fmtPeriod(g);
-        if (per) badges.push('<span class="gbadge">' + per + '</span>');
-        meta.innerHTML = badges.join(" ");
-        main.append(t, meta);
-
-        const star = document.createElement("button");
-        star.className = "gstar"; star.textContent = g.favorite ? "★" : "☆";
-        star.title = "المفضلة";
-        star.style.color = g.favorite ? "var(--dial-gold)" : "var(--muted)";
-        star.onclick = () => { g.favorite = !g.favorite; save(); renderGoals(); };
-
-        const del = document.createElement("button");
-        del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
-        del.onclick = () => { state.goals = state.goals.filter(x => x.id !== g.id); save(); renderGoals(); };
-
-        row.append(check, main, star, del);
-        goalsBox.append(row);
-      }
+      for (const g of sorted) goalsBox.append(buildGoalRow(g));
     }
 
-    domainAddGoal.onclick = () => openNewItem(currentDomainId);
+    domainAddGoal.onclick = () => openItem(null, currentDomainId);
     domainClose.onclick = () => domainDlg.close();
     domainDlg.addEventListener("close", () => { if (appMode === "plan") renderPlan(); });
 
@@ -1307,9 +1369,10 @@
     const itemTPoints = document.getElementById("itemTPoints");
     const itemFav = document.getElementById("itemFav");
     const itemFavText = document.getElementById("itemFavText");
+    const itemDlgTitleEl = document.getElementById("itemDlgTitle");
     const itemSave = document.getElementById("itemSave");
     const itemCancel = document.getElementById("itemCancel");
-    let niType = "hours", niFav = false;
+    let niType = "hours", niFav = false, editingGoalId = null;
 
     // تعبئة قائمة المجالات
     for (const d of DOMAINS) {
@@ -1323,32 +1386,56 @@
     itemTPoints.onclick = () => setNiType("points");
     itemFav.onclick = () => setNiFav(!niFav);
 
-    function openNewItem(presetDomainId) {
-      itemName.value = "";
-      itemStart.value = ""; itemEnd.value = "";
-      itemDomain.value = presetDomainId || DOMAINS[0].id;
-      setNiType("hours"); setNiFav(false);
+    // openItem(goal|null, presetDomainId) — تعديل هدف قائم أو إنشاء جديد
+    function openItem(goal, presetDomainId) {
+      if (goal) {
+        editingGoalId = goal.id;
+        itemDlgTitleEl.textContent = "✏️ تعديل الهدف";
+        itemSave.textContent = "حفظ";
+        itemName.value = goal.title;
+        itemStart.value = goal.startDate || "";
+        itemEnd.value = goal.endDate || "";
+        itemDomain.value = goal.domainId;
+        setNiType(goal.type || "hours");
+        setNiFav(!!goal.favorite);
+      } else {
+        editingGoalId = null;
+        itemDlgTitleEl.textContent = "🎯 هدف جديد";
+        itemSave.textContent = "إضافة";
+        itemName.value = "";
+        itemStart.value = ""; itemEnd.value = "";
+        itemDomain.value = presetDomainId || DOMAINS[0].id;
+        setNiType("hours"); setNiFav(false);
+      }
       itemDlg.showModal();
       itemName.focus();
     }
     itemSave.onclick = () => {
       const t = itemName.value.trim();
       if (!t) { itemName.focus(); return; }
-      state.goals.push({
-        id: uid(), domainId: itemDomain.value, title: t,
-        done: false, created: Date.now(),
-        startDate: itemStart.value || "", endDate: itemEnd.value || "",
-        type: niType, favorite: niFav
-      });
+      if (editingGoalId) {
+        const g = state.goals.find(x => x.id === editingGoalId);
+        if (g) {
+          g.title = t; g.domainId = itemDomain.value; g.type = niType; g.favorite = niFav;
+          g.startDate = itemStart.value || ""; g.endDate = itemEnd.value || "";
+        }
+      } else {
+        state.goals.push({
+          id: uid(), domainId: itemDomain.value, title: t,
+          done: false, created: Date.now(),
+          startDate: itemStart.value || "", endDate: itemEnd.value || "",
+          type: niType, favorite: niFav
+        });
+      }
       save();
       itemDlg.close();
-      if (appMode === "plan") renderPlan();
-      if (domainDlg.open) renderGoals();
+      refreshViews();
     };
     itemCancel.onclick = () => itemDlg.close();
     itemName.addEventListener("keydown", e => { if (e.key === "Enter") itemSave.click(); });
 
-    document.getElementById("addGoalMain").onclick = () => openNewItem(null);
+    document.getElementById("addGoalMain").onclick = () => openItem(null, null);
+    document.getElementById("addGoalGoals").onclick = () => openItem(null, null);
 
     // ---------- الإقلاع ----------
     render();
