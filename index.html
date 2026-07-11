@@ -630,8 +630,12 @@
       { id: "skill",   name: "المهارة", icon: "🛠️" }
     ];
     let state = load();
-    let currentView = "today";
-    let appMode = "plan"; // plan | timer
+    const UI_MODE_KEY = "ptt.ui.mode";
+    const UI_VIEW_KEY = "ptt.ui.view";
+    function readUI(key, allowed, def) { try { const v = localStorage.getItem(key); return allowed.indexOf(v) >= 0 ? v : def; } catch (e) { return def; } }
+    function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
+    let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month"], "today");
+    let appMode = readUI(UI_MODE_KEY, ["plan", "goals", "timer"], "plan"); // plan | goals | timer
 
     function load() {
       try {
@@ -1443,7 +1447,7 @@
       btn.onclick = () => {
         currentView = btn.dataset.view;
         document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("active", b === btn));
-        render();
+        saveUI(); render();
       };
     });
 
@@ -1452,9 +1456,13 @@
       btn.onclick = () => {
         appMode = btn.dataset.mode;
         document.querySelectorAll(".topnav button").forEach(b => b.classList.toggle("active", b === btn));
-        render();
+        saveUI(); render();
       };
     });
+
+    // استعادة حالة التبويبات المحفوظة عند الإقلاع
+    document.querySelectorAll(".topnav button").forEach(b => b.classList.toggle("active", b.dataset.mode === appMode));
+    document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("active", b.dataset.view === currentView));
 
     function fmtDateShort(val) {
       if (!val) return "";
