@@ -4,14 +4,14 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <meta name="theme-color" content="#14110C" />
-  <title>مؤقت المشاريع</title>
+  <title>الصحيفة</title>
   <link rel="manifest" href="./manifest.webmanifest" />
   <link rel="apple-touch-icon" href="./apple-touch-icon.png" />
   <link rel="icon" href="./icons/icon-192.png" type="image/png" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="المؤقت" />
+  <meta name="apple-mobile-web-app-title" content="الصحيفة" />
   <style>
     @font-face {
       font-family: 'Tajawal';
@@ -367,7 +367,7 @@
 <body>
   <div class="wrap">
     <header class="app">
-      <h1 id="appTitle">🎯 خطتي</h1>
+      <h1 id="appTitle">📖 الصحيفة</h1>
       <div class="date" id="dayLabel"></div>
     </header>
 
@@ -817,17 +817,15 @@
       els.planSection.hidden = appMode !== "plan";
       els.goalsSection.hidden = appMode !== "goals";
       els.timerSection.hidden = appMode !== "timer";
+      els.appTitle.textContent = "📖 الصحيفة";
       if (appMode === "plan") {
-        els.appTitle.textContent = "🎯 خطتي";
         els.addbar.classList.add("hidden");
         renderPlan();
       } else if (appMode === "goals") {
-        els.appTitle.textContent = "📋 أهدافي";
         els.dayLabel.textContent = "كل الأهداف — أضِف وعدّل بحرية";
         els.addbar.classList.add("hidden");
         renderGoalsPage();
       } else {
-        els.appTitle.textContent = "⏱️ مؤقت المشاريع";
         renderTimer();
       }
     }
