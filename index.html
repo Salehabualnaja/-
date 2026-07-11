@@ -693,27 +693,37 @@
     }
     function projectMsInDay(project, winStart, nowMs) {
       let ms = 0;
-      for (const ses of project.sessions) ms += sessionMsInDay(ses, winStart, nowMs);
+      for (const ses of (project.sessions || [])) ms += sessionMsInDay(ses, winStart, nowMs);
       return ms; // قد يكون سالباً بسبب الطرح اليدوي؛ التصفير عند العرض
     }
-    function isRunning(project) { return project.sessions.some(s => !s.manual && s.end == null); }
+    function isRunning(item) { return (item.sessions || []).some(s => !s.manual && s.end == null); }
+    // كل العناصر القابلة للتوقيت: المشاريع + الأهداف بالساعات
+    function hoursGoals() { return state.goals.filter(g => g.type === "hours"); }
+    function timerItems() { return state.projects.concat(hoursGoals()); }
+    function sessionHoursTotal(item) {
+      const now = Date.now(); let ms = 0;
+      for (const s of (item.sessions || [])) { if (s.manual) continue; ms += (s.end == null ? now : s.end) - s.start; }
+      return ms / 3600000;
+    }
 
     // ---------- منطق المؤقتات ----------
-    function startProject(id) {
+    function stopAllRunning(now) {
+      for (const it of timerItems()) if (it.sessions) for (const s of it.sessions) if (!s.manual && s.end == null) s.end = now;
+    }
+    function startItem(item) {
       const now = Date.now();
-      for (const p of state.projects) {
-        if (p.id === id) { if (!isRunning(p)) p.sessions.push({ start: now, end: null }); }
-        else stopSessions(p, now);
-      }
+      stopAllRunning(now);
+      if (!item.sessions) item.sessions = [];
+      if (!isRunning(item)) item.sessions.push({ start: now, end: null });
       save(); render();
     }
-    function stopProject(id) {
+    function stopItem(item) {
       const now = Date.now();
-      const p = state.projects.find(x => x.id === id);
-      if (p) { stopSessions(p, now); save(); render(); }
+      if (item.sessions) for (const s of item.sessions) if (!s.manual && s.end == null) s.end = now;
+      save(); render();
     }
     function stopSessions(project, now) {
-      for (const s of project.sessions) if (!s.manual && s.end == null) s.end = now;
+      for (const s of (project.sessions || [])) if (!s.manual && s.end == null) s.end = now;
     }
     function addProject(name) {
       name = (name || "").trim(); if (!name) return;
@@ -822,6 +832,7 @@
     function refreshViews() {
       if (appMode === "plan") renderPlan();
       else if (appMode === "goals") renderGoalsPage();
+      else if (appMode === "timer") renderTimer();
       if (typeof domainDlg !== "undefined" && domainDlg.open) renderGoals();
     }
 
@@ -845,15 +856,23 @@
       if (typeof g.year === "number") return g.year;
       return 2030;
     }
+    // المُنجَز الفعلي للهدف: للأهداف بالساعات = يدوي + ساعات المؤقّت
+    function goalCurrent(g) {
+      const base = g.current || 0;
+      return g.type === "hours" ? base + sessionHoursTotal(g) : base;
+    }
     // تقدّم الهدف 0..1: من التارجت إن وُجد، وإلا من مربع الإنجاز
     function goalProgress(g) {
-      if (g.target && g.target > 0) return Math.max(0, Math.min(1, (g.current || 0) / g.target));
+      if (g.target && g.target > 0) return Math.max(0, Math.min(1, goalCurrent(g) / g.target));
       return g.done ? 1 : 0;
     }
     function isComplete(g) { return goalProgress(g) >= 1; }
     function toggleComplete(g) {
-      if (g.target && g.target > 0) { g.current = isComplete(g) ? 0 : g.target; g.done = isComplete(g); }
-      else g.done = !g.done;
+      if (g.target && g.target > 0) {
+        if (isComplete(g)) g.current = 0;
+        else g.current = g.type === "hours" ? Math.max(0, g.target - sessionHoursTotal(g)) : g.target;
+        g.done = isComplete(g);
+      } else g.done = !g.done;
     }
     // متوسط تقدّم مجال 0..1 (اختيارياً لأهداف 2026 فقط)
     function domainProgress(domainId, only2026) {
@@ -1003,11 +1022,12 @@
       if (per) badges.push('<span class="gbadge">' + per + '</span>');
       if (hasTarget) {
         const pct = Math.round(goalProgress(g) * 100);
-        badges.push('<span class="gbadge">' + fmtNum(g.current || 0) + " / " + fmtNum(g.target) + " (" + toArDigits(pct) + "٪)</span>");
+        badges.push('<span class="gbadge">' + fmtNum(goalCurrent(g)) + " / " + fmtNum(g.target) + " (" + toArDigits(pct) + "٪)</span>");
+        if (g.type === "hours") badges.push('<span class="gbadge">⏱️ يُوقَّت في المؤقتات</span>');
       }
       meta.innerHTML = badges.join(" ");
-      // خطوات زيادة/إنقاص المُنجَز للأهداف ذات التارجت
-      if (hasTarget) {
+      // خطوات يدوية للأهداف بالنقاط فقط (الساعات تُقاس بالمؤقّت)
+      if (hasTarget && g.type === "points") {
         const step = document.createElement("div"); step.className = "gstep";
         const minus = document.createElement("button"); minus.textContent = "−"; minus.title = "إنقاص";
         minus.onclick = () => { g.current = Math.max(0, (g.current || 0) - 1); g.done = g.current >= g.target; save(); refreshViews(); };
@@ -1069,50 +1089,83 @@
     function renderToday(now, today) {
       let totalMs = 0;
       const frag = document.createDocumentFragment();
+      const goals = hoursGoals();
 
-      if (state.projects.length === 0) {
+      if (state.projects.length === 0 && goals.length === 0) {
         const div = document.createElement("div");
         div.className = "empty";
-        div.textContent = "لا توجد مشاريع بعد. أضف مشروعاً من الأسفل لتبدأ القياس.";
+        div.textContent = "لا توجد مشاريع أو أهداف بالساعات بعد. أضف مشروعاً من الأسفل، أو هدفاً بالساعات من صفحة الأهداف.";
         frag.append(div);
       } else {
+        // أهداف بالساعات
+        if (goals.length) {
+          const gtitle = document.createElement("div");
+          gtitle.className = "section-title"; gtitle.textContent = "🎯 أهداف بالساعات";
+          frag.append(gtitle);
+          for (const g of goals) {
+            const ms = Math.max(0, projectMsInDay(g, today, now));
+            totalMs += ms;
+            frag.append(buildTimerCard(g, ms, isRunning(g), true));
+          }
+        }
+
+        // المشاريع
         const title = document.createElement("div");
         title.className = "section-title"; title.textContent = "المشاريع";
         frag.append(title);
-
+        if (state.projects.length === 0) {
+          const div = document.createElement("div");
+          div.className = "empty"; div.textContent = "لا توجد مشاريع بعد. أضف مشروعاً من الأسفل.";
+          frag.append(div);
+        }
         for (const p of state.projects) {
-          const raw = projectMsInDay(p, today, now);
-          const ms = Math.max(0, raw);
+          const ms = Math.max(0, projectMsInDay(p, today, now));
           totalMs += ms;
-          const running = isRunning(p);
-
-          const card = document.createElement("div");
-          card.className = "project" + (running ? " running" : "");
-
-          const info = document.createElement("div");
-          info.className = "info";
-          const name = document.createElement("div");
-          name.className = "name"; name.textContent = p.name;
-          const time = document.createElement("div");
-          time.className = "time"; time.dataset.pid = p.id;
-          time.textContent = clockLine(ms, running);
-          info.append(name, time);
-
-          const timeEdit = mkIcon("🕐", "تعديل الوقت", () => openTimeEditor(p));
-          const edit = mkIcon("✏️", "تعديل الاسم", () => openEdit(p));
-          const del = mkIcon("🗑️", "حذف", () => openDelete(p));
-
-          const toggle = document.createElement("button");
-          toggle.className = "btn " + (running ? "stop" : "start");
-          toggle.textContent = running ? "إيقاف" : "بدء";
-          toggle.onclick = () => running ? stopProject(p.id) : startProject(p.id);
-
-          card.append(info, timeEdit, edit, del, toggle);
-          frag.append(card);
+          frag.append(buildTimerCard(p, ms, isRunning(p), false));
         }
       }
       els.content.replaceChildren(frag);
       renderSummary(totalMs, "مجموع ساعات العمل اليوم");
+    }
+
+    // بطاقة مؤقّت لمشروع أو هدف بالساعات
+    function buildTimerCard(item, ms, running, isGoal) {
+      const card = document.createElement("div");
+      card.className = "project" + (running ? " running" : "");
+
+      const info = document.createElement("div");
+      info.className = "info";
+      const name = document.createElement("div");
+      name.className = "name"; name.textContent = item.title || item.name;
+      const time = document.createElement("div");
+      time.className = "time";
+      if (isGoal) { time.dataset.gid = item.id; time.textContent = goalTimerLine(item, ms, running); }
+      else { time.dataset.pid = item.id; time.textContent = clockLine(ms, running); }
+      info.append(name, time);
+
+      card.append(info);
+      if (isGoal) {
+        card.append(mkIcon("✏️", "تعديل الهدف", () => openItem(item)));
+      } else {
+        card.append(mkIcon("🕐", "تعديل الوقت", () => openTimeEditor(item)));
+        card.append(mkIcon("✏️", "تعديل الاسم", () => openEdit(item)));
+        card.append(mkIcon("🗑️", "حذف", () => openDelete(item)));
+      }
+
+      const toggle = document.createElement("button");
+      toggle.className = "btn " + (running ? "stop" : "start");
+      toggle.textContent = running ? "إيقاف" : "بدء";
+      toggle.onclick = () => running ? stopItem(item) : startItem(item);
+      card.append(toggle);
+      return card;
+    }
+
+    function goalTimerLine(g, ms, running) {
+      const pct = g.target > 0 ? Math.round(goalProgress(g) * 100) : 0;
+      const tot = g.target > 0
+        ? (" · الإجمالي " + fmtNum(goalCurrent(g)) + "/" + fmtNum(g.target) + " س (" + toArDigits(pct) + "٪)")
+        : "";
+      return "اليوم " + fmtClock(ms) + tot + (running ? " · يعمل الآن" : "");
     }
 
     function clockLine(ms, running) {
@@ -1132,17 +1185,18 @@
       const dayStarts = [];
       for (let i = days - 1; i >= 0; i--) dayStarts.push(dayStartAgo(i));
 
+      const items = timerItems();
       const dayTotals = dayStarts.map(ds => {
         let t = 0;
-        for (const p of state.projects) t += Math.max(0, projectMsInDay(p, ds, now));
+        for (const it of items) t += Math.max(0, projectMsInDay(it, ds, now));
         return t;
       });
       const rangeTotal = dayTotals.reduce((a, b) => a + b, 0);
 
-      const projTotals = state.projects.map(p => {
+      const projTotals = items.map(it => {
         let t = 0;
-        for (const ds of dayStarts) t += Math.max(0, projectMsInDay(p, ds, now));
-        return { name: p.name, ms: t };
+        for (const ds of dayStarts) t += Math.max(0, projectMsInDay(it, ds, now));
+        return { name: it.name || it.title, ms: t };
       }).filter(x => x.ms > 0).sort((a, b) => b.ms - a.ms);
 
       const g = goalMs();
@@ -1213,6 +1267,12 @@
         totalMs += ms;
         const el = els.content.querySelector('.time[data-pid="' + p.id + '"]');
         if (el) el.textContent = clockLine(ms, isRunning(p));
+      }
+      for (const g of hoursGoals()) {
+        const ms = Math.max(0, projectMsInDay(g, today, now));
+        totalMs += ms;
+        const el = els.content.querySelector('.time[data-gid="' + g.id + '"]');
+        if (el) el.textContent = goalTimerLine(g, ms, isRunning(g));
       }
       renderSummary(totalMs, "مجموع ساعات العمل اليوم");
       if (tick._lastDay !== today) { tick._lastDay = today; render(); }
