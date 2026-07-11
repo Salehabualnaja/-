@@ -158,8 +158,19 @@
 
     /* التبويبات الفرعية */
     .tabs { display: flex; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 18px; gap: 4px; }
-    .tabs button { flex: 1; border: none; background: transparent; color: var(--muted); font-family: inherit; font-size: 13.5px; font-weight: 700; padding: 9px 0; border-radius: 9px; cursor: pointer; transition: color .15s, background .15s; }
+    .tabs button { flex: 1; border: none; background: transparent; color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 700; padding: 9px 2px; border-radius: 9px; cursor: pointer; transition: color .15s, background .15s; white-space: nowrap; }
     .tabs button.active { background: var(--panel); color: var(--accent); box-shadow: var(--shadow); }
+
+    /* مخطط الأعمدة */
+    .chart-readout { text-align: center; font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 8px; font-variant-numeric: tabular-nums; min-height: 18px; }
+    .chart-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .colchart { display: block; }
+    .colchart .cgrid { stroke: var(--border); stroke-width: 1; }
+    .colchart .cgoal { stroke: var(--danger); stroke-width: 1.5; stroke-dasharray: 4 4; opacity: .7; }
+    .colchart .cbar { fill: var(--accent); transition: opacity .15s; }
+    .colchart .cbar.met { fill: var(--run); }
+    .colchart .cbar.sel { fill: var(--accent-ink); }
+    .colchart .clabel { fill: var(--muted); font-size: 10px; font-family: inherit; }
 
     .section-title { font-size: 11px; color: var(--muted); margin: 6px 4px 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
 
@@ -420,10 +431,12 @@
         </div>
       </div>
 
-      <div class="tabs">
+      <div class="tabs" id="periodTabs">
         <button data-view="today" class="active">اليوم</button>
-        <button data-view="week">آخر ٧ أيام</button>
-        <button data-view="month">آخر ٣٠ يوماً</button>
+        <button data-view="week">أسبوع</button>
+        <button data-view="month">شهر</button>
+        <button data-view="quarter">٣ أشهر</button>
+        <button data-view="year">سنة</button>
       </div>
 
       <div id="content"></div>
@@ -634,7 +647,7 @@
     const UI_VIEW_KEY = "ptt.ui.view";
     function readUI(key, allowed, def) { try { const v = localStorage.getItem(key); return allowed.indexOf(v) >= 0 ? v : def; } catch (e) { return def; } }
     function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
-    let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month"], "today");
+    let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
     let appMode = readUI(UI_MODE_KEY, ["plan", "goals", "timer"], "plan"); // plan | goals | timer
 
     function load() {
@@ -845,7 +858,7 @@
       els.dayLabel.textContent = fmtDayLong(today) + " · يبدأ اليوم ٥ صباحاً";
 
       if (currentView === "today") { els.addbar.classList.remove("hidden"); renderToday(now, today); }
-      else { els.addbar.classList.add("hidden"); renderReport(now, currentView === "week" ? 7 : 30); }
+      else { els.addbar.classList.add("hidden"); renderReport(now, ({ week: 7, month: 30, quarter: 90, year: 365 })[currentView] || 7); }
     }
 
     // ---------- عرض الخطة ----------
@@ -1179,21 +1192,103 @@
       return b;
     }
 
-    // ---------- تقرير أسبوعي / شهري ----------
+    // ---------- التقارير والرسوم ----------
+    const SVGNS = "http://www.w3.org/2000/svg";
+    function svgEl(tag, attrs) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; }
+    const RANGE_LABEL = { 7: "٧ أيام", 30: "٣٠ يوماً", 90: "٣ أشهر", 365: "سنة" };
+
+    function buildBuckets(dayStarts, dailyTotals, mode) {
+      if (mode === "day") {
+        return dayStarts.map((ds, i) => ({ label: fmtDayShort(ds), full: fmtDayLong(ds), ms: dailyTotals[i] }));
+      }
+      if (mode === "week") {
+        const out = [];
+        for (let i = 0; i < dayStarts.length; i += 7) {
+          let ms = 0; const end = Math.min(i + 7, dayStarts.length);
+          for (let j = i; j < end; j++) ms += dailyTotals[j];
+          out.push({ label: fmtDayShort(dayStarts[i]), full: "أسبوع " + fmtDayShort(dayStarts[i]) + " ← " + fmtDayShort(dayStarts[end - 1]), ms });
+        }
+        return out;
+      }
+      // month
+      const map = new Map();
+      for (let i = 0; i < dayStarts.length; i++) {
+        const d = new Date(dayStarts[i]); const key = d.getFullYear() + "-" + d.getMonth();
+        if (!map.has(key)) map.set(key, { label: AR_MONTHS[d.getMonth()], full: AR_MONTHS[d.getMonth()] + " " + d.getFullYear(), ms: 0 });
+        map.get(key).ms += dailyTotals[i];
+      }
+      return [...map.values()];
+    }
+
+    // مخطط أعمدة (SVG) مع خط الهدف وتفاعل باللمس
+    function columnChartCard(title, buckets, goalPerBucket, metFn) {
+      const card = document.createElement("div");
+      card.className = "report-card";
+      const h = document.createElement("h4"); h.textContent = title; card.append(h);
+
+      const readout = document.createElement("div"); readout.className = "chart-readout";
+      card.append(readout);
+
+      const n = buckets.length;
+      const maxV = Math.max(goalPerBucket || 0, ...buckets.map(b => b.ms), 1);
+      const step = n <= 8 ? 60 : (n <= 14 ? 44 : 24);
+      const W = Math.max(n * step, 40), H = 200, padT = 16, padB = 30, plotH = H - padT - padB, base = H - padB;
+      const scroll = document.createElement("div"); scroll.className = "chart-scroll";
+      const svg = svgEl("svg", { viewBox: "0 0 " + W + " " + H, class: "colchart", preserveAspectRatio: "xMidYMid meet" });
+      svg.style.width = (n <= 14 ? "100%" : W + "px");
+      svg.style.height = H + "px";
+
+      for (const f of [0, 0.5, 1]) { const y = base - f * plotH; svg.append(svgEl("line", { x1: 0, y1: y, x2: W, y2: y, class: "cgrid" })); }
+      if (goalPerBucket > 0) {
+        const y = base - Math.min(1, goalPerBucket / maxV) * plotH;
+        svg.append(svgEl("line", { x1: 0, y1: y, x2: W, y2: y, class: "cgoal" }));
+      }
+      const barW = step * 0.62, off = (step - barW) / 2;
+      const labelEvery = n <= 12 ? 1 : Math.ceil(n / 8);
+      buckets.forEach((b, i) => {
+        const hgt = b.ms / maxV * plotH;
+        const x = i * step + off, y = base - hgt;
+        const rect = svgEl("rect", { x: x, y: Math.min(y, base - 2), width: barW, height: Math.max(2, hgt), rx: 4, class: "cbar" + (metFn && metFn(b) ? " met" : "") });
+        rect.dataset.i = i;
+        svg.append(rect);
+        if (i % labelEvery === 0) {
+          const tx = svgEl("text", { x: x + barW / 2, y: base + 16, class: "clabel", "text-anchor": "middle" });
+          tx.textContent = b.label; svg.append(tx);
+        }
+      });
+
+      function showBucket(b, el) {
+        readout.textContent = (b.full || b.label) + " — " + fmtHM(b.ms);
+        svg.querySelectorAll("rect.cbar").forEach(x => x.classList.remove("sel"));
+        if (el) el.classList.add("sel");
+      }
+      svg.addEventListener("pointerdown", e => {
+        const r = e.target.closest ? e.target.closest("rect.cbar") : null;
+        if (r) showBucket(buckets[+r.dataset.i], r);
+      });
+      const peakIdx = buckets.reduce((bi, b, i, arr) => b.ms > arr[bi].ms ? i : bi, 0);
+      if (buckets.length) showBucket(buckets[peakIdx], svg.querySelector('rect.cbar[data-i="' + peakIdx + '"]'));
+
+      scroll.append(svg); card.append(scroll);
+      return card;
+    }
+
     function renderReport(now, days) {
       const frag = document.createDocumentFragment();
-
-      // مجاميع الأيام + مجاميع المشاريع
       const dayStarts = [];
       for (let i = days - 1; i >= 0; i--) dayStarts.push(dayStartAgo(i));
 
       const items = timerItems();
-      const dayTotals = dayStarts.map(ds => {
+      const dailyTotals = dayStarts.map(ds => {
         let t = 0;
         for (const it of items) t += Math.max(0, projectMsInDay(it, ds, now));
         return t;
       });
-      const rangeTotal = dayTotals.reduce((a, b) => a + b, 0);
+      const rangeTotal = dailyTotals.reduce((a, b) => a + b, 0);
+      const g = goalMs();
+      const avgDay = rangeTotal / days;
+      const bestMs = dailyTotals.length ? Math.max(...dailyTotals) : 0;
+      const daysMet = g > 0 ? dailyTotals.filter(t => t >= g).length : 0;
 
       const projTotals = items.map(it => {
         let t = 0;
@@ -1201,59 +1296,46 @@
         return { name: it.name || it.title, ms: t };
       }).filter(x => x.ms > 0).sort((a, b) => b.ms - a.ms);
 
-      const g = goalMs();
-      const maxDay = Math.max(g, ...dayTotals, 1);
-      const daysMet = g > 0 ? dayTotals.filter(t => t >= g).length : 0;
-      const avg = rangeTotal / days;
-
-      // بطاقة الإجمالي
+      // بطاقة الإجمالي + إحصاءات
       const tot = document.createElement("div");
       tot.className = "report-card report-total";
-      tot.innerHTML = "<span>الإجمالي خلال " + (days === 7 ? "٧ أيام" : "٣٠ يوماً") + "</span>" +
+      tot.innerHTML = "<span>الإجمالي خلال " + (RANGE_LABEL[days] || days + " يوم") + "</span>" +
         "<b>" + fmtHours(rangeTotal) + "</b>" +
-        "<span>المعدل اليومي: " + fmtHours(avg) + (g > 0 ? " · أيام تحقّق الهدف: " + daysMet + " من " + days : "") + "</span>";
+        "<span>المعدل اليومي: " + fmtHours(avgDay) + " · أفضل يوم: " + fmtHM(bestMs) +
+        (g > 0 ? " · أيام حقّقت الهدف: " + toArDigits(daysMet) + " من " + toArDigits(days) : "") + "</span>";
       frag.append(tot);
 
-      // مخطط الأيام
-      const dc = document.createElement("div");
-      dc.className = "report-card";
-      dc.innerHTML = "<h4>حسب اليوم</h4>";
-      for (let i = dayStarts.length - 1; i >= 0; i--) {
-        const t = dayTotals[i];
-        const met = g > 0 && t >= g;
-        const row = document.createElement("div");
-        row.className = "rrow";
-        const goalMarker = g > 0 ? '<span class="rgoal" style="inset-inline-start:' + Math.min(100, (g / maxDay) * 100) + '%"></span>' : "";
-        row.innerHTML =
-          '<span class="rlabel">' + fmtDayShort(dayStarts[i]) + '</span>' +
-          '<span class="rtrack"><span class="rfill ' + (met ? "met" : "") + '" style="width:' + (t / maxDay * 100) + '%"></span>' + goalMarker + '</span>' +
-          '<span class="rval">' + fmtHM(t) + '</span>';
-        dc.append(row);
-      }
-      frag.append(dc);
+      // مخطط الأعمدة الزمني (تجميع تلقائي)
+      const mode = days <= 31 ? "day" : (days <= 120 ? "week" : "month");
+      const buckets = buildBuckets(dayStarts, dailyTotals, mode);
+      const goalPerBucket = mode === "day" ? g : 0;
+      const metFn = (mode === "day" && g > 0) ? (b => b.ms >= g) : null;
+      const chartTitle = "حسب " + (mode === "day" ? "اليوم" : mode === "week" ? "الأسبوع" : "الشهر");
+      frag.append(columnChartCard(chartTitle, buckets, goalPerBucket, metFn));
 
-      // حسب المشروع
+      // التوزيع حسب المشروع/الهدف
       const pc = document.createElement("div");
       pc.className = "report-card";
-      pc.innerHTML = "<h4>حسب المشروع</h4>";
+      pc.innerHTML = "<h4>التوزيع حسب المشروع / الهدف</h4>";
       if (projTotals.length === 0) {
         const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا يوجد وقت مسجّل في هذه الفترة."; pc.append(e);
       } else {
         const maxP = Math.max(...projTotals.map(x => x.ms), 1);
         for (const it of projTotals) {
+          const pctShare = rangeTotal > 0 ? Math.round(it.ms / rangeTotal * 100) : 0;
           const row = document.createElement("div");
           row.className = "rrow";
           row.innerHTML =
             '<span class="rlabel" style="width:110px;color:var(--text)">' + escapeHtml(it.name) + '</span>' +
             '<span class="rtrack"><span class="rfill" style="width:' + (it.ms / maxP * 100) + '%"></span></span>' +
-            '<span class="rval">' + fmtHours(it.ms).replace(" ساعة", "س") + '</span>';
+            '<span class="rval">' + toArDigits(pctShare) + '٪</span>';
           pc.append(row);
         }
       }
       frag.append(pc);
 
       els.content.replaceChildren(frag);
-      renderSummary(dayTotals[dayTotals.length - 1], "ساعات اليوم");
+      renderSummary(dailyTotals[dailyTotals.length - 1], "ساعات اليوم");
     }
 
     function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
