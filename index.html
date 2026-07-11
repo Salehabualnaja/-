@@ -391,14 +391,14 @@
     <!-- ═══ قسم الخطة (الصفحة الرئيسية) ═══ -->
     <section id="planSection">
       <div class="planbar-card">
-        <div class="pb-head"><span class="pb-title">🌟 خطة 2030</span><span class="pb-pct" id="pct2030">٠٪</span></div>
+        <div class="pb-head"><span class="pb-title">🌟 خطة 2030</span><span class="pb-pct" id="pct2030">0٪</span></div>
         <div class="pb-track"><div class="pb-fill" id="fill2030"></div></div>
-        <div class="pb-sub" id="sub2030">٠ من ٠ هدف مُنجَز</div>
+        <div class="pb-sub" id="sub2030">0 من 0 هدف مُنجَز</div>
       </div>
       <div class="planbar-card">
-        <div class="pb-head"><span class="pb-title">📅 خطة 2026</span><span class="pb-pct" id="pct2026">٠٪</span></div>
+        <div class="pb-head"><span class="pb-title">📅 خطة 2026</span><span class="pb-pct" id="pct2026">0٪</span></div>
         <div class="pb-track"><div class="pb-fill alt" id="fill2026"></div></div>
-        <div class="pb-sub" id="sub2026">٠ من ٠ هدف مُنجَز</div>
+        <div class="pb-sub" id="sub2026">0 من 0 هدف مُنجَز</div>
       </div>
 
       <div id="favWrap" hidden>
@@ -435,7 +435,7 @@
         <button data-view="today" class="active">اليوم</button>
         <button data-view="week">أسبوع</button>
         <button data-view="month">شهر</button>
-        <button data-view="quarter">٣ أشهر</button>
+        <button data-view="quarter">3 أشهر</button>
         <button data-view="year">سنة</button>
       </div>
 
@@ -538,17 +538,17 @@
       <h3 id="domainTitle">المجال</h3>
       <div class="domain-progress">
         <div class="pb-track"><div class="pb-fill" id="domainFill"></div></div>
-        <div class="pb-sub" id="domainSub">٠ من ٠ هدف مُنجَز</div>
+        <div class="pb-sub" id="domainSub">0 من 0 هدف مُنجَز</div>
       </div>
 
       <label>وزن هذا المجال في الخطة</label>
       <div class="inline" style="margin-bottom:6px">
         <div>
-          <label>وزن خطة ٢٠٢٦ (٠–١٠٠)</label>
+          <label>وزن خطة 2026 (0–100)</label>
           <input id="wDomain2026" type="number" min="0" max="100" step="1" placeholder="1" />
         </div>
         <div>
-          <label>وزن خطة ٢٠٣٠ (٠–١٠٠)</label>
+          <label>وزن خطة 2030 (0–100)</label>
           <input id="wDomain2030" type="number" min="0" max="100" step="1" placeholder="1" />
         </div>
       </div>
@@ -571,7 +571,7 @@
       <div class="rows">
         <div>
           <label>الاسم</label>
-          <input id="itemName" type="text" placeholder="مثال: قراءة ١٢ كتاباً" autocomplete="off" />
+          <input id="itemName" type="text" placeholder="مثال: قراءة 12 كتاباً" autocomplete="off" />
         </div>
         <div class="inline">
           <div>
@@ -855,14 +855,14 @@
     function renderTimer() {
       const now = Date.now();
       const today = dayStartOf(now);
-      els.dayLabel.textContent = fmtDayLong(today) + " · يبدأ اليوم ٥ صباحاً";
+      els.dayLabel.textContent = fmtDayLong(today) + " · يبدأ اليوم 5 صباحاً";
 
       if (currentView === "today") { els.addbar.classList.remove("hidden"); renderToday(now, today); }
       else { els.addbar.classList.add("hidden"); renderReport(now, ({ week: 7, month: 30, quarter: 90, year: 365 })[currentView] || 7); }
     }
 
     // ---------- عرض الخطة ----------
-    function toArDigits(s) { return String(s).replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[d]); }
+    function toArDigits(s) { return String(s).replace(/[0-9]/g, d => "0123456789"[d]); }
 
     function goalsInDomain(domainId) { return state.goals.filter(g => g.domainId === domainId); }
     // انتماء الهدف لخطة سنة: يُشتق من نهاية الفترة (وإلا 2030)
@@ -920,7 +920,7 @@
     }
 
     function renderPlan() {
-      els.dayLabel.textContent = "لوحة الخطة الشخصية · ٨ مجالات";
+      els.dayLabel.textContent = "لوحة الخطة الشخصية · 8 مجالات";
 
       // البارات الكبيرة (متوسط مرجّح لتقدّم المجالات)
       const pct30 = planPct(false), pct26 = planPct(true);
@@ -928,7 +928,7 @@
       els.fill2030.style.width = pct30 + "%"; els.pct2030.textContent = toArDigits(pct30) + "٪";
       els.sub2030.textContent = d30.total ? (toArDigits(d30.done) + " من " + toArDigits(d30.total) + " هدف مكتمل · متوسط مرجّح") : "لا توجد أهداف بعد";
       els.fill2026.style.width = pct26 + "%"; els.pct2026.textContent = toArDigits(pct26) + "٪";
-      els.sub2026.textContent = d26.total ? (toArDigits(d26.done) + " من " + toArDigits(d26.total) + " هدف مكتمل · متوسط مرجّح") : "لا توجد أهداف لسنة ٢٠٢٦";
+      els.sub2026.textContent = d26.total ? (toArDigits(d26.done) + " من " + toArDigits(d26.total) + " هدف مكتمل · متوسط مرجّح") : "لا توجد أهداف لسنة 2026";
 
       // المربعات الثمانية
       const frag = document.createDocumentFragment();
@@ -1195,7 +1195,7 @@
     // ---------- التقارير والرسوم ----------
     const SVGNS = "http://www.w3.org/2000/svg";
     function svgEl(tag, attrs) { const e = document.createElementNS(SVGNS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e; }
-    const RANGE_LABEL = { 7: "٧ أيام", 30: "٣٠ يوماً", 90: "٣ أشهر", 365: "سنة" };
+    const RANGE_LABEL = { 7: "7 أيام", 30: "30 يوماً", 90: "3 أشهر", 365: "سنة" };
 
     function buildBuckets(dayStarts, dailyTotals, mode) {
       if (mode === "day") {
