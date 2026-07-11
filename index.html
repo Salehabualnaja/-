@@ -392,8 +392,6 @@
         <div id="favList"></div>
       </div>
 
-      <button class="add-goal-btn" id="addGoalMain">➕ إضافة هدف جديد</button>
-
       <div class="section-title">المجالات الثمانية</div>
       <div class="domains-grid" id="domainsGrid"></div>
     </section>
@@ -1434,7 +1432,6 @@
     itemCancel.onclick = () => itemDlg.close();
     itemName.addEventListener("keydown", e => { if (e.key === "Enter") itemSave.click(); });
 
-    document.getElementById("addGoalMain").onclick = () => openItem(null, null);
     document.getElementById("addGoalGoals").onclick = () => openItem(null, null);
 
     // ---------- الإقلاع ----------
