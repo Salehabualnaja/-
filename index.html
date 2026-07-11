@@ -200,6 +200,26 @@
     .goalrow .gtitle { flex: 1; min-width: 0; }
     .goalrow.done .gtitle { text-decoration: line-through; color: var(--muted); }
     .goalrow .gyear { flex: none; font-size: 11px; font-weight: 700; border-radius: 7px; padding: 3px 9px; cursor: pointer; background: var(--accent-soft); color: var(--accent-ink); border: 1px solid var(--border); }
+    .goalrow .gmeta { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .gbadge { font-size: 10.5px; font-weight: 700; border-radius: 6px; padding: 1px 7px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
+    .gstar { flex: none; background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; padding: 4px; color: var(--dial-gold); }
+
+    /* زر إضافة هدف بارز */
+    .add-goal-btn { width: 100%; margin-bottom: 14px; border: 1.5px dashed var(--border-strong); background: var(--panel); color: var(--accent); font-family: inherit; font-weight: 800; font-size: 15px; padding: 14px 0; border-radius: var(--radius); cursor: pointer; box-shadow: var(--shadow); transition: border-color .15s, background .15s; }
+    .add-goal-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+    /* قسم المفضلة */
+    #favList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
+    .favrow { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; box-shadow: var(--shadow); }
+    .favrow .fav-main { flex: 1; min-width: 0; }
+    .favrow .fav-name { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .favrow.done .fav-name { text-decoration: line-through; color: var(--muted); }
+    .favrow .fav-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+    /* اختيار المفضلة في النموذج */
+    .fav-select { display: flex; align-items: center; gap: 8px; width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 14px; font-family: inherit; cursor: pointer; font-weight: 700; }
+    .fav-select .fav-star { font-size: 20px; color: var(--dial-gold); }
+    .fav-select.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent-ink); }
 
     /* صفوف المشاريع — أسطر دفتر السجلّ */
     .project {
@@ -360,6 +380,13 @@
         <div class="pb-sub" id="sub2026">٠ من ٠ هدف مُنجَز</div>
       </div>
 
+      <button class="add-goal-btn" id="addGoalMain">➕ إضافة هدف جديد</button>
+
+      <div id="favWrap" hidden>
+        <div class="section-title">⭐ المفضلة</div>
+        <div id="favList"></div>
+      </div>
+
       <div class="section-title">المجالات الثمانية</div>
       <div class="domains-grid" id="domainsGrid"></div>
     </section>
@@ -487,26 +514,59 @@
         <div class="pb-sub" id="domainSub">٠ من ٠ هدف مُنجَز</div>
       </div>
 
-      <label>إضافة هدف</label>
-      <div class="rows">
-        <input id="goalTitleInput" type="text" placeholder="اكتب الهدف…" autocomplete="off" />
-        <div class="inline" style="align-items:flex-end">
-          <div>
-            <label>السنة المستهدفة</label>
-            <div class="seg">
-              <button type="button" id="goalYear2026" class="active">2026</button>
-              <button type="button" id="goalYear2030">2030</button>
-            </div>
-          </div>
-          <button class="ok" id="goalAddBtn" style="flex:none;padding:10px 18px;border:none;border-radius:10px;font-weight:700;color:#fff;background:var(--accent);cursor:pointer;font-family:inherit">إضافة</button>
-        </div>
-      </div>
+      <button class="add-goal-btn" id="domainAddGoal">➕ إضافة هدف في هذا المجال</button>
 
       <div class="loghdr"><h4>الأهداف</h4></div>
       <div class="logbox" id="goalsBox"></div>
 
       <div class="actions" style="margin-top:14px">
         <button class="cancel" id="domainClose">إغلاق</button>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- هدف/مشروع جديد -->
+  <dialog id="itemDlg">
+    <div class="dlg">
+      <h3 id="itemDlgTitle">🎯 هدف جديد</h3>
+      <div class="rows">
+        <div>
+          <label>الاسم</label>
+          <input id="itemName" type="text" placeholder="مثال: قراءة ١٢ كتاباً" autocomplete="off" />
+        </div>
+        <div class="inline">
+          <div>
+            <label>التاريخ</label>
+            <input id="itemDate" type="date" />
+          </div>
+          <div>
+            <label>المجال</label>
+            <select id="itemDomain"></select>
+          </div>
+        </div>
+        <div class="inline">
+          <div>
+            <label>السنة المستهدفة</label>
+            <div class="seg">
+              <button type="button" id="itemY2026" class="active">2026</button>
+              <button type="button" id="itemY2030">2030</button>
+            </div>
+          </div>
+          <div>
+            <label>النوع</label>
+            <div class="seg">
+              <button type="button" id="itemTHours" class="active">⏱️ ساعات</button>
+              <button type="button" id="itemTPoints">⭐ نقاط</button>
+            </div>
+          </div>
+        </div>
+        <button type="button" id="itemFav" class="fav-select">
+          <span class="fav-star">☆</span> <span id="itemFavText">إضافة إلى المفضلة</span>
+        </button>
+      </div>
+      <div class="actions">
+        <button class="ok" id="itemSave">إضافة</button>
+        <button class="cancel" id="itemCancel">إلغاء</button>
       </div>
     </div>
   </dialog>
@@ -553,6 +613,11 @@
       if (!p.settings) p.settings = {};
       if (typeof p.settings.dailyGoalHours !== "number") p.settings.dailyGoalHours = 8;
       if (!Array.isArray(p.goals)) p.goals = [];
+      for (const g of p.goals) {
+        if (typeof g.type !== "string") g.type = "hours";
+        if (typeof g.date !== "string") g.date = "";
+        if (typeof g.favorite !== "boolean") g.favorite = false;
+      }
       return p;
     }
     function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} }
@@ -758,6 +823,47 @@
         frag.append(card);
       }
       els.domainsGrid.replaceChildren(frag);
+
+      renderFavorites();
+    }
+
+    function domainName(id) { const d = DOMAINS.find(x => x.id === id); return d ? d.name : ""; }
+    function domainIcon(id) { const d = DOMAINS.find(x => x.id === id); return d ? d.icon : "🎯"; }
+    function typeLabel(t) { return t === "points" ? "⭐ نقاط" : "⏱️ ساعات"; }
+
+    function renderFavorites() {
+      const favs = state.goals.filter(g => g.favorite);
+      const favWrap = document.getElementById("favWrap");
+      const favList = document.getElementById("favList");
+      if (!favs.length) { favWrap.hidden = true; favList.replaceChildren(); return; }
+      favWrap.hidden = false;
+      const frag = document.createDocumentFragment();
+      favs.sort((a, b) => (a.done - b.done) || (b.created - a.created));
+      for (const g of favs) {
+        const row = document.createElement("div");
+        row.className = "favrow" + (g.done ? " done" : "");
+
+        const check = document.createElement("button");
+        check.className = "gcheck" + (g.done ? " done" : "");
+        check.textContent = g.done ? "✓" : "";
+        check.title = "تبديل الإنجاز";
+        check.onclick = () => { g.done = !g.done; save(); renderPlan(); };
+
+        const main = document.createElement("div");
+        main.className = "fav-main";
+        const nm = document.createElement("div"); nm.className = "fav-name"; nm.textContent = g.title;
+        const mt = document.createElement("div"); mt.className = "fav-meta";
+        mt.textContent = domainIcon(g.domainId) + " " + domainName(g.domainId) + " · " + typeLabel(g.type) + " · " + toArDigits(g.year);
+        main.append(nm, mt);
+
+        const star = document.createElement("button");
+        star.className = "gstar"; star.textContent = "★"; star.title = "إزالة من المفضلة";
+        star.onclick = () => { g.favorite = false; save(); renderPlan(); };
+
+        row.append(check, main, star);
+        frag.append(row);
+      }
+      favList.replaceChildren(frag);
     }
 
     function setBar(fillEl, pctEl, subEl, list) {
@@ -1100,33 +1206,25 @@
       };
     });
 
+    function fmtDateShort(val) {
+      if (!val) return "";
+      const parts = val.split("-"); if (parts.length !== 3) return "";
+      return toArDigits(parseInt(parts[2], 10) + "/" + parseInt(parts[1], 10) + "/" + parts[0]);
+    }
+
     // ---------- نافذة أهداف المجال ----------
     const domainDlg = document.getElementById("domainDlg");
     const domainTitle = document.getElementById("domainTitle");
     const domainFill = document.getElementById("domainFill");
     const domainSub = document.getElementById("domainSub");
     const goalsBox = document.getElementById("goalsBox");
-    const goalTitleInput = document.getElementById("goalTitleInput");
-    const goalYear2026 = document.getElementById("goalYear2026");
-    const goalYear2030 = document.getElementById("goalYear2030");
-    const goalAddBtn = document.getElementById("goalAddBtn");
+    const domainAddGoal = document.getElementById("domainAddGoal");
     const domainClose = document.getElementById("domainClose");
     let currentDomainId = null;
-    let newGoalYear = 2026;
-
-    function setGoalYear(y) {
-      newGoalYear = y;
-      goalYear2026.classList.toggle("active", y === 2026);
-      goalYear2030.classList.toggle("active", y === 2030);
-    }
-    goalYear2026.onclick = () => setGoalYear(2026);
-    goalYear2030.onclick = () => setGoalYear(2030);
 
     function openDomain(d) {
       currentDomainId = d.id;
       domainTitle.textContent = d.icon + " " + d.name;
-      goalTitleInput.value = "";
-      setGoalYear(2026);
       renderGoals();
       domainDlg.showModal();
     }
@@ -1145,7 +1243,6 @@
       if (!list.length) {
         const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد أهداف."; goalsBox.append(e); return;
       }
-      // المنجَز أخيراً، والأحدث أولاً ضمن كل مجموعة
       const sorted = list.slice().sort((a, b) => (a.done - b.done) || (b.created - a.created));
       for (const g of sorted) {
         const row = document.createElement("div");
@@ -1157,8 +1254,21 @@
         check.title = "تبديل الإنجاز";
         check.onclick = () => { g.done = !g.done; save(); renderGoals(); };
 
-        const title = document.createElement("div");
-        title.className = "gtitle"; title.textContent = g.title;
+        const main = document.createElement("div");
+        main.className = "gtitle";
+        const t = document.createElement("div"); t.textContent = g.title;
+        const meta = document.createElement("div"); meta.className = "gmeta";
+        const badges = [];
+        badges.push('<span class="gbadge">' + typeLabel(g.type) + '</span>');
+        if (g.date) badges.push('<span class="gbadge">📅 ' + fmtDateShort(g.date) + '</span>');
+        meta.innerHTML = badges.join(" ");
+        main.append(t, meta);
+
+        const star = document.createElement("button");
+        star.className = "gstar"; star.textContent = g.favorite ? "★" : "☆";
+        star.title = "المفضلة";
+        star.style.color = g.favorite ? "var(--dial-gold)" : "var(--muted)";
+        star.onclick = () => { g.favorite = !g.favorite; save(); renderGoals(); };
 
         const year = document.createElement("button");
         year.className = "gyear"; year.textContent = toArDigits(g.year);
@@ -1169,25 +1279,69 @@
         del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
         del.onclick = () => { state.goals = state.goals.filter(x => x.id !== g.id); save(); renderGoals(); };
 
-        row.append(check, title, year, del);
+        row.append(check, main, star, year, del);
         goalsBox.append(row);
       }
     }
 
-    function addGoal() {
-      const t = goalTitleInput.value.trim();
-      if (!t) return;
-      state.goals.push({ id: uid(), domainId: currentDomainId, year: newGoalYear, title: t, done: false, created: Date.now() });
-      save();
-      goalTitleInput.value = "";
-      renderGoals();
-    }
-    goalAddBtn.onclick = addGoal;
-    goalTitleInput.addEventListener("keydown", e => { if (e.key === "Enter") addGoal(); });
-
-    // عند الإغلاق حدّث لوحة الخطة
+    domainAddGoal.onclick = () => openNewItem(currentDomainId);
     domainClose.onclick = () => domainDlg.close();
     domainDlg.addEventListener("close", () => { if (appMode === "plan") renderPlan(); });
+
+    // ---------- نافذة هدف/مشروع جديد ----------
+    const itemDlg = document.getElementById("itemDlg");
+    const itemName = document.getElementById("itemName");
+    const itemDate = document.getElementById("itemDate");
+    const itemDomain = document.getElementById("itemDomain");
+    const itemY2026 = document.getElementById("itemY2026");
+    const itemY2030 = document.getElementById("itemY2030");
+    const itemTHours = document.getElementById("itemTHours");
+    const itemTPoints = document.getElementById("itemTPoints");
+    const itemFav = document.getElementById("itemFav");
+    const itemFavText = document.getElementById("itemFavText");
+    const itemSave = document.getElementById("itemSave");
+    const itemCancel = document.getElementById("itemCancel");
+    let niYear = 2026, niType = "hours", niFav = false;
+
+    // تعبئة قائمة المجالات
+    for (const d of DOMAINS) {
+      const opt = document.createElement("option");
+      opt.value = d.id; opt.textContent = d.icon + " " + d.name;
+      itemDomain.append(opt);
+    }
+    function setNiYear(y) { niYear = y; itemY2026.classList.toggle("active", y === 2026); itemY2030.classList.toggle("active", y === 2030); }
+    function setNiType(t) { niType = t; itemTHours.classList.toggle("active", t === "hours"); itemTPoints.classList.toggle("active", t === "points"); }
+    function setNiFav(v) { niFav = v; itemFav.classList.toggle("on", v); itemFav.querySelector(".fav-star").textContent = v ? "★" : "☆"; itemFavText.textContent = v ? "مضاف إلى المفضلة" : "إضافة إلى المفضلة"; }
+    itemY2026.onclick = () => setNiYear(2026);
+    itemY2030.onclick = () => setNiYear(2030);
+    itemTHours.onclick = () => setNiType("hours");
+    itemTPoints.onclick = () => setNiType("points");
+    itemFav.onclick = () => setNiFav(!niFav);
+
+    function openNewItem(presetDomainId) {
+      itemName.value = "";
+      itemDate.value = toDateInput(Date.now());
+      itemDomain.value = presetDomainId || DOMAINS[0].id;
+      setNiYear(2026); setNiType("hours"); setNiFav(false);
+      itemDlg.showModal();
+      itemName.focus();
+    }
+    itemSave.onclick = () => {
+      const t = itemName.value.trim();
+      if (!t) { itemName.focus(); return; }
+      state.goals.push({
+        id: uid(), domainId: itemDomain.value, year: niYear, title: t,
+        done: false, created: Date.now(), date: itemDate.value || "", type: niType, favorite: niFav
+      });
+      save();
+      itemDlg.close();
+      if (appMode === "plan") renderPlan();
+      if (domainDlg.open) renderGoals();
+    };
+    itemCancel.onclick = () => itemDlg.close();
+    itemName.addEventListener("keydown", e => { if (e.key === "Enter") itemSave.click(); });
+
+    document.getElementById("addGoalMain").onclick = () => openNewItem(null);
 
     // ---------- الإقلاع ----------
     render();
