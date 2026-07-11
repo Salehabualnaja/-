@@ -137,12 +137,55 @@
     }
     .goaltext button:hover { background: rgba(240,198,116,.22); }
 
-    /* التبويبات */
+    /* التبويب العلوي بين الخطة والمؤقتات */
+    .topnav { display: flex; gap: 8px; margin: 14px 0 16px; }
+    .topnav button { flex: 1; border: 1px solid var(--border); background: var(--panel); color: var(--muted); font-family: inherit; font-size: 14.5px; font-weight: 800; padding: 12px 0; border-radius: 13px; cursor: pointer; box-shadow: var(--shadow); transition: color .15s, border-color .15s, background .15s; }
+    .topnav button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* التبويبات الفرعية */
     .tabs { display: flex; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 18px; gap: 4px; }
     .tabs button { flex: 1; border: none; background: transparent; color: var(--muted); font-family: inherit; font-size: 13.5px; font-weight: 700; padding: 9px 0; border-radius: 9px; cursor: pointer; transition: color .15s, background .15s; }
     .tabs button.active { background: var(--panel); color: var(--accent); box-shadow: var(--shadow); }
 
     .section-title { font-size: 11px; color: var(--muted); margin: 6px 4px 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
+
+    /* ── قسم الخطة ── */
+    .planbar-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 15px 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+    .pb-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+    .pb-title { font-weight: 800; font-size: 15.5px; }
+    .pb-pct { font-weight: 800; font-size: 20px; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .pb-track { height: 14px; border-radius: 999px; background: var(--track); overflow: hidden; }
+    .pb-fill { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--accent-ink), var(--accent)); transition: width .5s ease; }
+    .pb-fill.alt { background: linear-gradient(90deg, #B45309, #E0A94A); }
+    .pb-sub { font-size: 12px; color: var(--muted); margin-top: 7px; font-variant-numeric: tabular-nums; }
+
+    .domains-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    @media (min-width: 560px) { .domains-grid { grid-template-columns: repeat(4, 1fr); } }
+    .domain-card {
+      background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+      box-shadow: var(--shadow); padding: 14px 8px 12px; cursor: pointer; font-family: inherit;
+      display: flex; flex-direction: column; align-items: center; gap: 8px; transition: transform .06s, border-color .15s;
+    }
+    .domain-card:hover { border-color: var(--border-strong); }
+    .domain-card:active { transform: scale(.97); }
+    .dc-ring { width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center;
+      background: conic-gradient(var(--accent) calc(var(--p, 0) * 1%), var(--track) 0); }
+    .dc-ring .hole { width: 50px; height: 50px; border-radius: 50%; background: var(--panel); display: grid; place-items: center;
+      font-weight: 800; font-size: 14px; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .dc-ring.zero .hole { color: var(--muted); }
+    .dc-name { font-weight: 700; font-size: 12.5px; text-align: center; line-height: 1.25; }
+    .dc-icon { font-size: 15px; }
+    .dc-count { font-size: 10.5px; color: var(--muted); }
+
+    /* أهداف المجال */
+    .domain-progress { margin-bottom: 16px; }
+    .goalrow { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .goalrow:last-child { border-bottom: none; }
+    .goalrow .gcheck { width: 24px; height: 24px; flex: none; border-radius: 7px; border: 2px solid var(--border-strong); background: var(--panel-2); cursor: pointer; display: grid; place-items: center; font-size: 15px; color: #fff; }
+    .goalrow .gcheck.done { background: var(--run); border-color: var(--run); }
+    .goalrow .gtitle { flex: 1; min-width: 0; }
+    .goalrow.done .gtitle { text-decoration: line-through; color: var(--muted); }
+    .goalrow .gyear { flex: none; font-size: 11px; font-weight: 700; border-radius: 7px; padding: 3px 9px; cursor: pointer; background: var(--accent-soft); color: var(--accent-ink); border: 1px solid var(--border); }
 
     /* صفوف المشاريع — أسطر دفتر السجلّ */
     .project {
@@ -281,30 +324,55 @@
 <body>
   <div class="wrap">
     <header class="app">
-      <h1>⏱️ مؤقت المشاريع</h1>
+      <h1 id="appTitle">🎯 خطتي</h1>
       <div class="date" id="dayLabel"></div>
     </header>
 
-    <div class="summary">
-      <div class="label" id="summaryLabel">مجموع ساعات العمل اليوم</div>
-      <div class="total" id="totalClock">00:00:00</div>
-      <div class="sub" id="totalHours">0.00 ساعة</div>
-      <div class="goalwrap" id="goalWrap">
-        <div class="goalbar"><div class="goalfill" id="goalFill"></div></div>
-        <div class="goaltext">
-          <span id="goalText">الهدف اليومي</span>
-          <button id="editGoalBtn">🎯 تعديل الهدف</button>
+    <div class="topnav">
+      <button data-mode="plan" class="active">🎯 الخطة</button>
+      <button data-mode="timer">⏱️ المؤقتات</button>
+    </div>
+
+    <!-- ═══ قسم الخطة (الصفحة الرئيسية) ═══ -->
+    <section id="planSection">
+      <div class="planbar-card">
+        <div class="pb-head"><span class="pb-title">🌟 خطة 2030</span><span class="pb-pct" id="pct2030">٠٪</span></div>
+        <div class="pb-track"><div class="pb-fill" id="fill2030"></div></div>
+        <div class="pb-sub" id="sub2030">٠ من ٠ هدف مُنجَز</div>
+      </div>
+      <div class="planbar-card">
+        <div class="pb-head"><span class="pb-title">📅 خطة 2026</span><span class="pb-pct" id="pct2026">٠٪</span></div>
+        <div class="pb-track"><div class="pb-fill alt" id="fill2026"></div></div>
+        <div class="pb-sub" id="sub2026">٠ من ٠ هدف مُنجَز</div>
+      </div>
+
+      <div class="section-title">المجالات الثمانية</div>
+      <div class="domains-grid" id="domainsGrid"></div>
+    </section>
+
+    <!-- ═══ قسم المؤقتات ═══ -->
+    <section id="timerSection" hidden>
+      <div class="summary">
+        <div class="label" id="summaryLabel">مجموع ساعات العمل اليوم</div>
+        <div class="total" id="totalClock">00:00:00</div>
+        <div class="sub" id="totalHours">0.00 ساعة</div>
+        <div class="goalwrap" id="goalWrap">
+          <div class="goalbar"><div class="goalfill" id="goalFill"></div></div>
+          <div class="goaltext">
+            <span id="goalText">الهدف اليومي</span>
+            <button id="editGoalBtn">🎯 تعديل الهدف</button>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="tabs">
-      <button data-view="today" class="active">اليوم</button>
-      <button data-view="week">آخر ٧ أيام</button>
-      <button data-view="month">آخر ٣٠ يوماً</button>
-    </div>
+      <div class="tabs">
+        <button data-view="today" class="active">اليوم</button>
+        <button data-view="week">آخر ٧ أيام</button>
+        <button data-view="month">آخر ٣٠ يوماً</button>
+      </div>
 
-    <div id="content"></div>
+      <div id="content"></div>
+    </section>
 
     <div class="footer-tools">
       <button class="linkbtn" id="exportBtn">تصدير البيانات</button>
@@ -396,6 +464,39 @@
     </div>
   </dialog>
 
+  <!-- أهداف المجال -->
+  <dialog id="domainDlg">
+    <div class="dlg">
+      <h3 id="domainTitle">المجال</h3>
+      <div class="domain-progress">
+        <div class="pb-track"><div class="pb-fill" id="domainFill"></div></div>
+        <div class="pb-sub" id="domainSub">٠ من ٠ هدف مُنجَز</div>
+      </div>
+
+      <label>إضافة هدف</label>
+      <div class="rows">
+        <input id="goalTitleInput" type="text" placeholder="اكتب الهدف…" autocomplete="off" />
+        <div class="inline" style="align-items:flex-end">
+          <div>
+            <label>السنة المستهدفة</label>
+            <div class="seg">
+              <button type="button" id="goalYear2026" class="active">2026</button>
+              <button type="button" id="goalYear2030">2030</button>
+            </div>
+          </div>
+          <button class="ok" id="goalAddBtn" style="flex:none;padding:10px 18px;border:none;border-radius:10px;font-weight:700;color:#fff;background:var(--accent);cursor:pointer;font-family:inherit">إضافة</button>
+        </div>
+      </div>
+
+      <div class="loghdr"><h4>الأهداف</h4></div>
+      <div class="logbox" id="goalsBox"></div>
+
+      <div class="actions" style="margin-top:14px">
+        <button class="cancel" id="domainClose">إغلاق</button>
+      </div>
+    </div>
+  </dialog>
+
   <script>
   (function () {
     "use strict";
@@ -410,8 +511,20 @@
     //   جلسة مؤقت: { start, end|null }
     //   إدخال يدوي: { manual:true, day:<بداية يوم العمل ms>, ms:<موجب/سالب>, created }
     // state.settings: { dailyGoalHours }
+    // state.goals[]: { id, domainId, year: 2026|2030, title, done, created }
+    const DOMAINS = [
+      { id: "worship", name: "العبادة", icon: "🕌" },
+      { id: "morals",  name: "الأخلاق", icon: "🌸" },
+      { id: "knowledge", name: "المعرفة", icon: "📚" },
+      { id: "career",  name: "المهنة", icon: "💼" },
+      { id: "money",   name: "المال", icon: "💰" },
+      { id: "health",  name: "الصحة", icon: "💪" },
+      { id: "family",  name: "المجتمع والعائلة", icon: "👨‍👩‍👧‍👦" },
+      { id: "skill",   name: "المهارة", icon: "🛠️" }
+    ];
     let state = load();
     let currentView = "today";
+    let appMode = "plan"; // plan | timer
 
     function load() {
       try {
@@ -425,6 +538,7 @@
     function withDefaults(p) {
       if (!p.settings) p.settings = {};
       if (typeof p.settings.dailyGoalHours !== "number") p.settings.dailyGoalHours = 8;
+      if (!Array.isArray(p.goals)) p.goals = [];
       return p;
     }
     function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} }
@@ -526,6 +640,16 @@
       goalWrap: document.getElementById("goalWrap"),
       goalFill: document.getElementById("goalFill"),
       goalText: document.getElementById("goalText"),
+      appTitle: document.getElementById("appTitle"),
+      planSection: document.getElementById("planSection"),
+      timerSection: document.getElementById("timerSection"),
+      domainsGrid: document.getElementById("domainsGrid"),
+      pct2030: document.getElementById("pct2030"),
+      fill2030: document.getElementById("fill2030"),
+      sub2030: document.getElementById("sub2030"),
+      pct2026: document.getElementById("pct2026"),
+      fill2026: document.getElementById("fill2026"),
+      sub2026: document.getElementById("sub2026"),
     };
 
     // ---------- الرأس والملخص ----------
@@ -548,14 +672,88 @@
       }
     }
 
-    // ---------- العرض الرئيسي ----------
+    // ---------- التبديل بين الأوضاع ----------
     function render() {
+      if (appMode === "plan") {
+        els.appTitle.textContent = "🎯 خطتي";
+        els.planSection.hidden = false;
+        els.timerSection.hidden = true;
+        els.addbar.classList.add("hidden");
+        renderPlan();
+      } else {
+        els.appTitle.textContent = "⏱️ مؤقت المشاريع";
+        els.planSection.hidden = true;
+        els.timerSection.hidden = false;
+        renderTimer();
+      }
+    }
+
+    // ---------- عرض المؤقتات ----------
+    function renderTimer() {
       const now = Date.now();
       const today = dayStartOf(now);
       els.dayLabel.textContent = fmtDayLong(today) + " · يبدأ اليوم ٥ صباحاً";
 
       if (currentView === "today") { els.addbar.classList.remove("hidden"); renderToday(now, today); }
       else { els.addbar.classList.add("hidden"); renderReport(now, currentView === "week" ? 7 : 30); }
+    }
+
+    // ---------- عرض الخطة ----------
+    function toArDigits(s) { return String(s).replace(/[0-9]/g, d => "٠١٢٣٤٥٦٧٨٩"[d]); }
+
+    function goalsInDomain(domainId) { return state.goals.filter(g => g.domainId === domainId); }
+    function pctOf(list) { if (!list.length) return 0; return Math.round(list.filter(g => g.done).length / list.length * 100); }
+
+    function renderPlan() {
+      els.dayLabel.textContent = "لوحة الخطة الشخصية · ٨ مجالات";
+
+      // البارات الكبيرة
+      const all = state.goals;
+      const y2026 = all.filter(g => g.year === 2026);
+      setBar(els.fill2030, els.pct2030, els.sub2030, all);
+      setBar(els.fill2026, els.pct2026, els.sub2026, y2026);
+
+      // المربعات الثمانية
+      const frag = document.createDocumentFragment();
+      for (const d of DOMAINS) {
+        const list = goalsInDomain(d.id);
+        const pct = pctOf(list);
+        const doneN = list.filter(g => g.done).length;
+
+        const card = document.createElement("button");
+        card.className = "domain-card";
+        card.onclick = () => openDomain(d);
+
+        const ring = document.createElement("div");
+        ring.className = "dc-ring" + (pct === 0 ? " zero" : "");
+        ring.style.setProperty("--p", pct);
+        const hole = document.createElement("div");
+        hole.className = "hole";
+        hole.textContent = toArDigits(pct) + "٪";
+        ring.append(hole);
+
+        const name = document.createElement("div");
+        name.className = "dc-name";
+        name.innerHTML = '<span class="dc-icon">' + d.icon + '</span> ' + d.name;
+
+        const count = document.createElement("div");
+        count.className = "dc-count";
+        count.textContent = list.length ? (toArDigits(doneN) + " من " + toArDigits(list.length)) : "لا أهداف";
+
+        card.append(ring, name, count);
+        frag.append(card);
+      }
+      els.domainsGrid.replaceChildren(frag);
+    }
+
+    function setBar(fillEl, pctEl, subEl, list) {
+      const pct = pctOf(list);
+      const doneN = list.filter(g => g.done).length;
+      fillEl.style.width = pct + "%";
+      pctEl.textContent = toArDigits(pct) + "٪";
+      subEl.textContent = list.length
+        ? (toArDigits(doneN) + " من " + toArDigits(list.length) + " هدف مُنجَز")
+        : "لا توجد أهداف بعد";
     }
 
     function renderToday(now, today) {
@@ -696,7 +894,7 @@
 
     // ---------- التحديث الحي ----------
     function tick() {
-      if (currentView !== "today") return;
+      if (appMode !== "timer" || currentView !== "today") return;
       const now = Date.now();
       const today = dayStartOf(now);
       let totalMs = 0;
@@ -870,7 +1068,7 @@
     document.getElementById("addBtn").onclick = () => { addProject(els.newName.value); els.newName.value = ""; els.newName.focus(); };
     els.newName.addEventListener("keydown", e => { if (e.key === "Enter") { addProject(els.newName.value); els.newName.value = ""; } });
 
-    // ---------- التبويبات ----------
+    // ---------- التبويبات الفرعية (المؤقتات) ----------
     document.querySelectorAll(".tabs button").forEach(btn => {
       btn.onclick = () => {
         currentView = btn.dataset.view;
@@ -878,6 +1076,104 @@
         render();
       };
     });
+
+    // ---------- التبويب العلوي (الخطة/المؤقتات) ----------
+    document.querySelectorAll(".topnav button").forEach(btn => {
+      btn.onclick = () => {
+        appMode = btn.dataset.mode;
+        document.querySelectorAll(".topnav button").forEach(b => b.classList.toggle("active", b === btn));
+        render();
+      };
+    });
+
+    // ---------- نافذة أهداف المجال ----------
+    const domainDlg = document.getElementById("domainDlg");
+    const domainTitle = document.getElementById("domainTitle");
+    const domainFill = document.getElementById("domainFill");
+    const domainSub = document.getElementById("domainSub");
+    const goalsBox = document.getElementById("goalsBox");
+    const goalTitleInput = document.getElementById("goalTitleInput");
+    const goalYear2026 = document.getElementById("goalYear2026");
+    const goalYear2030 = document.getElementById("goalYear2030");
+    const goalAddBtn = document.getElementById("goalAddBtn");
+    const domainClose = document.getElementById("domainClose");
+    let currentDomainId = null;
+    let newGoalYear = 2026;
+
+    function setGoalYear(y) {
+      newGoalYear = y;
+      goalYear2026.classList.toggle("active", y === 2026);
+      goalYear2030.classList.toggle("active", y === 2030);
+    }
+    goalYear2026.onclick = () => setGoalYear(2026);
+    goalYear2030.onclick = () => setGoalYear(2030);
+
+    function openDomain(d) {
+      currentDomainId = d.id;
+      domainTitle.textContent = d.icon + " " + d.name;
+      goalTitleInput.value = "";
+      setGoalYear(2026);
+      renderGoals();
+      domainDlg.showModal();
+    }
+
+    function renderGoals() {
+      const d = DOMAINS.find(x => x.id === currentDomainId);
+      const list = goalsInDomain(currentDomainId);
+      const pct = pctOf(list);
+      const doneN = list.filter(g => g.done).length;
+      domainFill.style.width = pct + "%";
+      domainSub.textContent = list.length
+        ? (toArDigits(doneN) + " من " + toArDigits(list.length) + " هدف مُنجَز · " + toArDigits(pct) + "٪")
+        : "لا أهداف بعد — أضِف أول هدف في مجال «" + (d ? d.name : "") + "»";
+
+      goalsBox.replaceChildren();
+      if (!list.length) {
+        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد أهداف."; goalsBox.append(e); return;
+      }
+      // المنجَز أخيراً، والأحدث أولاً ضمن كل مجموعة
+      const sorted = list.slice().sort((a, b) => (a.done - b.done) || (b.created - a.created));
+      for (const g of sorted) {
+        const row = document.createElement("div");
+        row.className = "goalrow" + (g.done ? " done" : "");
+
+        const check = document.createElement("button");
+        check.className = "gcheck" + (g.done ? " done" : "");
+        check.textContent = g.done ? "✓" : "";
+        check.title = "تبديل الإنجاز";
+        check.onclick = () => { g.done = !g.done; save(); renderGoals(); };
+
+        const title = document.createElement("div");
+        title.className = "gtitle"; title.textContent = g.title;
+
+        const year = document.createElement("button");
+        year.className = "gyear"; year.textContent = toArDigits(g.year);
+        year.title = "تبديل السنة المستهدفة";
+        year.onclick = () => { g.year = g.year === 2026 ? 2030 : 2026; save(); renderGoals(); };
+
+        const del = document.createElement("button");
+        del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
+        del.onclick = () => { state.goals = state.goals.filter(x => x.id !== g.id); save(); renderGoals(); };
+
+        row.append(check, title, year, del);
+        goalsBox.append(row);
+      }
+    }
+
+    function addGoal() {
+      const t = goalTitleInput.value.trim();
+      if (!t) return;
+      state.goals.push({ id: uid(), domainId: currentDomainId, year: newGoalYear, title: t, done: false, created: Date.now() });
+      save();
+      goalTitleInput.value = "";
+      renderGoals();
+    }
+    goalAddBtn.onclick = addGoal;
+    goalTitleInput.addEventListener("keydown", e => { if (e.key === "Enter") addGoal(); });
+
+    // عند الإغلاق حدّث لوحة الخطة
+    domainClose.onclick = () => domainDlg.close();
+    domainDlg.addEventListener("close", () => { if (appMode === "plan") renderPlan(); });
 
     // ---------- الإقلاع ----------
     render();
