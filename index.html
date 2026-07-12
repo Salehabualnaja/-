@@ -152,8 +152,8 @@
     .goaltext button:hover { background: rgba(240,198,116,.22); }
 
     /* التبويب العلوي بين الخطة والمؤقتات */
-    .topnav { display: flex; gap: 8px; margin: 14px 0 16px; }
-    .topnav button { flex: 1; border: 1px solid var(--border); background: var(--panel); color: var(--muted); font-family: inherit; font-size: 14.5px; font-weight: 800; padding: 12px 0; border-radius: 13px; cursor: pointer; box-shadow: var(--shadow); transition: color .15s, border-color .15s, background .15s; }
+    .topnav { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 16px; }
+    .topnav button { flex: 1 1 42%; border: 1px solid var(--border); background: var(--panel); color: var(--muted); font-family: inherit; font-size: 14px; font-weight: 800; padding: 12px 4px; border-radius: 13px; cursor: pointer; box-shadow: var(--shadow); transition: color .15s, border-color .15s, background .15s; white-space: nowrap; }
     .topnav button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
 
     /* التبويبات الفرعية */
@@ -184,8 +184,8 @@
     .pb-fill.alt { background: linear-gradient(90deg, #B45309, #E0A94A); }
     .pb-sub { font-size: 12px; color: var(--muted); margin-top: 7px; font-variant-numeric: tabular-nums; }
 
-    .domains-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-    @media (min-width: 560px) { .domains-grid { grid-template-columns: repeat(4, 1fr); } }
+    .domains-grid, #projectsList { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+    @media (min-width: 560px) { .domains-grid { grid-template-columns: repeat(4, 1fr); } #projectsList { grid-template-columns: repeat(3, 1fr); } }
     .domain-card {
       background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
       box-shadow: var(--shadow); padding: 14px 8px 12px; cursor: pointer; font-family: inherit;
@@ -383,7 +383,8 @@
     </header>
 
     <div class="topnav">
-      <button data-mode="plan" class="active">🎯 الخطة</button>
+      <button data-mode="plan" class="active">🎯 الملخص التنفيذي</button>
+      <button data-mode="projects">📁 المشاريع</button>
       <button data-mode="goals">📋 الأهداف</button>
       <button data-mode="timer">⏱️ المؤقتات</button>
     </div>
@@ -414,6 +415,12 @@
     <section id="goalsSection" hidden>
       <button class="add-goal-btn" id="addGoalGoals">➕ إضافة هدف جديد</button>
       <div id="goalsPageList"></div>
+    </section>
+
+    <!-- ═══ قسم المشاريع ═══ -->
+    <section id="projectsSection" hidden>
+      <button class="add-goal-btn" id="addPlanBtn">➕ إضافة مشروع جديد</button>
+      <div id="projectsList"></div>
     </section>
 
     <!-- ═══ قسم المؤقتات ═══ -->
@@ -564,6 +571,28 @@
     </div>
   </dialog>
 
+  <!-- أهداف المشروع -->
+  <dialog id="planDlg">
+    <div class="dlg">
+      <h3 id="planTitle">المشروع</h3>
+      <div class="domain-progress">
+        <div class="pb-track"><div class="pb-fill" id="planFill"></div></div>
+        <div class="pb-sub" id="planSub">0 من 0 هدف مكتمل</div>
+      </div>
+
+      <button class="add-goal-btn" id="planAddGoal">➕ إضافة هدف في هذا المشروع</button>
+
+      <div class="loghdr"><h4>الأهداف</h4></div>
+      <div class="logbox" id="planGoalsBox"></div>
+
+      <div class="actions" style="margin-top:14px">
+        <button class="ok" id="planRename" style="background:var(--panel-2);color:var(--text);border:1px solid var(--border)">✏️ إعادة تسمية</button>
+        <button class="ok danger" id="planDelete">🗑️ حذف المشروع</button>
+        <button class="cancel" id="planClose">إغلاق</button>
+      </div>
+    </div>
+  </dialog>
+
   <!-- هدف/مشروع جديد -->
   <dialog id="itemDlg">
     <div class="dlg">
@@ -579,11 +608,15 @@
             <select id="itemDomain"></select>
           </div>
           <div>
-            <label>النوع</label>
-            <div class="seg">
-              <button type="button" id="itemTHours" class="active">⏱️ ساعات</button>
-              <button type="button" id="itemTPoints">⭐ نقاط</button>
-            </div>
+            <label>المشروع</label>
+            <select id="itemProject"></select>
+          </div>
+        </div>
+        <div>
+          <label>النوع</label>
+          <div class="seg">
+            <button type="button" id="itemTHours" class="active">⏱️ ساعات</button>
+            <button type="button" id="itemTPoints">⭐ نقاط</button>
           </div>
         </div>
         <div class="inline">
@@ -648,7 +681,7 @@
     function readUI(key, allowed, def) { try { const v = localStorage.getItem(key); return allowed.indexOf(v) >= 0 ? v : def; } catch (e) { return def; } }
     function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
     let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
-    let appMode = readUI(UI_MODE_KEY, ["plan", "goals", "timer"], "plan"); // plan | goals | timer
+    let appMode = readUI(UI_MODE_KEY, ["plan", "goals", "projects", "timer"], "plan"); // plan | goals | projects | timer
 
     function load() {
       try {
@@ -670,8 +703,11 @@
         if (typeof g.endDate !== "string") g.endDate = "";
         if (typeof g.target !== "number") g.target = 0;
         if (typeof g.current !== "number") g.current = g.done ? (g.target || 0) : 0;
+        if (typeof g.projectId !== "string") g.projectId = "";
         delete g.date;
       }
+      // مشاريع تضمّ الأهداف
+      if (!Array.isArray(p.plans)) p.plans = [];
       // أوزان المجالات في خطتَي 2026 و2030 (افتراضي: متساوٍ = 1)
       if (!p.domainWeights || typeof p.domainWeights !== "object") p.domainWeights = {};
       for (const d of DOMAINS) {
@@ -796,6 +832,8 @@
       timerSection: document.getElementById("timerSection"),
       goalsSection: document.getElementById("goalsSection"),
       goalsPageList: document.getElementById("goalsPageList"),
+      projectsSection: document.getElementById("projectsSection"),
+      projectsList: document.getElementById("projectsList"),
       domainsGrid: document.getElementById("domainsGrid"),
       pct2030: document.getElementById("pct2030"),
       fill2030: document.getElementById("fill2030"),
@@ -829,15 +867,19 @@
     function render() {
       els.planSection.hidden = appMode !== "plan";
       els.goalsSection.hidden = appMode !== "goals";
+      els.projectsSection.hidden = appMode !== "projects";
       els.timerSection.hidden = appMode !== "timer";
       els.appTitle.textContent = "📖 الصحيفة";
+      els.addbar.classList.add("hidden");
       if (appMode === "plan") {
-        els.addbar.classList.add("hidden");
+        els.dayLabel.textContent = "الملخص التنفيذي — نظرة عامة على الخطة";
         renderPlan();
       } else if (appMode === "goals") {
         els.dayLabel.textContent = "كل الأهداف — أضِف وعدّل بحرية";
-        els.addbar.classList.add("hidden");
         renderGoalsPage();
+      } else if (appMode === "projects") {
+        els.dayLabel.textContent = "المشاريع — مجموعات من الأهداف";
+        renderProjects();
       } else {
         renderTimer();
       }
@@ -847,8 +889,10 @@
     function refreshViews() {
       if (appMode === "plan") renderPlan();
       else if (appMode === "goals") renderGoalsPage();
+      else if (appMode === "projects") renderProjects();
       else if (appMode === "timer") renderTimer();
       if (typeof domainDlg !== "undefined" && domainDlg.open) renderGoals();
+      if (typeof planDlg !== "undefined" && planDlg.open) renderPlanGoals();
     }
 
     // ---------- عرض المؤقتات ----------
@@ -1099,6 +1143,63 @@
         frag.append(group);
       }
       els.goalsPageList.replaceChildren(frag);
+    }
+
+    // ---------- المشاريع (تضمّ الأهداف) ----------
+    function projectGoals(pid) { return state.goals.filter(g => (g.projectId || "") === pid); }
+    function projectPct(pid) {
+      const list = projectGoals(pid);
+      if (!list.length) return 0;
+      let s = 0; for (const g of list) s += goalProgress(g);
+      return Math.round(s / list.length * 100);
+    }
+
+    function renderProjects() {
+      const frag = document.createDocumentFragment();
+      const plans = state.plans;
+      const unassigned = projectGoals("");
+
+      if (!plans.length && !unassigned.length) {
+        const e = document.createElement("div");
+        e.className = "empty";
+        e.textContent = "لا توجد مشاريع بعد. اضغط «إضافة مشروع جديد»، ثم أضِف أهدافاً داخله.";
+        els.projectsList.replaceChildren(e);
+        return;
+      }
+
+      for (const pl of plans) frag.append(buildProjectCard(pl));
+      if (unassigned.length) {
+        frag.append(buildProjectCard({ id: "", name: "أهداف غير مصنّفة" }, true));
+      }
+      els.projectsList.replaceChildren(frag);
+    }
+
+    function buildProjectCard(pl, isUnassigned) {
+      const list = projectGoals(pl.id);
+      const pct = projectPct(pl.id);
+      const doneN = list.filter(isComplete).length;
+
+      const card = document.createElement("button");
+      card.className = "domain-card project-card";
+      card.onclick = () => openPlan(pl, isUnassigned);
+
+      const ring = document.createElement("div");
+      ring.className = "dc-ring" + (pct === 0 ? " zero" : "");
+      ring.style.setProperty("--p", pct);
+      const hole = document.createElement("div");
+      hole.className = "hole"; hole.textContent = pct + "٪";
+      ring.append(hole);
+
+      const name = document.createElement("div");
+      name.className = "dc-name";
+      name.innerHTML = '<span class="dc-icon">' + (isUnassigned ? "🗂️" : "📁") + '</span> ' + escapeHtml(pl.name);
+
+      const count = document.createElement("div");
+      count.className = "dc-count";
+      count.textContent = list.length ? (doneN + " من " + list.length + " مكتمل") : "لا أهداف";
+
+      card.append(ring, name, count);
+      return card;
     }
 
     function renderToday(now, today) {
@@ -1614,12 +1715,75 @@
     domainClose.onclick = () => domainDlg.close();
     domainDlg.addEventListener("close", () => { if (appMode === "plan") renderPlan(); });
 
+    // ---------- نافذة المشروع (يضمّ الأهداف) ----------
+    const planDlg = document.getElementById("planDlg");
+    const planTitle = document.getElementById("planTitle");
+    const planFill = document.getElementById("planFill");
+    const planSub = document.getElementById("planSub");
+    const planGoalsBox = document.getElementById("planGoalsBox");
+    const planAddGoal = document.getElementById("planAddGoal");
+    const planRename = document.getElementById("planRename");
+    const planDelete = document.getElementById("planDelete");
+    const planClose = document.getElementById("planClose");
+    let currentPlanId = null;
+
+    function openPlan(pl, isUnassigned) {
+      currentPlanId = pl.id;
+      planTitle.textContent = (isUnassigned ? "🗂️ " : "📁 ") + pl.name;
+      planRename.style.display = isUnassigned ? "none" : "";
+      planDelete.style.display = isUnassigned ? "none" : "";
+      planAddGoal.style.display = isUnassigned ? "none" : "";
+      renderPlanGoals();
+      planDlg.showModal();
+    }
+
+    function renderPlanGoals() {
+      const list = projectGoals(currentPlanId);
+      const pct = projectPct(currentPlanId);
+      const doneN = list.filter(isComplete).length;
+      planFill.style.width = pct + "%";
+      planSub.textContent = list.length ? ("التقدّم " + pct + "٪ · " + doneN + " من " + list.length + " مكتمل") : "لا أهداف بعد";
+      planGoalsBox.replaceChildren();
+      if (!list.length) {
+        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد أهداف في هذا المشروع."; planGoalsBox.append(e); return;
+      }
+      const sorted = list.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
+      for (const g of sorted) planGoalsBox.append(buildGoalRow(g));
+    }
+
+    planAddGoal.onclick = () => openItem(null, null, currentPlanId);
+    planClose.onclick = () => planDlg.close();
+    planRename.onclick = () => {
+      const pl = state.plans.find(x => x.id === currentPlanId); if (!pl) return;
+      const name = prompt("اسم المشروع:", pl.name);
+      if (name && name.trim()) { pl.name = name.trim(); save(); planTitle.textContent = "📁 " + pl.name; }
+    };
+    planDelete.onclick = () => {
+      const pl = state.plans.find(x => x.id === currentPlanId); if (!pl) return;
+      if (!confirm("حذف المشروع «" + pl.name + "»؟ ستبقى أهدافه لكن بلا مشروع.")) return;
+      for (const g of state.goals) if (g.projectId === currentPlanId) g.projectId = "";
+      state.plans = state.plans.filter(x => x.id !== currentPlanId);
+      save(); planDlg.close(); if (appMode === "projects") renderProjects();
+    };
+    planDlg.addEventListener("close", () => { if (appMode === "projects") renderProjects(); });
+
+    document.getElementById("addPlanBtn").onclick = () => {
+      const name = prompt("اسم المشروع الجديد:");
+      if (name && name.trim()) {
+        const pl = { id: uid(), name: name.trim() };
+        state.plans.push(pl); save();
+        openPlan(pl, false);
+        renderProjects();
+      }
+    };
+
     // ---------- نافذة هدف/مشروع جديد ----------
     const itemDlg = document.getElementById("itemDlg");
     const itemName = document.getElementById("itemName");
     const itemStart = document.getElementById("itemStart");
     const itemEnd = document.getElementById("itemEnd");
     const itemDomain = document.getElementById("itemDomain");
+    const itemProject = document.getElementById("itemProject");
     const itemTHours = document.getElementById("itemTHours");
     const itemTPoints = document.getElementById("itemTPoints");
     const itemFav = document.getElementById("itemFav");
@@ -1638,6 +1802,19 @@
       opt.value = d.id; opt.textContent = d.icon + " " + d.name;
       itemDomain.append(opt);
     }
+    // تعبئة قائمة المشاريع (تُبنى عند كل فتح لأنها تتغيّر)
+    function fillProjectSelect(selected) {
+      itemProject.replaceChildren();
+      const none = document.createElement("option");
+      none.value = ""; none.textContent = "— بدون مشروع —";
+      itemProject.append(none);
+      for (const pl of state.plans) {
+        const opt = document.createElement("option");
+        opt.value = pl.id; opt.textContent = pl.name;
+        itemProject.append(opt);
+      }
+      itemProject.value = selected || "";
+    }
     function setNiType(t) {
       niType = t;
       itemTHours.classList.toggle("active", t === "hours");
@@ -1649,8 +1826,8 @@
     itemTPoints.onclick = () => setNiType("points");
     itemFav.onclick = () => setNiFav(!niFav);
 
-    // openItem(goal|null, presetDomainId) — تعديل هدف قائم أو إنشاء جديد
-    function openItem(goal, presetDomainId) {
+    // openItem(goal|null, presetDomainId, presetProjectId) — تعديل هدف قائم أو إنشاء جديد
+    function openItem(goal, presetDomainId, presetProjectId) {
       if (goal) {
         editingGoalId = goal.id;
         itemDlgTitleEl.textContent = "✏️ تعديل الهدف";
@@ -1659,6 +1836,7 @@
         itemStart.value = goal.startDate || "";
         itemEnd.value = goal.endDate || "";
         itemDomain.value = goal.domainId;
+        fillProjectSelect(goal.projectId || "");
         setNiType(goal.type || "hours");
         itemTarget.value = goal.target ? goal.target : "";
         itemCurrent.value = goal.current ? goal.current : "";
@@ -1670,6 +1848,7 @@
         itemName.value = "";
         itemStart.value = ""; itemEnd.value = "";
         itemDomain.value = presetDomainId || DOMAINS[0].id;
+        fillProjectSelect(presetProjectId || "");
         setNiType("hours"); setNiFav(false);
         itemTarget.value = ""; itemCurrent.value = "";
       }
@@ -1686,7 +1865,7 @@
         if (g) {
           g.title = t; g.domainId = itemDomain.value; g.type = niType; g.favorite = niFav;
           g.startDate = itemStart.value || ""; g.endDate = itemEnd.value || "";
-          g.target = target; g.current = current;
+          g.target = target; g.current = current; g.projectId = itemProject.value || "";
           g.done = target > 0 ? (current >= target) : g.done;
         }
       } else {
@@ -1694,7 +1873,8 @@
           id: uid(), domainId: itemDomain.value, title: t,
           done: target > 0 ? (current >= target) : false, created: Date.now(),
           startDate: itemStart.value || "", endDate: itemEnd.value || "",
-          type: niType, favorite: niFav, target: target, current: current
+          type: niType, favorite: niFav, target: target, current: current,
+          projectId: itemProject.value || ""
         });
       }
       save();
