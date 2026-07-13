@@ -488,16 +488,18 @@
     <div class="dlg">
       <h3>🔥 تحدي</h3>
       <p>قائمة مهام سريعة لفترات الضغط.</p>
-      <div class="inline" style="align-items:flex-end">
-        <div style="flex:2">
+      <div class="rows">
+        <div>
           <label>المهمة</label>
           <input id="chInput" type="text" placeholder="اكتب المهمة…" autocomplete="off" />
         </div>
-        <div style="flex:1">
-          <label>المجال</label>
-          <select id="chDomain"></select>
+        <div class="inline" style="align-items:flex-end">
+          <div style="flex:1">
+            <label>المجال</label>
+            <select id="chDomain"></select>
+          </div>
+          <button class="ok" id="chAdd" style="flex:none;padding:11px 22px;border:none;border-radius:10px;font-weight:800;color:#fff;background:var(--fab);cursor:pointer;font-family:inherit">إضافة</button>
         </div>
-        <button class="ok" id="chAdd" style="flex:none;padding:10px 16px;border:none;border-radius:10px;font-weight:800;color:#fff;background:var(--fab);cursor:pointer;font-family:inherit">إضافة</button>
       </div>
 
       <div class="loghdr"><h4 id="chCount">المهام</h4><button class="linkbtn" id="chClear">مسح المكتمل</button></div>
