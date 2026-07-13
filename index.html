@@ -55,6 +55,7 @@
       --shadow: 0 1px 2px rgba(28, 26, 21, .06), 0 10px 30px rgba(28, 26, 21, .07);
       --shadow-dial: 0 12px 34px rgba(20, 15, 8, .35), inset 0 1px 0 rgba(255,255,255,.05);
       --radius: 14px;
+      --fab: #EA580C;
       --f-sans: "Tajawal", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Kufi Arabic", "Helvetica Neue", Arial, sans-serif;
     }
     @media (prefers-color-scheme: dark) {
@@ -371,6 +372,18 @@
     .logempty { padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
     .tag { font-size: 10.5px; background: var(--accent-soft); color: var(--accent-ink); border-radius: 6px; padding: 1px 7px; margin-inline-start: 6px; font-weight: 700; }
 
+    /* زر التحدي العائم */
+    .fab {
+      position: fixed; left: 16px; bottom: calc(20px + env(safe-area-inset-bottom));
+      width: 58px; height: 58px; border-radius: 50%; border: none; cursor: pointer; z-index: 60;
+      font-size: 27px; color: #fff; background: linear-gradient(145deg, #FB923C, #EA580C);
+      box-shadow: 0 8px 22px rgba(234, 88, 12, .45); display: grid; place-items: center; transition: transform .1s;
+    }
+    .fab:active { transform: scale(.92); }
+    body.addbar-on .fab { bottom: calc(86px + env(safe-area-inset-bottom)); }
+    #chList .goalrow .gbadge { background: var(--panel-2); }
+    #chCount { text-transform: none; letter-spacing: 0; }
+
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
   </style>
@@ -466,6 +479,35 @@
       <button id="addBtn">إضافة</button>
     </div>
   </div>
+
+  <!-- زر التحدي العائم -->
+  <button class="fab" id="fabChallenge" title="تحدي" aria-label="تحدي">🔥</button>
+
+  <!-- قائمة مهام التحدي -->
+  <dialog id="challengeDlg">
+    <div class="dlg">
+      <h3>🔥 تحدي</h3>
+      <p>قائمة مهام سريعة لفترات الضغط.</p>
+      <div class="inline" style="align-items:flex-end">
+        <div style="flex:2">
+          <label>المهمة</label>
+          <input id="chInput" type="text" placeholder="اكتب المهمة…" autocomplete="off" />
+        </div>
+        <div style="flex:1">
+          <label>المجال</label>
+          <select id="chDomain"></select>
+        </div>
+        <button class="ok" id="chAdd" style="flex:none;padding:10px 16px;border:none;border-radius:10px;font-weight:800;color:#fff;background:var(--fab);cursor:pointer;font-family:inherit">إضافة</button>
+      </div>
+
+      <div class="loghdr"><h4 id="chCount">المهام</h4><button class="linkbtn" id="chClear">مسح المكتمل</button></div>
+      <div class="logbox" id="chList"></div>
+
+      <div class="actions" style="margin-top:14px">
+        <button class="cancel" id="chClose">إغلاق</button>
+      </div>
+    </div>
+  </dialog>
 
   <!-- تعديل اسم المشروع -->
   <dialog id="editDlg">
@@ -708,6 +750,8 @@
       }
       // مشاريع تضمّ الأهداف
       if (!Array.isArray(p.plans)) p.plans = [];
+      // مهام التحدي السريعة
+      if (!Array.isArray(p.challenges)) p.challenges = [];
       // أوزان المجالات في خطتَي 2026 و2030 (افتراضي: متساوٍ = 1)
       if (!p.domainWeights || typeof p.domainWeights !== "object") p.domainWeights = {};
       for (const d of DOMAINS) {
@@ -883,6 +927,7 @@
       } else {
         renderTimer();
       }
+      document.body.classList.toggle("addbar-on", !els.addbar.classList.contains("hidden"));
     }
 
     // إعادة رسم ما هو ظاهر حالياً بعد أي تعديل على الأهداف
@@ -1885,6 +1930,63 @@
     itemName.addEventListener("keydown", e => { if (e.key === "Enter") itemSave.click(); });
 
     document.getElementById("addGoalGoals").onclick = () => openItem(null, null);
+
+    // ---------- التحدي (قائمة مهام سريعة) ----------
+    const challengeDlg = document.getElementById("challengeDlg");
+    const chInput = document.getElementById("chInput");
+    const chDomain = document.getElementById("chDomain");
+    const chAdd = document.getElementById("chAdd");
+    const chList = document.getElementById("chList");
+    const chCount = document.getElementById("chCount");
+    const chClear = document.getElementById("chClear");
+    const chClose = document.getElementById("chClose");
+
+    (function fillChDomains() {
+      const none = document.createElement("option"); none.value = ""; none.textContent = "— عام —"; chDomain.append(none);
+      for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; chDomain.append(o); }
+    })();
+
+    function renderChallenges() {
+      const list = state.challenges;
+      const doneN = list.filter(c => c.done).length;
+      chCount.textContent = list.length ? ("المهام · " + doneN + " من " + list.length) : "المهام";
+      chList.replaceChildren();
+      if (!list.length) {
+        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا مهام بعد. أضِف مهمة سريعة."; chList.append(e); return;
+      }
+      const sorted = list.slice().sort((a, b) => (a.done - b.done) || (b.created - a.created));
+      for (const c of sorted) {
+        const row = document.createElement("div");
+        row.className = "goalrow" + (c.done ? " done" : "");
+        const check = document.createElement("button");
+        check.className = "gcheck" + (c.done ? " done" : "");
+        check.textContent = c.done ? "✓" : ""; check.title = "تبديل";
+        check.onclick = () => { c.done = !c.done; save(); renderChallenges(); };
+        const main = document.createElement("div"); main.className = "gtitle";
+        const t = document.createElement("div"); t.textContent = c.text;
+        main.append(t);
+        if (c.domainId) {
+          const meta = document.createElement("div"); meta.className = "gmeta";
+          meta.innerHTML = '<span class="gbadge">' + domainIcon(c.domainId) + " " + domainName(c.domainId) + '</span>';
+          main.append(meta);
+        }
+        const del = document.createElement("button");
+        del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
+        del.onclick = () => { state.challenges = state.challenges.filter(x => x.id !== c.id); save(); renderChallenges(); };
+        row.append(check, main, del);
+        chList.append(row);
+      }
+    }
+    function addChallenge() {
+      const t = chInput.value.trim(); if (!t) return;
+      state.challenges.push({ id: uid(), text: t, domainId: chDomain.value || "", done: false, created: Date.now() });
+      save(); chInput.value = ""; renderChallenges(); chInput.focus();
+    }
+    chAdd.onclick = addChallenge;
+    chInput.addEventListener("keydown", e => { if (e.key === "Enter") addChallenge(); });
+    chClear.onclick = () => { state.challenges = state.challenges.filter(c => !c.done); save(); renderChallenges(); };
+    chClose.onclick = () => challengeDlg.close();
+    document.getElementById("fabChallenge").onclick = () => { renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
 
     // ---------- الإقلاع ----------
     render();
