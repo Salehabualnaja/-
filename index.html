@@ -1944,8 +1944,8 @@
     const chClose = document.getElementById("chClose");
 
     (function fillChDomains() {
-      const none = document.createElement("option"); none.value = ""; none.textContent = "— عام —"; chDomain.append(none);
       for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; chDomain.append(o); }
+      chDomain.value = "career"; // المهنة هي الافتراضي
     })();
 
     function renderChallenges() {
@@ -1988,7 +1988,7 @@
     chInput.addEventListener("keydown", e => { if (e.key === "Enter") addChallenge(); });
     chClear.onclick = () => { state.challenges = state.challenges.filter(c => !c.done); save(); renderChallenges(); };
     chClose.onclick = () => challengeDlg.close();
-    document.getElementById("fabChallenge").onclick = () => { renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
+    document.getElementById("fabChallenge").onclick = () => { chDomain.value = "career"; renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
 
     // ---------- الإقلاع ----------
     render();
