@@ -337,6 +337,9 @@
     dialog {
       border: none; border-radius: 16px; padding: 0; max-width: 92vw; width: 400px;
       background: var(--panel); color: var(--text); box-shadow: var(--shadow);
+      /* محاذاة للأعلى + تمرير داخلي حتى لا يغطّي الكيبورد الحقول */
+      margin: 12px auto auto; max-height: 88dvh; overflow-y: auto;
+      overscroll-behavior: contain;
     }
     dialog::backdrop { background: rgba(20, 15, 8, .5); backdrop-filter: blur(2px); }
     .dlg { padding: 20px; }
@@ -555,7 +558,7 @@
       <h3>الهدف اليومي</h3>
       <p>كم ساعة تريد إنجازها كل يوم؟</p>
       <div class="rows">
-        <input id="goalInput" type="number" min="0" max="24" step="0.5" placeholder="مثال: 8" />
+        <input id="goalInput" type="text" inputmode="decimal" class="numfield" min="0" max="24" step="0.5" placeholder="مثال: 8" />
       </div>
       <div class="actions">
         <button class="ok" value="save">حفظ</button>
@@ -592,11 +595,11 @@
         </div>
         <div>
           <label>ساعات</label>
-          <input id="manualH" type="number" min="0" max="23" step="1" placeholder="0" />
+          <input id="manualH" type="text" inputmode="decimal" class="numfield" min="0" max="23" step="1" placeholder="0" />
         </div>
         <div>
           <label>دقائق</label>
-          <input id="manualM" type="number" min="0" max="59" step="1" placeholder="0" />
+          <input id="manualM" type="text" inputmode="decimal" class="numfield" min="0" max="59" step="1" placeholder="0" />
         </div>
       </div>
       <div class="actions" style="margin-top:12px">
@@ -622,11 +625,11 @@
       <div class="inline" style="margin-bottom:6px">
         <div>
           <label>وزن خطة 2026 (0–100)</label>
-          <input id="wDomain2026" type="number" min="0" max="100" step="1" placeholder="1" />
+          <input id="wDomain2026" type="text" inputmode="decimal" class="numfield" min="0" max="100" step="1" placeholder="1" />
         </div>
         <div>
           <label>وزن خطة 2030 (0–100)</label>
-          <input id="wDomain2030" type="number" min="0" max="100" step="1" placeholder="1" />
+          <input id="wDomain2030" type="text" inputmode="decimal" class="numfield" min="0" max="100" step="1" placeholder="1" />
         </div>
       </div>
 
@@ -713,11 +716,11 @@
         <div class="inline">
           <div>
             <label id="itemTargetLabel">الساعات المستهدفة</label>
-            <input id="itemTarget" type="number" min="0" step="1" placeholder="0" />
+            <input id="itemTarget" type="text" inputmode="decimal" class="numfield" min="0" step="1" placeholder="0" />
           </div>
           <div>
             <label>المُنجَز حالياً</label>
-            <input id="itemCurrent" type="number" min="0" step="1" placeholder="0" />
+            <input id="itemCurrent" type="text" inputmode="decimal" class="numfield" min="0" step="1" placeholder="0" />
           </div>
         </div>
         <div class="inline">
@@ -2129,6 +2132,23 @@
     chClear.onclick = () => { state.challenges = state.challenges.filter(c => !c.done); save(); renderChallenges(); };
     chClose.onclick = () => challengeDlg.close();
     document.getElementById("fabChallenge").onclick = () => { chDomain.value = "career"; renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
+
+    // ---------- إدخال الأرقام (قبول الأرقام العربية) + إبقاء الحقل فوق الكيبورد ----------
+    function normNum(s) {
+      s = s.replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660))
+           .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x06F0));
+      return s.replace(/[^0-9.]/g, "");
+    }
+    document.querySelectorAll(".numfield").forEach(inp => {
+      inp.addEventListener("input", () => { const n = normNum(inp.value); if (n !== inp.value) inp.value = n; });
+    });
+    // عند فتح الكيبورد، مرّر الحقل المُركَّز ليظهر داخل النافذة
+    document.addEventListener("focusin", e => {
+      const t = e.target;
+      if (t && t.closest && t.closest("dialog") && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) {
+        setTimeout(() => { try { t.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (_) {} }, 260);
+      }
+    });
 
     // ---------- الإقلاع ----------
     render();
