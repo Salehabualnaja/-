@@ -467,11 +467,6 @@
     </section>
 
     <!-- ═══ قسم الأهداف ═══ -->
-    <section id="goalsSection" hidden>
-      <button class="add-goal-btn" id="addGoalGoals">➕ إضافة هدف جديد</button>
-      <div id="goalsPageList"></div>
-    </section>
-
     <!-- ═══ قسم البرامج ═══ -->
     <section id="projectsSection" hidden>
       <button class="add-goal-btn" id="addProgramBtn">➕ إضافة برنامج جديد</button>
@@ -506,6 +501,7 @@
 
     <!-- ═══ قسم التذكيرات ═══ -->
     <section id="remindersSection" hidden>
+      <button class="ok" id="addReminderBtn" style="width:100%;border:none;border-radius:12px;padding:14px;font-weight:800;font-size:15px;color:var(--accent-ink);background:var(--accent-soft);cursor:pointer;font-family:inherit;margin-bottom:14px">➕ إضافة تذكير</button>
       <div id="remindersList"></div>
     </section>
 
@@ -520,13 +516,6 @@
     </div>
   </div>
 
-  <div class="addbar" id="addbar">
-    <div class="row">
-      <input id="newName" type="text" placeholder="اسم مشروع جديد…" autocomplete="off" />
-      <button id="addBtn">إضافة</button>
-    </div>
-  </div>
-
   <!-- زر التحدي العائم -->
   <button class="fab" id="fabChallenge" title="تحدي" aria-label="تحدي">🔥</button>
 
@@ -537,7 +526,6 @@
   <nav class="bottomnav" id="bottomnav">
     <button data-mode="plan" class="active"><span class="bi">🎯</span><span class="bl">الملخص</span></button>
     <button data-mode="projects"><span class="bi">📁</span><span class="bl">البرامج</span></button>
-    <button data-mode="goals"><span class="bi">📋</span><span class="bl">الأهداف</span></button>
     <button data-mode="timer"><span class="bi">⏱️</span><span class="bl">المؤقتات</span></button>
     <button data-mode="reminders"><span class="bi">🔔</span><span class="bl">تذكيرات</span></button>
   </nav>
@@ -557,8 +545,12 @@
   <!-- تذكير -->
   <dialog id="reminderDlg">
     <form method="dialog" class="dlg">
-      <h3 id="reminderTitle">🔔 تذكير</h3>
+      <h3 id="reminderTitle">🔔 تذكير جديد</h3>
       <div class="rows">
+        <div>
+          <label>البرنامج أو المشروع</label>
+          <select id="remTarget"></select>
+        </div>
         <div>
           <label>التكرار</label>
           <select id="remRecur">
@@ -718,9 +710,7 @@
         </div>
       </div>
 
-      <button class="add-goal-btn" id="domainAddGoal">➕ إضافة هدف في هذا المجال</button>
-
-      <div class="loghdr"><h4>الأهداف</h4></div>
+      <div class="loghdr"><h4>مشاريع هذا المجال</h4></div>
       <div class="logbox" id="goalsBox"></div>
 
       <div class="actions" style="margin-top:14px">
@@ -750,65 +740,18 @@
     </form>
   </dialog>
 
-  <!-- مشروع جديد / إعادة تسمية -->
-  <dialog id="projNameDlg">
-    <form method="dialog" class="dlg">
-      <h3 id="projNameTitle">📄 مشروع جديد</h3>
+  <!-- مشروع جديد / تعديل -->
+  <dialog id="itemDlg">
+    <div class="dlg">
+      <h3 id="itemDlgTitle">📄 مشروع جديد</h3>
       <div class="rows">
         <div>
           <label>اسم المشروع</label>
-          <input id="projNameInput" type="text" placeholder="مثال: شهادة PMP" autocomplete="off" />
-        </div>
-      </div>
-      <div class="actions">
-        <button class="ok" value="save" id="projNameSave">حفظ</button>
-        <button class="cancel" value="cancel" formnovalidate>إلغاء</button>
-      </div>
-    </form>
-  </dialog>
-
-  <!-- أهداف المشروع -->
-  <dialog id="planDlg">
-    <div class="dlg">
-      <h3 id="planTitle">المشروع</h3>
-      <div class="domain-progress">
-        <div class="pb-track"><div class="pb-fill" id="planFill"></div></div>
-        <div class="pb-sub" id="planSub">0 من 0 هدف مكتمل</div>
-      </div>
-
-      <button class="add-goal-btn" id="planAddGoal">➕ إضافة هدف في هذا المشروع</button>
-
-      <button class="add-goal-btn" id="planReminder" style="border-style:solid;border-color:var(--border-strong)">🔔 إضافة تذكير لهذا المشروع</button>
-
-      <div class="loghdr"><h4>الأهداف</h4></div>
-      <div class="logbox" id="planGoalsBox"></div>
-
-      <div class="actions" style="margin-top:14px">
-        <button class="ok" id="planRename" style="background:var(--panel-2);color:var(--text);border:1px solid var(--border)">✏️ إعادة تسمية</button>
-        <button class="ok danger" id="planDelete">🗑️ حذف المشروع</button>
-        <button class="cancel" id="planClose">إغلاق</button>
-      </div>
-    </div>
-  </dialog>
-
-  <!-- هدف/مشروع جديد -->
-  <dialog id="itemDlg">
-    <div class="dlg">
-      <h3 id="itemDlgTitle">🎯 هدف جديد</h3>
-      <div class="rows">
-        <div>
-          <label>الاسم</label>
           <input id="itemName" type="text" placeholder="مثال: قراءة 12 كتاباً" autocomplete="off" />
         </div>
-        <div class="inline">
-          <div>
-            <label>المجال</label>
-            <select id="itemDomain"></select>
-          </div>
-          <div>
-            <label>المشروع</label>
-            <select id="itemProject"></select>
-          </div>
+        <div>
+          <label>البرنامج (ضمن مجال)</label>
+          <select id="itemProgram"></select>
         </div>
         <div>
           <label>النوع</label>
@@ -874,12 +817,13 @@
       { id: "skill",   name: "المهارة", icon: "🛠️" }
     ];
     let state = load();
+    save(); // ثبّت الحالة بعد الترحيل حتى لا يُعاد الترحيل كل مرة
     const UI_MODE_KEY = "ptt.ui.mode";
     const UI_VIEW_KEY = "ptt.ui.view";
     function readUI(key, allowed, def) { try { const v = localStorage.getItem(key); return allowed.indexOf(v) >= 0 ? v : def; } catch (e) { return def; } }
     function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
     let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
-    let appMode = readUI(UI_MODE_KEY, ["plan", "goals", "projects", "timer", "reminders"], "plan");
+    let appMode = readUI(UI_MODE_KEY, ["plan", "projects", "timer", "reminders"], "plan");
 
     function load() {
       try {
@@ -893,21 +837,53 @@
     function withDefaults(p) {
       if (!p.settings) p.settings = {};
       if (typeof p.settings.dailyGoalHours !== "number") p.settings.dailyGoalHours = 8;
-      if (!Array.isArray(p.goals)) p.goals = [];
-      for (const g of p.goals) {
-        if (typeof g.type !== "string") g.type = "hours";
-        if (typeof g.favorite !== "boolean") g.favorite = false;
-        if (typeof g.startDate !== "string") g.startDate = (typeof g.date === "string") ? g.date : "";
-        if (typeof g.endDate !== "string") g.endDate = "";
-        if (typeof g.target !== "number") g.target = 0;
-        if (typeof g.current !== "number") g.current = g.done ? (g.target || 0) : 0;
-        if (typeof g.projectId !== "string") g.projectId = "";
-        delete g.date;
-      }
-      // برامج تضمّ المشاريع، ومشاريع تضمّ الأهداف
       if (!Array.isArray(p.programs)) p.programs = [];
       if (!Array.isArray(p.plans)) p.plans = [];
-      for (const pl of p.plans) { if (typeof pl.programId !== "string") pl.programId = ""; }
+
+      // ترحيل النموذج القديم (أهداف داخل مشاريع) إلى: مشاريع قابلة للقياس مرتبطة ببرامج
+      if (!p.v3) {
+        const containerById = {};
+        for (const pl of p.plans) containerById[pl.id] = pl;
+        const newProjects = [];
+        for (const g of (p.goals || [])) {
+          const container = containerById[g.projectId];
+          newProjects.push({
+            id: g.id, name: g.title || "مشروع", programId: container ? (container.programId || "") : "",
+            domainId: g.domainId || "", type: g.type || "points",
+            target: typeof g.target === "number" ? g.target : 0,
+            current: typeof g.current === "number" ? g.current : (g.done ? (g.target || 0) : 0),
+            done: !!g.done, startDate: g.startDate || g.date || "", endDate: g.endDate || "",
+            favorite: !!g.favorite, sessions: Array.isArray(g.sessions) ? g.sessions : [], created: g.created || Date.now()
+          });
+        }
+        // مشاريع المؤقّت القديمة → مشاريع ساعات بلا برنامج
+        for (const pr of (p.projects || [])) {
+          newProjects.push({
+            id: pr.id, name: pr.name || "نشاط", programId: "", domainId: "", type: "hours",
+            target: 0, current: 0, done: false, startDate: "", endDate: "", favorite: false,
+            sessions: Array.isArray(pr.sessions) ? pr.sessions : [], created: pr.created || Date.now()
+          });
+        }
+        p.plans = newProjects;
+        p.projects = [];
+        delete p.goals;
+        p.v3 = true;
+      }
+
+      // ضمان حقول المشروع
+      for (const pl of p.plans) {
+        if (typeof pl.programId !== "string") pl.programId = "";
+        if (typeof pl.domainId !== "string") pl.domainId = "";
+        if (typeof pl.type !== "string") pl.type = "points";
+        if (typeof pl.target !== "number") pl.target = 0;
+        if (typeof pl.current !== "number") pl.current = 0;
+        if (typeof pl.done !== "boolean") pl.done = false;
+        if (typeof pl.favorite !== "boolean") pl.favorite = false;
+        if (typeof pl.startDate !== "string") pl.startDate = "";
+        if (typeof pl.endDate !== "string") pl.endDate = "";
+        if (!Array.isArray(pl.sessions)) pl.sessions = [];
+        if (typeof pl.created !== "number") pl.created = Date.now();
+      }
       // مهام التحدي السريعة
       if (!Array.isArray(p.challenges)) p.challenges = [];
       // تاريخ آخر تحديث لكل مجال
@@ -967,13 +943,16 @@
       return ms; // قد يكون سالباً بسبب الطرح اليدوي؛ التصفير عند العرض
     }
     function isRunning(item) { return (item.sessions || []).some(s => !s.manual && s.end == null); }
-    // كل العناصر القابلة للتوقيت: المشاريع + الأهداف بالساعات
-    function hoursGoals() { return state.goals.filter(g => g.type === "hours"); }
-    function timerItems() { return state.projects.concat(hoursGoals()); }
+    // العناصر القابلة للتوقيت: المشاريع من نوع ساعات
+    function hoursGoals() { return state.plans.filter(g => g.type === "hours"); }
+    function timerItems() { return hoursGoals(); }
     function sessionHoursTotal(item) {
       const now = Date.now(); let ms = 0;
-      for (const s of (item.sessions || [])) { if (s.manual) continue; ms += (s.end == null ? now : s.end) - s.start; }
-      return ms / 3600000;
+      for (const s of (item.sessions || [])) {
+        if (s.manual) ms += (s.ms || 0);
+        else ms += (s.end == null ? now : s.end) - s.start;
+      }
+      return Math.max(0, ms) / 3600000;
     }
 
     // ---------- منطق المؤقتات ----------
@@ -1039,16 +1018,12 @@
       totalHours: document.getElementById("totalHours"),
       dayLabel: document.getElementById("dayLabel"),
       summaryLabel: document.getElementById("summaryLabel"),
-      newName: document.getElementById("newName"),
-      addbar: document.getElementById("addbar"),
       goalWrap: document.getElementById("goalWrap"),
       goalFill: document.getElementById("goalFill"),
       goalText: document.getElementById("goalText"),
       appTitle: document.getElementById("appTitle"),
       planSection: document.getElementById("planSection"),
       timerSection: document.getElementById("timerSection"),
-      goalsSection: document.getElementById("goalsSection"),
-      goalsPageList: document.getElementById("goalsPageList"),
       projectsSection: document.getElementById("projectsSection"),
       projectsList: document.getElementById("projectsList"),
       remindersSection: document.getElementById("remindersSection"),
@@ -1085,20 +1060,15 @@
     // ---------- التبديل بين الأوضاع ----------
     function render() {
       els.planSection.hidden = appMode !== "plan";
-      els.goalsSection.hidden = appMode !== "goals";
       els.projectsSection.hidden = appMode !== "projects";
       els.timerSection.hidden = appMode !== "timer";
       els.remindersSection.hidden = appMode !== "reminders";
       els.appTitle.textContent = "📖 الصحيفة";
-      els.addbar.classList.add("hidden");
       if (appMode === "plan") {
         els.dayLabel.textContent = "الملخص التنفيذي — نظرة عامة على الخطة";
         renderPlan();
-      } else if (appMode === "goals") {
-        els.dayLabel.textContent = "كل الأهداف — أضِف وعدّل بحرية";
-        renderGoalsPage();
       } else if (appMode === "projects") {
-        els.dayLabel.textContent = "البرامج — تضمّ المشاريع وأهدافها";
+        els.dayLabel.textContent = "البرامج — كل برنامج يضمّ مشاريعه";
         renderProjects();
       } else if (appMode === "reminders") {
         els.dayLabel.textContent = "التذكيرات — يومية · أسبوعية · شهرية · سنوية";
@@ -1106,18 +1076,15 @@
       } else {
         renderTimer();
       }
-      document.body.classList.toggle("addbar-on", !els.addbar.classList.contains("hidden"));
     }
 
     // إعادة رسم ما هو ظاهر حالياً بعد أي تعديل
     function refreshViews() {
       if (appMode === "plan") renderPlan();
-      else if (appMode === "goals") renderGoalsPage();
       else if (appMode === "projects") renderProjects();
       else if (appMode === "reminders") renderReminders();
       else if (appMode === "timer") renderTimer();
       if (typeof domainDlg !== "undefined" && domainDlg.open) renderGoals();
-      if (typeof planDlg !== "undefined" && planDlg.open) renderPlanGoals();
     }
 
     // ---------- عرض المؤقتات ----------
@@ -1126,26 +1093,29 @@
       const today = dayStartOf(now);
       els.dayLabel.textContent = fmtDayLong(today) + " · يبدأ اليوم 5 صباحاً";
 
-      if (currentView === "today") { els.addbar.classList.remove("hidden"); renderToday(now, today); }
-      else { els.addbar.classList.add("hidden"); renderReport(now, ({ week: 7, month: 30, quarter: 90, year: 365 })[currentView] || 7); }
+      if (currentView === "today") { renderToday(now, today); }
+      else { renderReport(now, ({ week: 7, month: 30, quarter: 90, year: 365 })[currentView] || 7); }
     }
 
     // ---------- عرض الخطة ----------
     function toArDigits(s) { return String(s).replace(/[0-9]/g, d => "0123456789"[d]); }
 
-    function goalsInDomain(domainId) { return state.goals.filter(g => g.domainId === domainId); }
-    // انتماء الهدف لخطة سنة: يُشتق من نهاية الفترة (وإلا 2030)
+    // مجال المشروع = مجال برنامجه (وإلا مجاله المُرحَّل)
+    function programOf(pl) { return state.programs.find(pr => pr.id === pl.programId) || null; }
+    function planDomain(pl) { const pr = programOf(pl); return pr ? (pr.domainId || "") : (pl.domainId || ""); }
+    function domainPlans(domainId) { return state.plans.filter(pl => planDomain(pl) === domainId); }
+    // انتماء المشروع لخطة سنة: يُشتق من نهاية الفترة (وإلا 2030)
     function planYear(g) {
       if (g.endDate) return parseInt(g.endDate.slice(0, 4), 10);
       if (typeof g.year === "number") return g.year;
       return 2030;
     }
-    // المُنجَز الفعلي للهدف: للأهداف بالساعات = يدوي + ساعات المؤقّت
+    // المُنجَز الفعلي: لمشاريع الساعات = يدوي + ساعات المؤقّت
     function goalCurrent(g) {
       const base = g.current || 0;
       return g.type === "hours" ? base + sessionHoursTotal(g) : base;
     }
-    // تقدّم الهدف 0..1: من التارجت إن وُجد، وإلا من مربع الإنجاز
+    // تقدّم المشروع 0..1
     function goalProgress(g) {
       if (g.target && g.target > 0) return Math.max(0, Math.min(1, goalCurrent(g) / g.target));
       return g.done ? 1 : 0;
@@ -1158,16 +1128,15 @@
         g.done = isComplete(g);
       } else g.done = !g.done;
     }
-    // متوسط تقدّم مجال 0..1 (اختيارياً لأهداف 2026 فقط)
     function domainProgress(domainId, only2026) {
-      let list = goalsInDomain(domainId);
+      let list = domainPlans(domainId);
       if (only2026) list = list.filter(g => planYear(g) <= 2026);
       if (!list.length) return 0;
       let s = 0; for (const g of list) s += goalProgress(g);
       return s / list.length;
     }
     function domainDone(domainId, only2026) {
-      let list = goalsInDomain(domainId);
+      let list = domainPlans(domainId);
       if (only2026) list = list.filter(g => planYear(g) <= 2026);
       return { done: list.filter(isComplete).length, total: list.length };
     }
@@ -1202,7 +1171,7 @@
       // المربعات الثمانية
       const frag = document.createDocumentFragment();
       for (const d of DOMAINS) {
-        const list = goalsInDomain(d.id);
+        const list = domainPlans(d.id);
         const pct = Math.round(domainProgress(d.id, false) * 100);
         const dd = domainDone(d.id, false);
 
@@ -1239,7 +1208,7 @@
     }
 
     function allDone(only2026) {
-      let list = state.goals;
+      let list = state.plans;
       if (only2026) list = list.filter(g => planYear(g) <= 2026);
       return { done: list.filter(isComplete).length, total: list.length };
     }
@@ -1249,7 +1218,7 @@
     function typeLabel(t) { return t === "points" ? "⭐ نقاط" : "⏱️ ساعات"; }
 
     function renderFavorites() {
-      const favs = state.goals.filter(g => g.favorite);
+      const favs = state.plans.filter(g => g.favorite);
       const favWrap = document.getElementById("favWrap");
       const favList = document.getElementById("favList");
       if (!favs.length) { favWrap.hidden = true; favList.replaceChildren(); return; }
@@ -1269,11 +1238,12 @@
 
         const main = document.createElement("div");
         main.className = "fav-main";
-        const nm = document.createElement("div"); nm.className = "fav-name"; nm.textContent = g.title;
+        const nm = document.createElement("div"); nm.className = "fav-name"; nm.textContent = g.name;
         const mt = document.createElement("div"); mt.className = "fav-meta";
         const per = fmtPeriod(g);
-        const tg = (g.target && g.target > 0) ? " · " + fmtNum(g.current || 0) + "/" + fmtNum(g.target) : "";
-        mt.textContent = domainIcon(g.domainId) + " " + domainName(g.domainId) + " · " + typeLabel(g.type) + tg + (per ? " · " + per : "");
+        const tg = (g.target && g.target > 0) ? " · " + fmtNum(goalCurrent(g)) + "/" + fmtNum(g.target) : "";
+        const did = planDomain(g);
+        mt.textContent = (did ? domainIcon(did) + " " + domainName(did) + " · " : "") + typeLabel(g.type) + tg + (per ? " · " + per : "");
         main.append(nm, mt);
 
         const star = document.createElement("button");
@@ -1299,11 +1269,11 @@
       check.className = "gcheck" + (complete ? " done" : "");
       check.textContent = complete ? "✓" : "";
       check.title = "تبديل الإكمال";
-      check.onclick = () => { toggleComplete(g); touchDomain(g.domainId); save(); refreshViews(); };
+      check.onclick = () => { toggleComplete(g); touchDomain(planDomain(g)); save(); refreshViews(); };
 
       const main = document.createElement("div");
       main.className = "gtitle";
-      const t = document.createElement("div"); t.textContent = g.title;
+      const t = document.createElement("div"); t.textContent = g.name;
       const meta = document.createElement("div"); meta.className = "gmeta";
       const badges = ['<span class="gbadge">' + typeLabel(g.type) + '</span>'];
       const per = fmtPeriod(g);
@@ -1318,9 +1288,9 @@
       if (hasTarget && g.type === "points") {
         const step = document.createElement("div"); step.className = "gstep";
         const minus = document.createElement("button"); minus.textContent = "−"; minus.title = "إنقاص";
-        minus.onclick = () => { g.current = Math.max(0, (g.current || 0) - 1); g.done = g.current >= g.target; touchDomain(g.domainId); save(); refreshViews(); };
+        minus.onclick = () => { g.current = Math.max(0, (g.current || 0) - 1); g.done = g.current >= g.target; touchDomain(planDomain(g)); save(); refreshViews(); };
         const plus = document.createElement("button"); plus.textContent = "+"; plus.title = "زيادة";
-        plus.onclick = () => { g.current = Math.min(g.target, (g.current || 0) + 1); g.done = g.current >= g.target; touchDomain(g.domainId); save(); refreshViews(); };
+        plus.onclick = () => { g.current = Math.min(g.target, (g.current || 0) + 1); g.done = g.current >= g.target; touchDomain(planDomain(g)); save(); refreshViews(); };
         step.append(minus, plus);
         meta.append(step);
       }
@@ -1338,93 +1308,44 @@
 
       const del = document.createElement("button");
       del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
-      del.onclick = () => { const d = g.domainId; state.goals = state.goals.filter(x => x.id !== g.id); touchDomain(d); save(); refreshViews(); };
+      del.onclick = () => { const d = planDomain(g); state.plans = state.plans.filter(x => x.id !== g.id); touchDomain(d); save(); refreshViews(); };
 
       row.append(check, main, star, edit, del);
       return row;
     }
 
-    // ---------- صفحة الأهداف ----------
-    function renderGoalsPage() {
-      const frag = document.createDocumentFragment();
-      if (!state.goals.length) {
-        const e = document.createElement("div");
-        e.className = "empty";
-        e.textContent = "لا توجد أهداف بعد. اضغط «إضافة هدف جديد» لتبدأ.";
-        els.goalsPageList.replaceChildren(e);
-        return;
-      }
-      for (const d of DOMAINS) {
-        const list = goalsInDomain(d.id);
-        if (!list.length) continue;
-        const doneN = list.filter(g => g.done).length;
-
-        const group = document.createElement("div");
-        group.className = "goals-group";
-        const head = document.createElement("div");
-        head.className = "goals-group-title";
-        head.innerHTML = '<span>' + d.icon + '</span> <span>' + d.name + '</span>' +
-          '<span class="ggcount">' + toArDigits(doneN) + " من " + toArDigits(list.length) + '</span>';
-        group.append(head);
-
-        const sorted = list.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
-        for (const g of sorted) group.append(buildGoalRow(g));
-        frag.append(group);
-      }
-      els.goalsPageList.replaceChildren(frag);
-    }
-
-    // ---------- المشاريع (تضمّ الأهداف) ----------
-    function projectGoals(pid) { return state.goals.filter(g => (g.projectId || "") === pid); }
-    function projectPct(pid) {
-      const list = projectGoals(pid);
-      if (!list.length) return 0;
-      let s = 0; for (const g of list) s += goalProgress(g);
-      return Math.round(s / list.length * 100);
-    }
-
-    // مشاريع/أهداف البرنامج
+    // ---------- البرامج ← المشاريع (المشروع = وحدة القياس) ----------
     function programProjects(progId) { return state.plans.filter(pl => (pl.programId || "") === progId); }
-    function programGoals(progId) {
-      const ids = new Set(programProjects(progId).map(pl => pl.id));
-      return state.goals.filter(g => ids.has(g.projectId));
-    }
     function programPct(progId) {
-      const list = programGoals(progId);
+      const list = programProjects(progId);
       if (!list.length) return 0;
       let s = 0; for (const g of list) s += goalProgress(g);
       return Math.round(s / list.length * 100);
     }
 
-    // البرامج ← المشاريع ← الأهداف
     function renderProjects() {
       const frag = document.createDocumentFragment();
       const ungroupedPlans = programProjects("");
-      const unassignedGoals = projectGoals("");
 
-      if (!state.programs.length && !ungroupedPlans.length && !unassignedGoals.length) {
+      if (!state.programs.length && !ungroupedPlans.length) {
         const e = document.createElement("div");
         e.className = "empty";
-        e.textContent = "لا توجد برامج بعد. اضغط «إضافة برنامج جديد»، ثم أضِف مشاريع داخله، وكل مشروع يضمّ أهدافه.";
+        e.textContent = "لا توجد برامج بعد. اضغط «إضافة برنامج جديد»، ثم أضِف مشاريع داخله.";
         els.projectsList.replaceChildren(e);
         return;
       }
 
       for (const prog of state.programs) frag.append(buildProgramBlock(prog));
 
-      // مشاريع بلا برنامج + أهداف غير مصنّفة
-      if (ungroupedPlans.length || unassignedGoals.length) {
+      if (ungroupedPlans.length) {
         const block = document.createElement("div"); block.className = "prog-block";
         const head = document.createElement("div"); head.className = "prog-head";
-        head.innerHTML = '<span class="dc-icon">🗂️</span> <span class="ph-name">بلا برنامج</span>';
+        head.innerHTML = '<span class="ph-name"><span class="dc-icon">🗂️</span> مشاريع بلا برنامج</span>';
         block.append(head);
-        const grid = document.createElement("div"); grid.className = "prog-projects";
-        for (const pl of ungroupedPlans) grid.append(buildProjectCard(pl));
-        if (unassignedGoals.length) grid.append(buildProjectCard({ id: "", name: "أهداف غير مصنّفة" }, true));
-        const add = document.createElement("button"); add.className = "prog-add"; add.textContent = "➕ مشروع بلا برنامج";
-        add.onclick = () => addPlanTo("");
-        grid.append(add);
-        block.append(grid);
+        const box = document.createElement("div"); box.className = "goals-group";
+        const sorted = ungroupedPlans.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
+        for (const pl of sorted) box.append(buildGoalRow(pl));
+        block.append(box);
         frag.append(block);
       }
       els.projectsList.replaceChildren(frag);
@@ -1433,6 +1354,7 @@
     function buildProgramBlock(prog) {
       const block = document.createElement("div"); block.className = "prog-block";
       const pct = programPct(prog.id);
+      const list = programProjects(prog.id);
 
       const head = document.createElement("div"); head.className = "prog-head";
       const nm = document.createElement("span"); nm.className = "ph-name";
@@ -1443,44 +1365,28 @@
         bd.textContent = domainIcon(prog.domainId) + " " + domainName(prog.domainId);
         head.append(bd);
       }
-      const pctEl = document.createElement("span"); pctEl.className = "ph-pct"; pctEl.textContent = pct + "٪";
+      const pctEl = document.createElement("span"); pctEl.className = "ph-pct"; pctEl.textContent = toArDigits(pct) + "٪";
       head.append(pctEl);
-      head.append(mkIcon("🔔", "تذكير", () => openReminder("program", prog.id)));
       head.append(mkIcon("✏️", "تعديل البرنامج", () => openProgram(prog)));
       head.append(mkIcon("🗑️", "حذف البرنامج", () => deleteProgram(prog)));
       block.append(head);
 
-      const grid = document.createElement("div"); grid.className = "prog-projects";
-      for (const pl of programProjects(prog.id)) grid.append(buildProjectCard(pl));
-      const add = document.createElement("button"); add.className = "prog-add"; add.textContent = "➕ مشروع في هذا البرنامج";
-      add.onclick = () => addPlanTo(prog.id);
-      grid.append(add);
-      block.append(grid);
+      const box = document.createElement("div"); box.className = "goals-group";
+      if (!list.length) {
+        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا مشاريع بعد في هذا البرنامج."; box.append(e);
+      } else {
+        const sorted = list.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
+        for (const pl of sorted) box.append(buildGoalRow(pl));
+      }
+      block.append(box);
+
+      const add = document.createElement("button"); add.className = "prog-add"; add.style.gridColumn = "";
+      add.textContent = "➕ مشروع في هذا البرنامج";
+      add.onclick = () => openItem(null, prog.id);
+      block.append(add);
       return block;
     }
 
-    // نافذة اسم المشروع (منسّقة بدل prompt)
-    const projNameDlg = document.getElementById("projNameDlg");
-    const projNameInput = document.getElementById("projNameInput");
-    const projNameTitle = document.getElementById("projNameTitle");
-    let projNameCb = null;
-    function openProjectName(title, initial, cb) {
-      projNameTitle.textContent = title; projNameInput.value = initial || ""; projNameCb = cb;
-      projNameDlg.showModal(); projNameInput.focus(); projNameInput.select();
-    }
-    projNameDlg.addEventListener("close", () => {
-      const cb = projNameCb; projNameCb = null;
-      if (projNameDlg.returnValue === "save" && cb) { const v = projNameInput.value.trim(); if (v) cb(v); }
-    });
-
-    function addPlanTo(programId) {
-      openProjectName("📄 مشروع جديد", "", (name) => {
-        const pl = { id: uid(), name: name, programId: programId || "" };
-        state.plans.push(pl); save();
-        renderProjects();
-        openPlan(pl, false);
-      });
-    }
     function deleteProgram(prog) {
       if (!confirm("حذف البرنامج «" + prog.name + "»؟ ستبقى مشاريعه لكن بلا برنامج.")) return;
       for (const pl of state.plans) if (pl.programId === prog.id) pl.programId = "";
@@ -1488,70 +1394,21 @@
       save(); renderProjects();
     }
 
-    function buildProjectCard(pl, isUnassigned) {
-      const list = projectGoals(pl.id);
-      const pct = projectPct(pl.id);
-      const doneN = list.filter(isComplete).length;
-
-      const card = document.createElement("button");
-      card.className = "domain-card project-card";
-      card.onclick = () => openPlan(pl, isUnassigned);
-
-      const ring = document.createElement("div");
-      ring.className = "dc-ring" + (pct === 0 ? " zero" : "");
-      ring.style.setProperty("--p", pct);
-      const hole = document.createElement("div");
-      hole.className = "hole"; hole.textContent = pct + "٪";
-      ring.append(hole);
-
-      const name = document.createElement("div");
-      name.className = "dc-name";
-      name.innerHTML = '<span class="dc-icon">' + (isUnassigned ? "🗂️" : "📄") + '</span> ' + escapeHtml(pl.name);
-
-      const count = document.createElement("div");
-      count.className = "dc-count";
-      count.textContent = list.length ? (doneN + " من " + list.length + " مكتمل") : "لا أهداف";
-
-      card.append(ring, name, count);
-      return card;
-    }
-
     function renderToday(now, today) {
       let totalMs = 0;
       const frag = document.createDocumentFragment();
       const goals = hoursGoals();
 
-      if (state.projects.length === 0 && goals.length === 0) {
+      if (goals.length === 0) {
         const div = document.createElement("div");
         div.className = "empty";
-        div.textContent = "لا توجد مشاريع أو أهداف بالساعات بعد. أضف مشروعاً من الأسفل، أو هدفاً بالساعات من صفحة الأهداف.";
+        div.textContent = "لا توجد مشاريع بالساعات بعد. أنشئ مشروعاً من نوع «ساعات» ليظهر هنا مؤقّته.";
         frag.append(div);
       } else {
-        // أهداف بالساعات
-        if (goals.length) {
-          const gtitle = document.createElement("div");
-          gtitle.className = "section-title"; gtitle.textContent = "🎯 أهداف بالساعات";
-          frag.append(gtitle);
-          for (const g of goals) {
-            const ms = Math.max(0, projectMsInDay(g, today, now));
-            totalMs += ms;
-            frag.append(buildTimerCard(g, ms, isRunning(g), true));
-          }
-        }
-
-        // المشاريع
-        const title = document.createElement("div");
-        title.className = "section-title"; title.textContent = "المشاريع";
-        frag.append(title);
-        if (state.projects.length === 0) {
-          const div = document.createElement("div");
-          div.className = "empty"; div.textContent = "لا توجد مشاريع بعد. أضف مشروعاً من الأسفل.";
-          frag.append(div);
-        }
-        for (const p of state.projects) {
-          const ms = Math.max(0, projectMsInDay(p, today, now));
+        for (const g of goals) {
+          const ms = Math.max(0, projectMsInDay(g, today, now));
           totalMs += ms;
-          frag.append(buildTimerCard(p, ms, isRunning(p), false));
+          frag.append(buildTimerCard(g, ms, isRunning(g), true));
         }
       }
       els.content.replaceChildren(frag);
@@ -1575,7 +1432,8 @@
 
       card.append(info);
       if (isGoal) {
-        card.append(mkIcon("✏️", "تعديل الهدف", () => openItem(item)));
+        card.append(mkIcon("🕐", "تعديل الوقت", () => openTimeEditor(item)));
+        card.append(mkIcon("✏️", "تعديل المشروع", () => openItem(item)));
       } else {
         card.append(mkIcon("🕐", "تعديل الوقت", () => openTimeEditor(item)));
         card.append(mkIcon("✏️", "تعديل الاسم", () => openEdit(item)));
@@ -1761,12 +1619,6 @@
       const now = Date.now();
       const today = dayStartOf(now);
       let totalMs = 0;
-      for (const p of state.projects) {
-        const ms = Math.max(0, projectMsInDay(p, today, now));
-        totalMs += ms;
-        const el = els.content.querySelector('.time[data-pid="' + p.id + '"]');
-        if (el) el.textContent = clockLine(ms, isRunning(p));
-      }
       for (const g of hoursGoals()) {
         const ms = Math.max(0, projectMsInDay(g, today, now));
         totalMs += ms;
@@ -1831,6 +1683,8 @@
     segAdd.onclick = () => setSign(1);
     segSub.onclick = () => setSign(-1);
 
+    function timerItemById(id) { return state.plans.find(x => x.id === id) || state.projects.find(x => x.id === id) || null; }
+
     function openTimeEditor(p) {
       timeProjectId = p.id;
       timeTitle.textContent = "⏱ " + p.name;
@@ -1842,7 +1696,7 @@
     }
 
     document.getElementById("manualApply").onclick = () => {
-      const p = state.projects.find(x => x.id === timeProjectId); if (!p) return;
+      const p = timerItemById(timeProjectId); if (!p) return;
       const h = parseInt(manualH.value, 10) || 0;
       const m = parseInt(manualM.value, 10) || 0;
       const ms = (h * 3600 + m * 60) * 1000 * manualSign;
@@ -1856,7 +1710,7 @@
     document.getElementById("timeClose").onclick = () => timeDlg.close();
 
     function renderLog() {
-      const p = state.projects.find(x => x.id === timeProjectId);
+      const p = timerItemById(timeProjectId);
       logBox.replaceChildren();
       if (!p) return;
       const now = Date.now();
@@ -1933,10 +1787,6 @@
       input.click();
     };
 
-    // ---------- الإضافة ----------
-    document.getElementById("addBtn").onclick = () => { addProject(els.newName.value); els.newName.value = ""; els.newName.focus(); };
-    els.newName.addEventListener("keydown", e => { if (e.key === "Enter") { addProject(els.newName.value); els.newName.value = ""; } });
-
     // ---------- التبويبات الفرعية (المؤقتات) ----------
     document.querySelectorAll(".tabs button").forEach(btn => {
       btn.onclick = () => {
@@ -1978,7 +1828,6 @@
     const domainFill = document.getElementById("domainFill");
     const domainSub = document.getElementById("domainSub");
     const goalsBox = document.getElementById("goalsBox");
-    const domainAddGoal = document.getElementById("domainAddGoal");
     const domainClose = document.getElementById("domainClose");
     let currentDomainId = null;
 
@@ -2009,79 +1858,24 @@
 
     function renderGoals() {
       const d = DOMAINS.find(x => x.id === currentDomainId);
-      const list = goalsInDomain(currentDomainId);
+      const list = domainPlans(currentDomainId);
       const pct = Math.round(domainProgress(currentDomainId, false) * 100);
       const dd = domainDone(currentDomainId, false);
       domainFill.style.width = pct + "%";
       domainSub.textContent = list.length
         ? ("التقدّم " + toArDigits(pct) + "٪ · " + toArDigits(dd.done) + " من " + toArDigits(dd.total) + " مكتمل")
-        : "لا أهداف بعد — أضِف أول هدف في مجال «" + (d ? d.name : "") + "»";
+        : "لا مشاريع بعد في مجال «" + (d ? d.name : "") + "»";
 
       goalsBox.replaceChildren();
       if (!list.length) {
-        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد أهداف."; goalsBox.append(e); return;
+        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد مشاريع في هذا المجال."; goalsBox.append(e); return;
       }
       const sorted = list.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
       for (const g of sorted) goalsBox.append(buildGoalRow(g));
     }
 
-    domainAddGoal.onclick = () => openItem(null, currentDomainId);
     domainClose.onclick = () => domainDlg.close();
     domainDlg.addEventListener("close", () => { if (appMode === "plan") renderPlan(); });
-
-    // ---------- نافذة المشروع (يضمّ الأهداف) ----------
-    const planDlg = document.getElementById("planDlg");
-    const planTitle = document.getElementById("planTitle");
-    const planFill = document.getElementById("planFill");
-    const planSub = document.getElementById("planSub");
-    const planGoalsBox = document.getElementById("planGoalsBox");
-    const planAddGoal = document.getElementById("planAddGoal");
-    const planRename = document.getElementById("planRename");
-    const planDelete = document.getElementById("planDelete");
-    const planClose = document.getElementById("planClose");
-    let currentPlanId = null;
-
-    function openPlan(pl, isUnassigned) {
-      currentPlanId = pl.id;
-      planTitle.textContent = (isUnassigned ? "🗂️ " : "📁 ") + pl.name;
-      planRename.style.display = isUnassigned ? "none" : "";
-      planDelete.style.display = isUnassigned ? "none" : "";
-      planAddGoal.style.display = isUnassigned ? "none" : "";
-      renderPlanGoals();
-      planDlg.showModal();
-    }
-
-    function renderPlanGoals() {
-      const list = projectGoals(currentPlanId);
-      const pct = projectPct(currentPlanId);
-      const doneN = list.filter(isComplete).length;
-      planFill.style.width = pct + "%";
-      planSub.textContent = list.length ? ("التقدّم " + pct + "٪ · " + doneN + " من " + list.length + " مكتمل") : "لا أهداف بعد";
-      planGoalsBox.replaceChildren();
-      if (!list.length) {
-        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد أهداف في هذا المشروع."; planGoalsBox.append(e); return;
-      }
-      const sorted = list.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
-      for (const g of sorted) planGoalsBox.append(buildGoalRow(g));
-    }
-
-    planAddGoal.onclick = () => openItem(null, null, currentPlanId);
-    planClose.onclick = () => planDlg.close();
-    planRename.onclick = () => {
-      const pl = state.plans.find(x => x.id === currentPlanId); if (!pl) return;
-      openProjectName("✏️ إعادة تسمية المشروع", pl.name, (name) => {
-        pl.name = name; save(); planTitle.textContent = "📁 " + pl.name;
-        if (appMode === "projects") renderProjects();
-      });
-    };
-    planDelete.onclick = () => {
-      const pl = state.plans.find(x => x.id === currentPlanId); if (!pl) return;
-      if (!confirm("حذف المشروع «" + pl.name + "»؟ ستبقى أهدافه لكن بلا مشروع.")) return;
-      for (const g of state.goals) if (g.projectId === currentPlanId) g.projectId = "";
-      state.plans = state.plans.filter(x => x.id !== currentPlanId);
-      save(); planDlg.close(); if (appMode === "projects") renderProjects();
-    };
-    planDlg.addEventListener("close", () => { if (appMode === "projects") renderProjects(); });
 
     // ---------- نافذة البرنامج ----------
     const programDlg = document.getElementById("programDlg");
@@ -2119,8 +1913,7 @@
     const itemName = document.getElementById("itemName");
     const itemStart = document.getElementById("itemStart");
     const itemEnd = document.getElementById("itemEnd");
-    const itemDomain = document.getElementById("itemDomain");
-    const itemProject = document.getElementById("itemProject");
+    const itemProgram = document.getElementById("itemProgram");
     const itemTHours = document.getElementById("itemTHours");
     const itemTPoints = document.getElementById("itemTPoints");
     const itemFav = document.getElementById("itemFav");
@@ -2133,24 +1926,19 @@
     const itemCancel = document.getElementById("itemCancel");
     let niType = "hours", niFav = false, editingGoalId = null;
 
-    // تعبئة قائمة المجالات
-    for (const d of DOMAINS) {
-      const opt = document.createElement("option");
-      opt.value = d.id; opt.textContent = d.icon + " " + d.name;
-      itemDomain.append(opt);
-    }
-    // تعبئة قائمة المشاريع (تُبنى عند كل فتح لأنها تتغيّر)
-    function fillProjectSelect(selected) {
-      itemProject.replaceChildren();
-      const none = document.createElement("option");
-      none.value = ""; none.textContent = "— بدون مشروع —";
-      itemProject.append(none);
-      for (const pl of state.plans) {
-        const opt = document.createElement("option");
-        opt.value = pl.id; opt.textContent = pl.name;
-        itemProject.append(opt);
+    // تعبئة قائمة البرامج (تُبنى عند كل فتح لأنها تتغيّر) — مع مجال كل برنامج
+    function fillProgramSelect(selected) {
+      itemProgram.replaceChildren();
+      if (!state.programs.length) {
+        const o = document.createElement("option"); o.value = ""; o.textContent = "— لا برامج، أنشئ برنامجاً أولاً —"; itemProgram.append(o);
+        itemProgram.value = ""; return;
       }
-      itemProject.value = selected || "";
+      for (const pr of state.programs) {
+        const opt = document.createElement("option");
+        opt.value = pr.id; opt.textContent = pr.name + (pr.domainId ? " · " + domainName(pr.domainId) : "");
+        itemProgram.append(opt);
+      }
+      itemProgram.value = (selected && state.programs.some(pr => pr.id === selected)) ? selected : state.programs[0].id;
     }
     function setNiType(t) {
       niType = t;
@@ -2164,28 +1952,32 @@
     itemFav.onclick = () => setNiFav(!niFav);
 
     // openItem(goal|null, presetDomainId, presetProjectId) — تعديل هدف قائم أو إنشاء جديد
-    function openItem(goal, presetDomainId, presetProjectId) {
-      if (goal) {
-        editingGoalId = goal.id;
-        itemDlgTitleEl.textContent = "✏️ تعديل الهدف";
+    // openItem(project|null, presetProgramId) — تعديل مشروع قائم أو إنشاء جديد
+    function openItem(pl, presetProgramId) {
+      if (!pl && !state.programs.length) {
+        alert("أنشئ برنامجاً أولاً، فكل مشروع يجب أن يكون ضمن برنامج.");
+        openProgram(null);
+        return;
+      }
+      if (pl) {
+        editingGoalId = pl.id;
+        itemDlgTitleEl.textContent = "✏️ تعديل المشروع";
         itemSave.textContent = "حفظ";
-        itemName.value = goal.title;
-        itemStart.value = goal.startDate || "";
-        itemEnd.value = goal.endDate || "";
-        itemDomain.value = goal.domainId;
-        fillProjectSelect(goal.projectId || "");
-        setNiType(goal.type || "hours");
-        itemTarget.value = goal.target ? goal.target : "";
-        itemCurrent.value = goal.current ? goal.current : "";
-        setNiFav(!!goal.favorite);
+        itemName.value = pl.name;
+        itemStart.value = pl.startDate || "";
+        itemEnd.value = pl.endDate || "";
+        fillProgramSelect(pl.programId || "");
+        setNiType(pl.type || "hours");
+        itemTarget.value = pl.target ? pl.target : "";
+        itemCurrent.value = pl.current ? pl.current : "";
+        setNiFav(!!pl.favorite);
       } else {
         editingGoalId = null;
-        itemDlgTitleEl.textContent = "🎯 هدف جديد";
+        itemDlgTitleEl.textContent = "📄 مشروع جديد";
         itemSave.textContent = "إضافة";
         itemName.value = "";
         itemStart.value = ""; itemEnd.value = "";
-        itemDomain.value = presetDomainId || DOMAINS[0].id;
-        fillProjectSelect(presetProjectId || "");
+        fillProgramSelect(presetProgramId || "");
         setNiType("hours"); setNiFav(false);
         itemTarget.value = ""; itemCurrent.value = "";
       }
@@ -2195,27 +1987,29 @@
     itemSave.onclick = () => {
       const t = itemName.value.trim();
       if (!t) { itemName.focus(); return; }
+      const programId = itemProgram.value || "";
+      if (!programId) { alert("اختر برنامجاً للمشروع."); return; }
       let target = parseFloat(itemTarget.value); if (!isFinite(target) || target < 0) target = 0;
       let current = parseFloat(itemCurrent.value); if (!isFinite(current) || current < 0) current = 0;
       if (editingGoalId) {
-        const g = state.goals.find(x => x.id === editingGoalId);
+        const g = state.plans.find(x => x.id === editingGoalId);
         if (g) {
-          const oldDomain = g.domainId;
-          g.title = t; g.domainId = itemDomain.value; g.type = niType; g.favorite = niFav;
+          const oldDomain = planDomain(g);
+          g.name = t; g.programId = programId; g.type = niType; g.favorite = niFav;
           g.startDate = itemStart.value || ""; g.endDate = itemEnd.value || "";
-          g.target = target; g.current = current; g.projectId = itemProject.value || "";
+          g.target = target; g.current = current;
           g.done = target > 0 ? (current >= target) : g.done;
-          touchDomain(oldDomain); touchDomain(g.domainId);
+          touchDomain(oldDomain); touchDomain(planDomain(g));
         }
       } else {
-        state.goals.push({
-          id: uid(), domainId: itemDomain.value, title: t,
+        const np = {
+          id: uid(), name: t, programId: programId, domainId: "",
           done: target > 0 ? (current >= target) : false, created: Date.now(),
           startDate: itemStart.value || "", endDate: itemEnd.value || "",
-          type: niType, favorite: niFav, target: target, current: current,
-          projectId: itemProject.value || ""
-        });
-        touchDomain(itemDomain.value);
+          type: niType, favorite: niFav, target: target, current: current, sessions: []
+        };
+        state.plans.push(np);
+        touchDomain(planDomain(np));
       }
       save();
       itemDlg.close();
@@ -2223,8 +2017,6 @@
     };
     itemCancel.onclick = () => itemDlg.close();
     itemName.addEventListener("keydown", e => { if (e.key === "Enter") itemSave.click(); });
-
-    document.getElementById("addGoalGoals").onclick = () => openItem(null, null);
 
     // ---------- التحدي (قائمة مهام سريعة) ----------
     const challengeDlg = document.getElementById("challengeDlg");
@@ -2305,10 +2097,11 @@
     document.getElementById("fabAdd").onclick = () => addSheet.showModal();
     document.getElementById("addSheetClose").onclick = () => addSheet.close();
     document.getElementById("addSheetProgram").onclick = () => { addSheet.close(); openProgram(null); };
-    document.getElementById("addSheetProject").onclick = () => { addSheet.close(); addPlanTo(""); };
+    document.getElementById("addSheetProject").onclick = () => { addSheet.close(); openItem(null, null); };
 
     // ---------- التذكيرات ----------
     const reminderDlg = document.getElementById("reminderDlg");
+    const remTarget = document.getElementById("remTarget");
     const remRecur = document.getElementById("remRecur");
     const remTime = document.getElementById("remTime");
     const remWeekday = document.getElementById("remWeekday");
@@ -2317,7 +2110,6 @@
     const remWeekdayWrap = document.getElementById("remWeekdayWrap");
     const remMonthdayWrap = document.getElementById("remMonthdayWrap");
     const remDateWrap = document.getElementById("remDateWrap");
-    let remRef = null; // {refType, refId}
 
     function updateRemFields() {
       const r = remRecur.value;
@@ -2327,17 +2119,47 @@
     }
     remRecur.onchange = updateRemFields;
 
-    function openReminder(refType, refId) {
-      remRef = { refType, refId };
+    function fillRemTarget() {
+      remTarget.replaceChildren();
+      const domName = (id) => { const d = DOMAINS.find(x => x.id === id); return d ? d.name : "بلا مجال"; };
+      if (state.programs.length) {
+        const og = document.createElement("optgroup"); og.label = "البرامج";
+        for (const p of state.programs) {
+          const o = document.createElement("option");
+          o.value = "program:" + p.id; o.textContent = "📁 " + p.name + " — " + domName(p.domainId);
+          og.append(o);
+        }
+        remTarget.append(og);
+      }
+      if (state.plans.length) {
+        const og = document.createElement("optgroup"); og.label = "المشاريع";
+        for (const pl of state.plans) {
+          const o = document.createElement("option");
+          o.value = "project:" + pl.id; o.textContent = "📄 " + pl.name;
+          og.append(o);
+        }
+        remTarget.append(og);
+      }
+    }
+
+    function openReminder() {
+      if (!state.programs.length && !state.plans.length) {
+        alert("أضِف برنامجاً أو مشروعاً أولاً حتى تتمكّن من ربط التذكير به.");
+        return;
+      }
+      fillRemTarget();
       remRecur.value = "daily"; remTime.value = "09:00";
       remWeekday.value = "6"; remMonthday.value = "1"; remDate.value = "";
       updateRemFields();
       reminderDlg.showModal();
     }
     reminderDlg.addEventListener("close", () => {
-      if (reminderDlg.returnValue !== "save" || !remRef) return;
+      if (reminderDlg.returnValue !== "save") return;
+      const sel = (remTarget.value || "").split(":");
+      const refType = sel[0], refId = sel[1];
+      if (!refType || !refId) return;
       const rem = {
-        id: uid(), refType: remRef.refType, refId: remRef.refId,
+        id: uid(), refType: refType, refId: refId,
         recurrence: remRecur.value, time: (remTime.value || "09:00"),
         weekday: parseInt(remWeekday.value, 10), monthday: parseInt(remMonthday.value, 10) || 1,
         date: remDate.value || "", enabled: true, nextAt: 0, lastFired: null
@@ -2447,12 +2269,12 @@
         }
         frag.append(group);
       }
-      if (!any) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "لا تذكيرات بعد. أضِف تذكيراً من نافذة أي برنامج أو مشروع (زر 🔔)."; frag.append(e); }
+      if (!any) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "لا تذكيرات بعد. اضغط «➕ إضافة تذكير» لربط تذكير ببرنامج أو مشروع."; frag.append(e); }
       els.remindersList.replaceChildren(frag);
     }
 
-    // أزرار التذكير من المشروع
-    document.getElementById("planReminder").onclick = () => { if (currentPlanId) openReminder("project", currentPlanId); };
+    // إضافة تذكير من صفحة التذكيرات فقط
+    document.getElementById("addReminderBtn").onclick = () => openReminder();
 
     // فحص التذكيرات دورياً
     checkReminders();
