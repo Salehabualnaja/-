@@ -1,6 +1,6 @@
 /* Service Worker — مؤقت المشاريع
    يخزّن ملفات التطبيق ليعمل بدون اتصال بالإنترنت. */
-const CACHE = "ptt-cache-v23";
+const CACHE = "ptt-cache-v24";
 const ASSETS = [
   "./",
   "./index.html",
@@ -38,6 +38,17 @@ self.addEventListener("fetch", (e) => {
         return res;
       }).catch(() => cached);
       return cached || network;
+    })
+  );
+});
+
+// عند النقر على إشعار تذكير: افتح/ركّز التطبيق
+self.addEventListener("notificationclick", (e) => {
+  e.notification.close();
+  e.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const c of list) { if ("focus" in c) return c.focus(); }
+      if (self.clients.openWindow) return self.clients.openWindow("./");
     })
   );
 });

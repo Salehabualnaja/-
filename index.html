@@ -106,7 +106,7 @@
       -webkit-font-smoothing: antialiased;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
-    .wrap { max-width: 620px; margin: 0 auto; padding: 20px 16px 100px; }
+    .wrap { max-width: 620px; margin: 0 auto; padding: 20px 16px calc(96px + env(safe-area-inset-bottom)); }
 
     /* الرأس */
     header.app { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0 2px; }
@@ -314,11 +314,11 @@
 
     /* شريط الإضافة */
     .addbar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: color-mix(in srgb, var(--panel) 90%, transparent);
+      position: fixed; bottom: calc(62px + env(safe-area-inset-bottom)); left: 0; right: 0;
+      background: color-mix(in srgb, var(--panel) 92%, transparent);
       backdrop-filter: blur(12px);
       border-top: 1px solid var(--border);
-      padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+      padding: 12px 16px;
     }
     .addbar .row { max-width: 620px; margin: 0 auto; display: flex; gap: 10px; }
     .addbar input {
@@ -375,17 +375,37 @@
     .logempty { padding: 20px; text-align: center; color: var(--muted); font-size: 13px; }
     .tag { font-size: 10.5px; background: var(--accent-soft); color: var(--accent-ink); border-radius: 6px; padding: 1px 7px; margin-inline-start: 6px; font-weight: 700; }
 
-    /* زر التحدي العائم */
+    /* الشريط السفلي */
+    .bottomnav {
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; display: flex;
+      background: color-mix(in srgb, var(--panel) 95%, transparent); backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border); padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+    }
+    .bottomnav button {
+      flex: 1; border: none; background: none; cursor: pointer; font-family: inherit; color: var(--muted);
+      display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; border-radius: 10px; transition: color .15s;
+    }
+    .bottomnav button .bi { font-size: 20px; line-height: 1; }
+    .bottomnav button .bl { font-size: 10.5px; font-weight: 700; }
+    .bottomnav button.active { color: var(--accent); }
+
+    /* الأزرار العائمة (تحدي + إضافة) فوق الشريط السفلي */
     .fab {
-      position: fixed; left: 16px; bottom: calc(20px + env(safe-area-inset-bottom));
-      width: 58px; height: 58px; border-radius: 50%; border: none; cursor: pointer; z-index: 60;
-      font-size: 27px; color: #fff; background: linear-gradient(145deg, #FB923C, #EA580C);
-      box-shadow: 0 8px 22px rgba(234, 88, 12, .45); display: grid; place-items: center; transition: transform .1s;
+      position: fixed; left: 16px; bottom: calc(80px + env(safe-area-inset-bottom));
+      width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; z-index: 60;
+      font-size: 26px; color: #fff; background: linear-gradient(145deg, #FB923C, #EA580C);
+      box-shadow: 0 8px 22px rgba(234, 88, 12, .45); display: grid; place-items: center; transition: transform .1s, bottom .2s;
     }
     .fab:active { transform: scale(.92); }
-    body.addbar-on .fab { bottom: calc(86px + env(safe-area-inset-bottom)); }
+    .fab-add { left: auto; right: 16px; font-size: 34px; font-weight: 300; background: linear-gradient(145deg, var(--accent), var(--accent-ink)); box-shadow: 0 8px 22px rgba(180,83,9,.4); }
+    body.addbar-on .fab { bottom: calc(146px + env(safe-area-inset-bottom)); }
     #chList .goalrow .gbadge { background: var(--panel-2); }
     #chCount { text-transform: none; letter-spacing: 0; }
+
+    /* تاريخ آخر تحديث للمجال */
+    .dc-updated { font-size: 9.5px; color: var(--muted); margin-top: 1px; }
+    /* التذكيرات */
+    .rem-recur-select { margin-bottom: 12px; }
 
     /* المظلة الكبرى (الآية) */
     .umbrella {
@@ -422,13 +442,6 @@
       <span class="orn">﴿</span>
       <span class="verse">قُلْ إِنَّ صَلَاتِي وَنُسُكِي وَمَحْيَايَ وَمَمَاتِي لِلَّهِ رَبِّ الْعَالَمِينَ</span>
       <span class="orn">﴾</span>
-    </div>
-
-    <div class="topnav">
-      <button data-mode="plan" class="active">🎯 الملخص التنفيذي</button>
-      <button data-mode="projects">📁 البرامج</button>
-      <button data-mode="goals">📋 الأهداف</button>
-      <button data-mode="timer">⏱️ المؤقتات</button>
     </div>
 
     <!-- ═══ قسم الخطة (الصفحة الرئيسية) ═══ -->
@@ -491,6 +504,11 @@
       <div id="content"></div>
     </section>
 
+    <!-- ═══ قسم التذكيرات ═══ -->
+    <section id="remindersSection" hidden>
+      <div id="remindersList"></div>
+    </section>
+
     <div class="footer-tools">
       <button class="linkbtn" id="exportBtn">تصدير البيانات</button>
       &nbsp;·&nbsp;
@@ -511,6 +529,73 @@
 
   <!-- زر التحدي العائم -->
   <button class="fab" id="fabChallenge" title="تحدي" aria-label="تحدي">🔥</button>
+
+  <!-- زر الإضافة العائم -->
+  <button class="fab fab-add" id="fabAdd" title="إضافة" aria-label="إضافة برنامج أو مشروع">＋</button>
+
+  <!-- الشريط السفلي للتنقل -->
+  <nav class="bottomnav" id="bottomnav">
+    <button data-mode="plan" class="active"><span class="bi">🎯</span><span class="bl">الملخص</span></button>
+    <button data-mode="projects"><span class="bi">📁</span><span class="bl">البرامج</span></button>
+    <button data-mode="goals"><span class="bi">📋</span><span class="bl">الأهداف</span></button>
+    <button data-mode="timer"><span class="bi">⏱️</span><span class="bl">المؤقتات</span></button>
+    <button data-mode="reminders"><span class="bi">🔔</span><span class="bl">تذكيرات</span></button>
+  </nav>
+
+  <!-- ورقة إجراء الإضافة -->
+  <dialog id="addSheet">
+    <div class="dlg">
+      <h3>➕ إضافة</h3>
+      <div class="rows">
+        <button class="ok" id="addSheetProgram" style="border:none;border-radius:12px;padding:14px;font-weight:800;font-size:15px;color:#fff;background:var(--accent);cursor:pointer;font-family:inherit">📁 برنامج جديد</button>
+        <button class="ok" id="addSheetProject" style="border:none;border-radius:12px;padding:14px;font-weight:800;font-size:15px;color:var(--accent-ink);background:var(--accent-soft);cursor:pointer;font-family:inherit">📄 مشروع جديد</button>
+      </div>
+      <div class="actions"><button class="cancel" id="addSheetClose">إلغاء</button></div>
+    </div>
+  </dialog>
+
+  <!-- تذكير -->
+  <dialog id="reminderDlg">
+    <form method="dialog" class="dlg">
+      <h3 id="reminderTitle">🔔 تذكير</h3>
+      <div class="rows">
+        <div>
+          <label>التكرار</label>
+          <select id="remRecur">
+            <option value="daily">يومي</option>
+            <option value="weekly">أسبوعي</option>
+            <option value="monthly">شهري</option>
+            <option value="yearly">سنوي</option>
+          </select>
+        </div>
+        <div class="inline">
+          <div>
+            <label>الوقت</label>
+            <input id="remTime" type="text" inputmode="numeric" class="numfield" placeholder="HH:MM" maxlength="5" />
+          </div>
+          <div id="remWeekdayWrap">
+            <label>اليوم</label>
+            <select id="remWeekday">
+              <option value="6">السبت</option><option value="0">الأحد</option><option value="1">الإثنين</option>
+              <option value="2">الثلاثاء</option><option value="3">الأربعاء</option><option value="4">الخميس</option><option value="5">الجمعة</option>
+            </select>
+          </div>
+          <div id="remMonthdayWrap">
+            <label>يوم الشهر</label>
+            <input id="remMonthday" type="text" inputmode="numeric" class="numfield" placeholder="1-28" maxlength="2" />
+          </div>
+          <div id="remDateWrap">
+            <label>التاريخ</label>
+            <input id="remDate" type="date" />
+          </div>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="ok" value="save" id="remSave">حفظ التذكير</button>
+        <button class="cancel" value="cancel" formnovalidate>إلغاء</button>
+      </div>
+    </form>
+  </dialog>
 
   <!-- قائمة مهام التحدي -->
   <dialog id="challengeDlg">
@@ -676,6 +761,8 @@
 
       <button class="add-goal-btn" id="planAddGoal">➕ إضافة هدف في هذا المشروع</button>
 
+      <button class="add-goal-btn" id="planReminder" style="border-style:solid;border-color:var(--border-strong)">🔔 إضافة تذكير لهذا المشروع</button>
+
       <div class="loghdr"><h4>الأهداف</h4></div>
       <div class="logbox" id="planGoalsBox"></div>
 
@@ -775,7 +862,7 @@
     function readUI(key, allowed, def) { try { const v = localStorage.getItem(key); return allowed.indexOf(v) >= 0 ? v : def; } catch (e) { return def; } }
     function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
     let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
-    let appMode = readUI(UI_MODE_KEY, ["plan", "goals", "projects", "timer"], "plan"); // plan | goals | projects | timer
+    let appMode = readUI(UI_MODE_KEY, ["plan", "goals", "projects", "timer", "reminders"], "plan");
 
     function load() {
       try {
@@ -806,6 +893,10 @@
       for (const pl of p.plans) { if (typeof pl.programId !== "string") pl.programId = ""; }
       // مهام التحدي السريعة
       if (!Array.isArray(p.challenges)) p.challenges = [];
+      // تاريخ آخر تحديث لكل مجال
+      if (!p.domainUpdated || typeof p.domainUpdated !== "object") p.domainUpdated = {};
+      // التذكيرات
+      if (!Array.isArray(p.reminders)) p.reminders = [];
       // أوزان المجالات في خطتَي 2026 و2030 (افتراضي: متساوٍ = 1)
       if (!p.domainWeights || typeof p.domainWeights !== "object") p.domainWeights = {};
       for (const d of DOMAINS) {
@@ -818,6 +909,17 @@
     }
     function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} }
     function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
+    function touchDomain(id) { if (!id) return; state.domainUpdated[id] = Date.now(); }
+    function fmtAgo(ts) {
+      if (!ts) return "لم يُحدَّث بعد";
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 60) return "قبل لحظات";
+      const m = Math.floor(s / 60); if (m < 60) return "قبل " + m + " دقيقة";
+      const h = Math.floor(m / 60); if (h < 24) return "قبل " + h + " ساعة";
+      const d = Math.floor(h / 24); if (d < 30) return "قبل " + d + " يوم";
+      const mo = Math.floor(d / 30); if (mo < 12) return "قبل " + mo + " شهر";
+      return "قبل " + Math.floor(mo / 12) + " سنة";
+    }
 
     // ---------- حدود يوم العمل (يبدأ 5 صباحاً) ----------
     function dayStartOf(dateLike) {
@@ -932,6 +1034,8 @@
       goalsPageList: document.getElementById("goalsPageList"),
       projectsSection: document.getElementById("projectsSection"),
       projectsList: document.getElementById("projectsList"),
+      remindersSection: document.getElementById("remindersSection"),
+      remindersList: document.getElementById("remindersList"),
       domainsGrid: document.getElementById("domainsGrid"),
       pct2030: document.getElementById("pct2030"),
       fill2030: document.getElementById("fill2030"),
@@ -967,6 +1071,7 @@
       els.goalsSection.hidden = appMode !== "goals";
       els.projectsSection.hidden = appMode !== "projects";
       els.timerSection.hidden = appMode !== "timer";
+      els.remindersSection.hidden = appMode !== "reminders";
       els.appTitle.textContent = "📖 الصحيفة";
       els.addbar.classList.add("hidden");
       if (appMode === "plan") {
@@ -978,17 +1083,21 @@
       } else if (appMode === "projects") {
         els.dayLabel.textContent = "البرامج — تضمّ المشاريع وأهدافها";
         renderProjects();
+      } else if (appMode === "reminders") {
+        els.dayLabel.textContent = "التذكيرات — يومية · أسبوعية · شهرية · سنوية";
+        renderReminders();
       } else {
         renderTimer();
       }
       document.body.classList.toggle("addbar-on", !els.addbar.classList.contains("hidden"));
     }
 
-    // إعادة رسم ما هو ظاهر حالياً بعد أي تعديل على الأهداف
+    // إعادة رسم ما هو ظاهر حالياً بعد أي تعديل
     function refreshViews() {
       if (appMode === "plan") renderPlan();
       else if (appMode === "goals") renderGoalsPage();
       else if (appMode === "projects") renderProjects();
+      else if (appMode === "reminders") renderReminders();
       else if (appMode === "timer") renderTimer();
       if (typeof domainDlg !== "undefined" && domainDlg.open) renderGoals();
       if (typeof planDlg !== "undefined" && planDlg.open) renderPlanGoals();
@@ -1100,7 +1209,11 @@
         count.className = "dc-count";
         count.textContent = list.length ? (toArDigits(dd.done) + " من " + toArDigits(dd.total)) : "لا أهداف";
 
-        card.append(ring, name, count);
+        const upd = document.createElement("div");
+        upd.className = "dc-updated";
+        upd.textContent = "🕒 " + fmtAgo(state.domainUpdated[d.id]);
+
+        card.append(ring, name, count, upd);
         frag.append(card);
       }
       els.domainsGrid.replaceChildren(frag);
@@ -1169,7 +1282,7 @@
       check.className = "gcheck" + (complete ? " done" : "");
       check.textContent = complete ? "✓" : "";
       check.title = "تبديل الإكمال";
-      check.onclick = () => { toggleComplete(g); save(); refreshViews(); };
+      check.onclick = () => { toggleComplete(g); touchDomain(g.domainId); save(); refreshViews(); };
 
       const main = document.createElement("div");
       main.className = "gtitle";
@@ -1188,9 +1301,9 @@
       if (hasTarget && g.type === "points") {
         const step = document.createElement("div"); step.className = "gstep";
         const minus = document.createElement("button"); minus.textContent = "−"; minus.title = "إنقاص";
-        minus.onclick = () => { g.current = Math.max(0, (g.current || 0) - 1); g.done = g.current >= g.target; save(); refreshViews(); };
+        minus.onclick = () => { g.current = Math.max(0, (g.current || 0) - 1); g.done = g.current >= g.target; touchDomain(g.domainId); save(); refreshViews(); };
         const plus = document.createElement("button"); plus.textContent = "+"; plus.title = "زيادة";
-        plus.onclick = () => { g.current = Math.min(g.target, (g.current || 0) + 1); g.done = g.current >= g.target; save(); refreshViews(); };
+        plus.onclick = () => { g.current = Math.min(g.target, (g.current || 0) + 1); g.done = g.current >= g.target; touchDomain(g.domainId); save(); refreshViews(); };
         step.append(minus, plus);
         meta.append(step);
       }
@@ -1208,7 +1321,7 @@
 
       const del = document.createElement("button");
       del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
-      del.onclick = () => { state.goals = state.goals.filter(x => x.id !== g.id); save(); refreshViews(); };
+      del.onclick = () => { const d = g.domainId; state.goals = state.goals.filter(x => x.id !== g.id); touchDomain(d); save(); refreshViews(); };
 
       row.append(check, main, star, edit, del);
       return row;
@@ -1315,6 +1428,7 @@
       }
       const pctEl = document.createElement("span"); pctEl.className = "ph-pct"; pctEl.textContent = pct + "٪";
       head.append(pctEl);
+      head.append(mkIcon("🔔", "تذكير", () => openReminder("program", prog.id)));
       head.append(mkIcon("✏️", "تعديل البرنامج", () => openProgram(prog)));
       head.append(mkIcon("🗑️", "حذف البرنامج", () => deleteProgram(prog)));
       block.append(head);
@@ -1802,17 +1916,17 @@
       };
     });
 
-    // ---------- التبويب العلوي (الخطة/المؤقتات) ----------
-    document.querySelectorAll(".topnav button").forEach(btn => {
+    // ---------- الشريط السفلي للتنقل ----------
+    document.querySelectorAll(".bottomnav button").forEach(btn => {
       btn.onclick = () => {
         appMode = btn.dataset.mode;
-        document.querySelectorAll(".topnav button").forEach(b => b.classList.toggle("active", b === btn));
+        document.querySelectorAll(".bottomnav button").forEach(b => b.classList.toggle("active", b === btn));
         saveUI(); render();
       };
     });
 
     // استعادة حالة التبويبات المحفوظة عند الإقلاع
-    document.querySelectorAll(".topnav button").forEach(b => b.classList.toggle("active", b.dataset.mode === appMode));
+    document.querySelectorAll(".bottomnav button").forEach(b => b.classList.toggle("active", b.dataset.mode === appMode));
     document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("active", b.dataset.view === currentView));
 
     function fmtDateShort(val) {
@@ -1959,9 +2073,10 @@
       const nm = programName.value.trim(); if (!nm) return;
       if (editingProgramId) {
         const prog = state.programs.find(x => x.id === editingProgramId);
-        if (prog) { prog.name = nm; prog.domainId = programDomain.value || ""; }
+        if (prog) { prog.name = nm; prog.domainId = programDomain.value || ""; touchDomain(prog.domainId); }
       } else {
-        state.programs.push({ id: uid(), name: nm, domainId: programDomain.value || "" });
+        const np = { id: uid(), name: nm, domainId: programDomain.value || "" };
+        state.programs.push(np); touchDomain(np.domainId);
       }
       save(); if (appMode === "projects") renderProjects();
     });
@@ -2053,10 +2168,12 @@
       if (editingGoalId) {
         const g = state.goals.find(x => x.id === editingGoalId);
         if (g) {
+          const oldDomain = g.domainId;
           g.title = t; g.domainId = itemDomain.value; g.type = niType; g.favorite = niFav;
           g.startDate = itemStart.value || ""; g.endDate = itemEnd.value || "";
           g.target = target; g.current = current; g.projectId = itemProject.value || "";
           g.done = target > 0 ? (current >= target) : g.done;
+          touchDomain(oldDomain); touchDomain(g.domainId);
         }
       } else {
         state.goals.push({
@@ -2066,6 +2183,7 @@
           type: niType, favorite: niFav, target: target, current: current,
           projectId: itemProject.value || ""
         });
+        touchDomain(itemDomain.value);
       }
       save();
       itemDlg.close();
@@ -2149,6 +2267,165 @@
         setTimeout(() => { try { t.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (_) {} }, 260);
       }
     });
+
+    // ---------- زر الإضافة العائم (برنامج/مشروع) ----------
+    const addSheet = document.getElementById("addSheet");
+    document.getElementById("fabAdd").onclick = () => addSheet.showModal();
+    document.getElementById("addSheetClose").onclick = () => addSheet.close();
+    document.getElementById("addSheetProgram").onclick = () => { addSheet.close(); openProgram(null); };
+    document.getElementById("addSheetProject").onclick = () => { addSheet.close(); addPlanTo(""); };
+
+    // ---------- التذكيرات ----------
+    const reminderDlg = document.getElementById("reminderDlg");
+    const remRecur = document.getElementById("remRecur");
+    const remTime = document.getElementById("remTime");
+    const remWeekday = document.getElementById("remWeekday");
+    const remMonthday = document.getElementById("remMonthday");
+    const remDate = document.getElementById("remDate");
+    const remWeekdayWrap = document.getElementById("remWeekdayWrap");
+    const remMonthdayWrap = document.getElementById("remMonthdayWrap");
+    const remDateWrap = document.getElementById("remDateWrap");
+    let remRef = null; // {refType, refId}
+
+    function updateRemFields() {
+      const r = remRecur.value;
+      remWeekdayWrap.style.display = r === "weekly" ? "" : "none";
+      remMonthdayWrap.style.display = r === "monthly" ? "" : "none";
+      remDateWrap.style.display = r === "yearly" ? "" : "none";
+    }
+    remRecur.onchange = updateRemFields;
+
+    function openReminder(refType, refId) {
+      remRef = { refType, refId };
+      remRecur.value = "daily"; remTime.value = "09:00";
+      remWeekday.value = "6"; remMonthday.value = "1"; remDate.value = "";
+      updateRemFields();
+      reminderDlg.showModal();
+    }
+    reminderDlg.addEventListener("close", () => {
+      if (reminderDlg.returnValue !== "save" || !remRef) return;
+      const rem = {
+        id: uid(), refType: remRef.refType, refId: remRef.refId,
+        recurrence: remRecur.value, time: (remTime.value || "09:00"),
+        weekday: parseInt(remWeekday.value, 10), monthday: parseInt(remMonthday.value, 10) || 1,
+        date: remDate.value || "", enabled: true, nextAt: 0, lastFired: null
+      };
+      rem.nextAt = computeNextAt(rem);
+      state.reminders.push(rem); save();
+      ensureNotifyPermission().then(() => { scheduleTrigger(rem); });
+      if (appMode === "reminders") renderReminders();
+    });
+
+    function reminderName(rem) {
+      if (rem.refType === "program") { const p = state.programs.find(x => x.id === rem.refId); return p ? ("📁 " + p.name) : null; }
+      const p = state.plans.find(x => x.id === rem.refId); return p ? ("📄 " + p.name) : null;
+    }
+    function parseHM(t) { const m = /^(\d{1,2}):?(\d{0,2})$/.exec((t || "").trim()); let h = m ? +m[1] : 9, mi = m ? (+m[2] || 0) : 0; return [Math.min(23, Math.max(0, h)), Math.min(59, Math.max(0, mi))]; }
+    function computeNextAt(rem) {
+      const now = new Date(); const [h, mi] = parseHM(rem.time); let d = new Date(now);
+      if (rem.recurrence === "daily") { d.setHours(h, mi, 0, 0); if (d <= now) d.setDate(d.getDate() + 1); }
+      else if (rem.recurrence === "weekly") { d.setHours(h, mi, 0, 0); let add = (rem.weekday - d.getDay() + 7) % 7; if (add === 0 && d <= now) add = 7; d.setDate(d.getDate() + add); }
+      else if (rem.recurrence === "monthly") { const day = Math.min(28, Math.max(1, rem.monthday || 1)); d.setDate(day); d.setHours(h, mi, 0, 0); if (d <= now) { d.setMonth(d.getMonth() + 1); d.setDate(day); } }
+      else { if (rem.date) { const p = rem.date.split("-").map(Number); d = new Date(now.getFullYear(), p[1] - 1, p[2], h, mi, 0, 0); if (d <= now) d.setFullYear(d.getFullYear() + 1); } else { d.setHours(h, mi, 0, 0); if (d <= now) d.setFullYear(d.getFullYear() + 1); } }
+      return d.getTime();
+    }
+    function recurLabel(r) { return { daily: "يومي", weekly: "أسبوعي", monthly: "شهري", yearly: "سنوي" }[r] || r; }
+    const AR_WD = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+    function remDetail(rem) {
+      if (rem.recurrence === "weekly") return "كل " + AR_WD[rem.weekday] + " " + rem.time;
+      if (rem.recurrence === "monthly") return "يوم " + rem.monthday + " من كل شهر " + rem.time;
+      if (rem.recurrence === "yearly") return (rem.date ? fmtDateShort(rem.date) : "") + " سنوياً " + rem.time;
+      return "كل يوم " + rem.time;
+    }
+
+    function ensureNotifyPermission() {
+      if (!("Notification" in window)) return Promise.resolve("unsupported");
+      if (Notification.permission === "granted") return Promise.resolve("granted");
+      if (Notification.permission === "denied") return Promise.resolve("denied");
+      try { return Notification.requestPermission(); } catch (e) { return Promise.resolve("default"); }
+    }
+    function fireNotification(title, body) {
+      try {
+        if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+          navigator.serviceWorker.ready.then(reg => reg.showNotification(title, { body: body, icon: "./icons/icon-192.png", badge: "./icons/icon-192.png", tag: "rem-" + Date.now() })).catch(() => {});
+        } else if ("Notification" in window && Notification.permission === "granted") {
+          new Notification(title, { body: body, icon: "./icons/icon-192.png" });
+        }
+      } catch (_) {}
+    }
+    async function scheduleTrigger(rem) {
+      try {
+        if (!("serviceWorker" in navigator) || !("Notification" in window)) return;
+        if (!("showTrigger" in Notification.prototype) || typeof TimestampTrigger === "undefined") return;
+        const reg = await navigator.serviceWorker.ready; const nm = reminderName(rem); if (!nm) return;
+        await reg.showNotification("🔔 تذكير: " + nm, { body: "حان وقت المتابعة", tag: "remtrig-" + rem.id, showTrigger: new TimestampTrigger(rem.nextAt) });
+      } catch (_) {}
+    }
+    function checkReminders() {
+      if (!("Notification" in window) || Notification.permission !== "granted") return;
+      const now = Date.now(); let changed = false;
+      for (const rem of state.reminders) {
+        if (!rem.enabled) continue;
+        if (!rem.nextAt) { rem.nextAt = computeNextAt(rem); changed = true; }
+        if (now >= rem.nextAt) {
+          const nm = reminderName(rem);
+          if (nm) fireNotification("🔔 تذكير: " + nm, "حان وقت متابعة هذا " + (rem.refType === "program" ? "البرنامج" : "المشروع"));
+          rem.lastFired = now; rem.nextAt = computeNextAt(rem); changed = true;
+        }
+      }
+      if (changed) save();
+    }
+
+    function renderReminders() {
+      const frag = document.createDocumentFragment();
+      // بطاقة حالة الإذن
+      const perm = ("Notification" in window) ? Notification.permission : "unsupported";
+      const note = document.createElement("div"); note.className = "report-card";
+      if (perm === "granted") note.innerHTML = "<h4>الإشعارات</h4><div style='font-size:13px;color:var(--muted)'>مُفعّلة ✅ — تظهر التذكيرات كنوافذ إشعار. للجدولة في الخلفية أبقِ التطبيق مثبّتاً؛ الدعم الخلفي يختلف بين الأجهزة (آيفون لا يدعمه).</div>";
+      else { note.innerHTML = "<h4>الإشعارات</h4><div style='font-size:13px;color:var(--muted);margin-bottom:8px'>لتصلك التذكيرات كنوافذ إشعار، فعّل الإذن.</div>"; const btn = document.createElement("button"); btn.className = "add-goal-btn"; btn.textContent = "🔔 تفعيل الإشعارات"; btn.onclick = () => ensureNotifyPermission().then(() => renderReminders()); note.append(btn); }
+      frag.append(note);
+
+      const groups = [["daily", "يومية"], ["weekly", "أسبوعية"], ["monthly", "شهرية"], ["yearly", "سنوية"]];
+      let any = false;
+      for (const [key, label] of groups) {
+        const list = state.reminders.filter(r => r.recurrence === key);
+        if (!list.length) continue;
+        any = true;
+        const group = document.createElement("div"); group.className = "goals-group";
+        const head = document.createElement("div"); head.className = "goals-group-title";
+        head.innerHTML = "<span>🔔</span> <span>تذكيرات " + label + "</span><span class='ggcount'>" + list.length + "</span>";
+        group.append(head);
+        list.sort((a, b) => (a.nextAt || 0) - (b.nextAt || 0));
+        for (const rem of list) {
+          const nm = reminderName(rem);
+          const row = document.createElement("div"); row.className = "goalrow" + (rem.enabled ? "" : " done");
+          const toggle = document.createElement("button");
+          toggle.className = "gcheck" + (rem.enabled ? " done" : "");
+          toggle.textContent = rem.enabled ? "🔔" : "🔕"; toggle.title = "تفعيل/تعطيل"; toggle.style.fontSize = "13px";
+          toggle.onclick = () => { rem.enabled = !rem.enabled; if (rem.enabled) { rem.nextAt = computeNextAt(rem); scheduleTrigger(rem); } save(); renderReminders(); };
+          const main = document.createElement("div"); main.className = "gtitle";
+          const t = document.createElement("div"); t.textContent = nm || "(عنصر محذوف)";
+          const meta = document.createElement("div"); meta.className = "gmeta";
+          meta.innerHTML = "<span class='gbadge'>" + remDetail(rem) + "</span>";
+          main.append(t, meta);
+          const del = document.createElement("button"); del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
+          del.onclick = () => { state.reminders = state.reminders.filter(x => x.id !== rem.id); save(); renderReminders(); };
+          row.append(toggle, main, del);
+          group.append(row);
+        }
+        frag.append(group);
+      }
+      if (!any) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "لا تذكيرات بعد. أضِف تذكيراً من نافذة أي برنامج أو مشروع (زر 🔔)."; frag.append(e); }
+      els.remindersList.replaceChildren(frag);
+    }
+
+    // أزرار التذكير من المشروع
+    document.getElementById("planReminder").onclick = () => { if (currentPlanId) openReminder("project", currentPlanId); };
+
+    // فحص التذكيرات دورياً
+    checkReminders();
+    setInterval(checkReminders, 30000);
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) checkReminders(); });
 
     // ---------- الإقلاع ----------
     render();
