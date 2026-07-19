@@ -377,30 +377,67 @@
 
     /* الشريط السفلي */
     .bottomnav {
-      position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; display: flex;
-      background: color-mix(in srgb, var(--panel) 95%, transparent); backdrop-filter: blur(12px);
-      border-top: 1px solid var(--border); padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
+      position: fixed; left: 0; right: 0; bottom: 0; z-index: 55; display: flex; align-items: stretch;
+      background: color-mix(in srgb, var(--panel) 96%, transparent); backdrop-filter: blur(14px);
+      border-top: 1px solid var(--border); padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
     }
-    .bottomnav button {
+    .bottomnav .nav-group { flex: 1; display: flex; }
+    .bottomnav .nav-group button {
       flex: 1; border: none; background: none; cursor: pointer; font-family: inherit; color: var(--muted);
-      display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0; border-radius: 10px; transition: color .15s;
+      display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; border-radius: 10px; transition: color .15s;
     }
-    .bottomnav button .bi { font-size: 20px; line-height: 1; }
-    .bottomnav button .bl { font-size: 10.5px; font-weight: 700; }
-    .bottomnav button.active { color: var(--accent); }
+    .bottomnav .nav-group button .bi { font-size: 20px; line-height: 1; }
+    .bottomnav .nav-group button .bl { font-size: 10.5px; font-weight: 700; }
+    .bottomnav .nav-group button.active { color: var(--accent); }
 
-    /* الأزرار العائمة (تحدي + إضافة) فوق الشريط السفلي */
+    /* زر الإضافة المركزي المرتفع (مدمج مع الشريط) */
+    .nav-fab {
+      flex: 0 0 auto; width: 62px; height: 62px; margin: -24px 12px 0; align-self: flex-start;
+      border-radius: 50%; border: 4px solid var(--panel); cursor: pointer; font-family: inherit;
+      color: #fff; background: linear-gradient(145deg, var(--accent), var(--accent-ink));
+      box-shadow: 0 8px 22px rgba(180,83,9,.45), 0 0 0 1px rgba(0,0,0,.04);
+      display: grid; place-items: center; transition: transform .12s ease, box-shadow .2s;
+    }
+    .nav-fab .plus { font-size: 32px; font-weight: 300; line-height: 1; transform: translateY(-1px); }
+    .nav-fab .lbl { position: absolute; bottom: -15px; font-size: 9.5px; font-weight: 800; color: var(--muted); white-space: nowrap; }
+    .nav-fab { position: relative; }
+    .nav-fab:hover { box-shadow: 0 11px 28px rgba(180,83,9,.6); }
+    .nav-fab:active { transform: scale(.9); }
+
+    /* زر التحدي العائم (الشعلة) — متحرك وتفاعلي */
     .fab {
-      position: fixed; left: 16px; bottom: calc(80px + env(safe-area-inset-bottom));
+      position: fixed; left: 16px; bottom: calc(86px + env(safe-area-inset-bottom));
       width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer; z-index: 60;
       font-size: 26px; color: #fff; background: linear-gradient(145deg, #FB923C, #EA580C);
-      box-shadow: 0 8px 22px rgba(234, 88, 12, .45); display: grid; place-items: center; transition: transform .1s, bottom .2s;
+      box-shadow: 0 8px 22px rgba(234, 88, 12, .45); display: grid; place-items: center;
+      transition: transform .1s; animation: fab-breathe 3.4s ease-in-out infinite;
     }
-    .fab:active { transform: scale(.92); }
-    .fab-add { left: auto; right: 16px; font-size: 34px; font-weight: 300; background: linear-gradient(145deg, var(--accent), var(--accent-ink)); box-shadow: 0 8px 22px rgba(180,83,9,.4); }
-    body.addbar-on .fab { bottom: calc(146px + env(safe-area-inset-bottom)); }
+    .fab:active { transform: scale(.9); }
+    .fab .flame { display: block; will-change: transform; transform-origin: 50% 85%; animation: flame-flicker 1.7s ease-in-out infinite; }
+    .fab.burst { animation: fab-pop .55s ease; }
+    .fab.burst .flame { animation: flame-burst .55s ease; }
+    @keyframes flame-flicker {
+      0%, 100% { transform: scale(1) rotate(-2deg); }
+      25% { transform: scale(1.14, .94) rotate(2.5deg); }
+      50% { transform: scale(.95, 1.1) rotate(-1.5deg); }
+      75% { transform: scale(1.07, 1) rotate(1.5deg); }
+    }
+    @keyframes fab-breathe {
+      0%, 100% { box-shadow: 0 8px 22px rgba(234, 88, 12, .42); }
+      50% { box-shadow: 0 10px 32px rgba(251, 146, 60, .72); }
+    }
+    @keyframes fab-pop { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
+    @keyframes flame-burst {
+      0% { transform: scale(1); } 30% { transform: scale(1.55) rotate(-10deg); }
+      65% { transform: scale(.8) rotate(7deg); } 100% { transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .fab, .fab .flame { animation: none; }
+    }
     #chList .goalrow .gbadge { background: var(--panel-2); }
     #chCount { text-transform: none; letter-spacing: 0; }
+    .ch-done-note { font-size: 12px; color: var(--muted); font-weight: 600; margin: -2px 0 12px; }
+    .ch-done-note b { color: var(--accent-ink); font-weight: 800; }
 
     /* تاريخ آخر تحديث للمجال */
     .dc-updated { font-size: 9.5px; color: var(--muted); margin-top: 1px; }
@@ -449,12 +486,12 @@
       <div class="planbar-card">
         <div class="pb-head"><span class="pb-title">🌟 خطة 2030</span><span class="pb-pct" id="pct2030">0٪</span></div>
         <div class="pb-track"><div class="pb-fill" id="fill2030"></div></div>
-        <div class="pb-sub" id="sub2030">0 من 0 هدف مُنجَز</div>
+        <div class="pb-sub" id="sub2030">0 من 0 مشروع مكتمل</div>
       </div>
       <div class="planbar-card">
         <div class="pb-head"><span class="pb-title">📅 خطة 2026</span><span class="pb-pct" id="pct2026">0٪</span></div>
         <div class="pb-track"><div class="pb-fill alt" id="fill2026"></div></div>
-        <div class="pb-sub" id="sub2026">0 من 0 هدف مُنجَز</div>
+        <div class="pb-sub" id="sub2026">0 من 0 مشروع مكتمل</div>
       </div>
 
       <div id="favWrap" hidden>
@@ -464,6 +501,8 @@
 
       <div class="section-title">المجالات الثمانية</div>
       <div class="domains-grid" id="domainsGrid"></div>
+
+      <button class="add-goal-btn" id="openProgramsBtn" style="margin-top:14px">📁 إدارة البرامج والمشاريع</button>
     </section>
 
     <!-- ═══ قسم الأهداف ═══ -->
@@ -516,18 +555,19 @@
     </div>
   </div>
 
-  <!-- زر التحدي العائم -->
-  <button class="fab" id="fabChallenge" title="تحدي" aria-label="تحدي">🔥</button>
+  <!-- زر التحدي العائم (الشعلة المتحركة) -->
+  <button class="fab" id="fabChallenge" title="تحدي" aria-label="تحدي"><span class="flame">🔥</span></button>
 
-  <!-- زر الإضافة العائم -->
-  <button class="fab fab-add" id="fabAdd" title="إضافة" aria-label="إضافة برنامج أو مشروع">＋</button>
-
-  <!-- الشريط السفلي للتنقل -->
+  <!-- الشريط السفلي للتنقل + زر الإضافة المركزي -->
   <nav class="bottomnav" id="bottomnav">
-    <button data-mode="plan" class="active"><span class="bi">🎯</span><span class="bl">الملخص</span></button>
-    <button data-mode="projects"><span class="bi">📁</span><span class="bl">البرامج</span></button>
-    <button data-mode="timer"><span class="bi">⏱️</span><span class="bl">المؤقتات</span></button>
-    <button data-mode="reminders"><span class="bi">🔔</span><span class="bl">تذكيرات</span></button>
+    <div class="nav-group">
+      <button data-mode="plan" class="active"><span class="bi">🎯</span><span class="bl">الملخص</span></button>
+      <button data-mode="timer"><span class="bi">⏱️</span><span class="bl">المؤقتات</span></button>
+    </div>
+    <button class="nav-fab" id="navAdd" title="إضافة" aria-label="إضافة برنامج أو مشروع"><span class="plus">＋</span><span class="lbl">إضافة</span></button>
+    <div class="nav-group">
+      <button data-mode="reminders"><span class="bi">🔔</span><span class="bl">تذكيرات</span></button>
+    </div>
   </nav>
 
   <!-- ورقة إجراء الإضافة -->
@@ -593,6 +633,7 @@
   <dialog id="challengeDlg">
     <div class="dlg">
       <h3>🔥 تحدي</h3>
+      <div class="ch-done-note" id="chDoneNote">أنجزت <b>0</b> تحدياً حتى الآن</div>
       <p>قائمة مهام سريعة لفترات الضغط.</p>
       <div class="rows">
         <div>
@@ -695,7 +736,7 @@
       <h3 id="domainTitle">المجال</h3>
       <div class="domain-progress">
         <div class="pb-track"><div class="pb-fill" id="domainFill"></div></div>
-        <div class="pb-sub" id="domainSub">0 من 0 هدف مُنجَز</div>
+        <div class="pb-sub" id="domainSub">0 من 0 مشروع مكتمل</div>
       </div>
 
       <label>وزن هذا المجال في الخطة</label>
@@ -886,6 +927,11 @@
       }
       // مهام التحدي السريعة
       if (!Array.isArray(p.challenges)) p.challenges = [];
+      // إحصاء التحديات المنجزة (يشمل ما تم مسحه) — يبدأ من المنجَز الحالي
+      if (!p.challengeStats || typeof p.challengeStats !== "object") p.challengeStats = {};
+      if (typeof p.challengeStats.completedEver !== "number") {
+        p.challengeStats.completedEver = p.challenges.filter(c => c && c.done).length;
+      }
       // تاريخ آخر تحديث لكل مجال
       if (!p.domainUpdated || typeof p.domainUpdated !== "object") p.domainUpdated = {};
       // التذكيرات
@@ -1164,9 +1210,9 @@
       const pct30 = planPct(false), pct26 = planPct(true);
       const d30 = allDone(false), d26 = allDone(true);
       els.fill2030.style.width = pct30 + "%"; els.pct2030.textContent = toArDigits(pct30) + "٪";
-      els.sub2030.textContent = d30.total ? (toArDigits(d30.done) + " من " + toArDigits(d30.total) + " هدف مكتمل · متوسط مرجّح") : "لا توجد أهداف بعد";
+      els.sub2030.textContent = d30.total ? (toArDigits(d30.done) + " من " + toArDigits(d30.total) + " مشروع مكتمل · متوسط مرجّح") : "لا توجد مشاريع بعد";
       els.fill2026.style.width = pct26 + "%"; els.pct2026.textContent = toArDigits(pct26) + "٪";
-      els.sub2026.textContent = d26.total ? (toArDigits(d26.done) + " من " + toArDigits(d26.total) + " هدف مكتمل · متوسط مرجّح") : "لا توجد أهداف لسنة 2026";
+      els.sub2026.textContent = d26.total ? (toArDigits(d26.done) + " من " + toArDigits(d26.total) + " مشروع مكتمل · متوسط مرجّح") : "لا توجد مشاريع لسنة 2026";
 
       // المربعات الثمانية
       const frag = document.createDocumentFragment();
@@ -1193,7 +1239,7 @@
 
         const count = document.createElement("div");
         count.className = "dc-count";
-        count.textContent = list.length ? (toArDigits(dd.done) + " من " + toArDigits(dd.total)) : "لا أهداف";
+        count.textContent = list.length ? (toArDigits(dd.done) + " من " + toArDigits(dd.total)) : "لا مشاريع";
 
         const upd = document.createElement("div");
         upd.className = "dc-updated";
@@ -1589,7 +1635,7 @@
       // التوزيع حسب المشروع/الهدف
       const pc = document.createElement("div");
       pc.className = "report-card";
-      pc.innerHTML = "<h4>التوزيع حسب المشروع / الهدف</h4>";
+      pc.innerHTML = "<h4>التوزيع حسب المشروع</h4>";
       if (projTotals.length === 0) {
         const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا يوجد وقت مسجّل في هذه الفترة."; pc.append(e);
       } else {
@@ -1797,16 +1843,24 @@
     });
 
     // ---------- الشريط السفلي للتنقل ----------
-    document.querySelectorAll(".bottomnav button").forEach(btn => {
+    document.querySelectorAll(".bottomnav button[data-mode]").forEach(btn => {
       btn.onclick = () => {
         appMode = btn.dataset.mode;
-        document.querySelectorAll(".bottomnav button").forEach(b => b.classList.toggle("active", b === btn));
+        document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b === btn));
         saveUI(); render();
       };
     });
+    // زر الإضافة المركزي
+    document.getElementById("navAdd").onclick = () => addSheet.showModal();
+    // فتح صفحة البرامج والمشاريع من الملخص
+    document.getElementById("openProgramsBtn").onclick = () => {
+      appMode = "projects";
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
+      saveUI(); render();
+    };
 
     // استعادة حالة التبويبات المحفوظة عند الإقلاع
-    document.querySelectorAll(".bottomnav button").forEach(b => b.classList.toggle("active", b.dataset.mode === appMode));
+    document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === appMode));
     document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("active", b.dataset.view === currentView));
 
     function fmtDateShort(val) {
@@ -2027,6 +2081,7 @@
     const chCount = document.getElementById("chCount");
     const chClear = document.getElementById("chClear");
     const chClose = document.getElementById("chClose");
+    const chDoneNote = document.getElementById("chDoneNote");
 
     (function fillChDomains() {
       for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; chDomain.append(o); }
@@ -2037,6 +2092,8 @@
       const list = state.challenges;
       const doneN = list.filter(c => c.done).length;
       chCount.textContent = list.length ? ("المهام · " + doneN + " من " + list.length) : "المهام";
+      const ever = (state.challengeStats && state.challengeStats.completedEver) || 0;
+      chDoneNote.querySelector("b").textContent = ever;
       chList.replaceChildren();
       if (!list.length) {
         const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا مهام بعد. أضِف مهمة سريعة."; chList.append(e); return;
@@ -2048,7 +2105,11 @@
         const check = document.createElement("button");
         check.className = "gcheck" + (c.done ? " done" : "");
         check.textContent = c.done ? "✓" : ""; check.title = "تبديل";
-        check.onclick = () => { c.done = !c.done; save(); renderChallenges(); };
+        check.onclick = () => {
+          const wasDone = c.done; c.done = !c.done;
+          if (!wasDone && c.done) state.challengeStats.completedEver = ((state.challengeStats && state.challengeStats.completedEver) || 0) + 1;
+          save(); renderChallenges();
+        };
         const main = document.createElement("div"); main.className = "gtitle";
         const t = document.createElement("div"); t.textContent = c.text;
         main.append(t);
@@ -2073,7 +2134,13 @@
     chInput.addEventListener("keydown", e => { if (e.key === "Enter") addChallenge(); });
     chClear.onclick = () => { state.challenges = state.challenges.filter(c => !c.done); save(); renderChallenges(); };
     chClose.onclick = () => challengeDlg.close();
-    document.getElementById("fabChallenge").onclick = () => { chDomain.value = "career"; renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
+    const fabChallenge = document.getElementById("fabChallenge");
+    // تفاعل الشعلة: نبضة/انفجار عند اللمس
+    fabChallenge.addEventListener("pointerdown", () => {
+      fabChallenge.classList.remove("burst"); void fabChallenge.offsetWidth; fabChallenge.classList.add("burst");
+    });
+    fabChallenge.addEventListener("animationend", (e) => { if (e.animationName === "fab-pop") fabChallenge.classList.remove("burst"); });
+    fabChallenge.onclick = () => { chDomain.value = "career"; renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
 
     // ---------- إدخال الأرقام (قبول الأرقام العربية) + إبقاء الحقل فوق الكيبورد ----------
     function normNum(s) {
@@ -2084,17 +2151,41 @@
     document.querySelectorAll(".numfield").forEach(inp => {
       inp.addEventListener("input", () => { const n = normNum(inp.value); if (n !== inp.value) inp.value = n; });
     });
-    // عند فتح الكيبورد، مرّر الحقل المُركَّز ليظهر داخل النافذة
+    // ---------- معالجة الكيبورد فوق النوافذ المنبثقة ----------
+    // نستخدم visualViewport لقياس ارتفاع المساحة المتاحة فعلياً، فنقلّص ارتفاع النافذة
+    // ونمرّر الحقل المُركَّز ليبقى ظاهراً فوق الكيبورد.
+    const isField = (t) => t && t.tagName && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName);
+    function scrollFocusedIntoView() {
+      const t = document.activeElement;
+      if (isField(t) && t.closest && t.closest("dialog[open]")) {
+        try { t.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (_) {}
+      }
+    }
+    if (window.visualViewport) {
+      const vv = window.visualViewport;
+      const onVV = () => {
+        const kbOpen = (window.innerHeight - vv.height) > 120; // الكيبورد مفتوح تقريباً
+        document.querySelectorAll("dialog[open]").forEach(d => {
+          d.style.maxHeight = kbOpen ? (vv.height - 12) + "px" : "";
+        });
+        if (kbOpen) scrollFocusedIntoView();
+      };
+      vv.addEventListener("resize", onVV);
+      vv.addEventListener("scroll", onVV);
+    }
+    // احتياطي: مرّر الحقل ليظهر بعد ظهور الكيبورد
     document.addEventListener("focusin", e => {
-      const t = e.target;
-      if (t && t.closest && t.closest("dialog") && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA")) {
-        setTimeout(() => { try { t.scrollIntoView({ block: "center", behavior: "smooth" }); } catch (_) {} }, 260);
+      if (isField(e.target) && e.target.closest && e.target.closest("dialog[open]")) {
+        setTimeout(scrollFocusedIntoView, 300);
       }
     });
+    // أعِد ضبط ارتفاع النوافذ عند إغلاق أي نافذة
+    document.querySelectorAll("dialog").forEach(d => {
+      d.addEventListener("close", () => { d.style.maxHeight = ""; });
+    });
 
-    // ---------- زر الإضافة العائم (برنامج/مشروع) ----------
+    // ---------- ورقة الإضافة (برنامج/مشروع) ----------
     const addSheet = document.getElementById("addSheet");
-    document.getElementById("fabAdd").onclick = () => addSheet.showModal();
     document.getElementById("addSheetClose").onclick = () => addSheet.close();
     document.getElementById("addSheetProgram").onclick = () => { addSheet.close(); openProgram(null); };
     document.getElementById("addSheetProject").onclick = () => { addSheet.close(); openItem(null, null); };
