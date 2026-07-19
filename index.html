@@ -750,6 +750,23 @@
     </form>
   </dialog>
 
+  <!-- مشروع جديد / إعادة تسمية -->
+  <dialog id="projNameDlg">
+    <form method="dialog" class="dlg">
+      <h3 id="projNameTitle">📄 مشروع جديد</h3>
+      <div class="rows">
+        <div>
+          <label>اسم المشروع</label>
+          <input id="projNameInput" type="text" placeholder="مثال: شهادة PMP" autocomplete="off" />
+        </div>
+      </div>
+      <div class="actions">
+        <button class="ok" value="save" id="projNameSave">حفظ</button>
+        <button class="cancel" value="cancel" formnovalidate>إلغاء</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- أهداف المشروع -->
   <dialog id="planDlg">
     <div class="dlg">
@@ -1442,14 +1459,27 @@
       return block;
     }
 
+    // نافذة اسم المشروع (منسّقة بدل prompt)
+    const projNameDlg = document.getElementById("projNameDlg");
+    const projNameInput = document.getElementById("projNameInput");
+    const projNameTitle = document.getElementById("projNameTitle");
+    let projNameCb = null;
+    function openProjectName(title, initial, cb) {
+      projNameTitle.textContent = title; projNameInput.value = initial || ""; projNameCb = cb;
+      projNameDlg.showModal(); projNameInput.focus(); projNameInput.select();
+    }
+    projNameDlg.addEventListener("close", () => {
+      const cb = projNameCb; projNameCb = null;
+      if (projNameDlg.returnValue === "save" && cb) { const v = projNameInput.value.trim(); if (v) cb(v); }
+    });
+
     function addPlanTo(programId) {
-      const name = prompt("اسم المشروع الجديد:");
-      if (name && name.trim()) {
-        const pl = { id: uid(), name: name.trim(), programId: programId || "" };
+      openProjectName("📄 مشروع جديد", "", (name) => {
+        const pl = { id: uid(), name: name, programId: programId || "" };
         state.plans.push(pl); save();
         renderProjects();
         openPlan(pl, false);
-      }
+      });
     }
     function deleteProgram(prog) {
       if (!confirm("حذف البرنامج «" + prog.name + "»؟ ستبقى مشاريعه لكن بلا برنامج.")) return;
@@ -2039,8 +2069,10 @@
     planClose.onclick = () => planDlg.close();
     planRename.onclick = () => {
       const pl = state.plans.find(x => x.id === currentPlanId); if (!pl) return;
-      const name = prompt("اسم المشروع:", pl.name);
-      if (name && name.trim()) { pl.name = name.trim(); save(); planTitle.textContent = "📁 " + pl.name; }
+      openProjectName("✏️ إعادة تسمية المشروع", pl.name, (name) => {
+        pl.name = name; save(); planTitle.textContent = "📁 " + pl.name;
+        if (appMode === "projects") renderProjects();
+      });
     };
     planDelete.onclick = () => {
       const pl = state.plans.find(x => x.id === currentPlanId); if (!pl) return;
