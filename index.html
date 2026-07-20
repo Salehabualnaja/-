@@ -390,18 +390,18 @@
     .bottomnav .nav-group button .bl { font-size: 10.5px; font-weight: 700; }
     .bottomnav .nav-group button.active { color: var(--accent); }
 
-    /* زر الإضافة المركزي المرتفع (مدمج مع الشريط) */
+    /* زر الإضافة المركزي المرتفع (مدمج مع الشريط بتصميم لامع) */
     .nav-fab {
-      flex: 0 0 auto; width: 62px; height: 62px; margin: -24px 12px 0; align-self: flex-start;
-      border-radius: 50%; border: 4px solid var(--panel); cursor: pointer; font-family: inherit;
-      color: #fff; background: linear-gradient(145deg, var(--accent), var(--accent-ink));
-      box-shadow: 0 8px 22px rgba(180,83,9,.45), 0 0 0 1px rgba(0,0,0,.04);
-      display: grid; place-items: center; transition: transform .12s ease, box-shadow .2s;
+      position: relative; flex: 0 0 auto; width: 58px; height: 58px; margin: -22px 16px 0; align-self: flex-start;
+      border-radius: 50%; border: 3px solid var(--panel); cursor: pointer; font-family: inherit; color: #fff;
+      background:
+        radial-gradient(130% 130% at 32% 22%, rgba(255,255,255,.45), rgba(255,255,255,0) 48%),
+        linear-gradient(150deg, #F59E0B, #D97706 55%, #B45309);
+      box-shadow: 0 7px 18px rgba(180,83,9,.5), 0 2px 5px rgba(0,0,0,.14);
+      display: grid; place-items: center; transition: transform .14s ease, box-shadow .2s;
     }
-    .nav-fab .plus { font-size: 32px; font-weight: 300; line-height: 1; transform: translateY(-1px); }
-    .nav-fab .lbl { position: absolute; bottom: -15px; font-size: 9.5px; font-weight: 800; color: var(--muted); white-space: nowrap; }
-    .nav-fab { position: relative; }
-    .nav-fab:hover { box-shadow: 0 11px 28px rgba(180,83,9,.6); }
+    .nav-fab .plus { font-size: 30px; font-weight: 400; line-height: 1; margin-top: -2px; }
+    .nav-fab:hover { box-shadow: 0 9px 24px rgba(180,83,9,.62); }
     .nav-fab:active { transform: scale(.9); }
 
     /* زر التحدي العائم (الشعلة) — متحرك وتفاعلي */
@@ -438,6 +438,57 @@
     #chCount { text-transform: none; letter-spacing: 0; }
     .ch-done-note { font-size: 12px; color: var(--muted); font-weight: 600; margin: -2px 0 12px; }
     .ch-done-note b { color: var(--accent-ink); font-weight: 800; }
+
+    /* ═══ تقويم التذكيرات ═══ */
+    .rem-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-top: 12px; box-shadow: var(--shadow); }
+    .rem-cal-title { font-weight: 800; font-size: 15px; text-align: center; margin-bottom: 10px; }
+    .rem-day-timeline { max-height: 60vh; overflow-y: auto; overscroll-behavior: contain; }
+    .hour-row { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-top: 1px dashed var(--border); }
+    .hour-row:first-child { border-top: none; }
+    .hour-row.now { background: var(--accent-soft); border-radius: 8px; }
+    .hour-row.now .hour-label { color: var(--accent-ink); }
+    .hour-label { flex: 0 0 50px; text-align: center; font-size: 11px; font-weight: 800; color: var(--muted); padding-top: 8px; }
+    .hour-slot { flex: 1; display: flex; flex-direction: column; gap: 6px; min-height: 30px; padding: 4px 0; }
+    .rem-chip { display: flex; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; }
+    .rem-chip.off { opacity: .5; }
+    .rem-chip .rc-time { font-size: 11px; font-weight: 800; color: var(--accent-ink); background: var(--accent-soft); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
+    .rem-chip .rc-name { flex: 1; font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rem-chip .rc-btn { border: none; background: none; cursor: pointer; font-size: 15px; padding: 2px; line-height: 1; }
+
+    .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .cal-nav button { border: none; background: var(--panel-2); color: var(--text); width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 20px; line-height: 1; font-family: inherit; }
+    .cal-nav button:active { transform: scale(.92); }
+    .cal-nav .rem-cal-title { margin: 0; }
+    .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+    .cal-head { font-size: 10px; font-weight: 800; color: var(--muted); text-align: center; padding: 3px 0; }
+    .cal-cell { aspect-ratio: 1; border-radius: 9px; border: 1.5px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; background: var(--panel-2); font-size: 12.5px; font-weight: 700; color: var(--text); }
+    .cal-cell.empty { background: transparent; cursor: default; }
+    .cal-cell.today { border-color: var(--accent); }
+    .cal-cell.has:not(.sel) { background: var(--accent-soft); color: var(--accent-ink); }
+    .cal-cell.sel { background: var(--accent); color: #fff; }
+    .cal-cell .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); }
+    .cal-cell.has:not(.sel) .dot { background: var(--accent-ink); }
+    .cal-cell.sel .dot { background: #fff; }
+
+    .year-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .month-cell { border-radius: 11px; background: var(--panel-2); padding: 14px 8px; text-align: center; cursor: pointer; border: 1.5px solid transparent; }
+    .month-cell.cur { border-color: var(--accent); }
+    .month-cell.sel { background: var(--accent); color: #fff; }
+    .month-cell .mc-name { font-weight: 800; font-size: 13px; }
+    .month-cell .mc-count { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .month-cell.sel .mc-count { color: rgba(255,255,255,.9); }
+
+    .wk-day { border: 1px solid var(--border); border-radius: 12px; padding: 10px; margin-bottom: 8px; background: var(--panel-2); }
+    .wk-day.today { border-color: var(--accent); }
+    .wk-day .wk-name { font-weight: 800; font-size: 13px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .wk-day .wk-name .wk-badge { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+    .wk-day .wk-slot { display: flex; flex-direction: column; gap: 6px; }
+    .wk-day .wk-empty { font-size: 12px; color: var(--muted); }
+
+    .rem-detail { margin-top: 14px; }
+    .rem-detail h4 { margin: 0 0 8px; font-size: 14px; font-weight: 800; }
+    .rem-detail .rem-chip { margin-bottom: 6px; }
+    .rem-foot { font-size: 11.5px; color: var(--muted); margin-top: 10px; text-align: center; }
 
     /* تاريخ آخر تحديث للمجال */
     .dc-updated { font-size: 9.5px; color: var(--muted); margin-top: 1px; }
@@ -501,8 +552,6 @@
 
       <div class="section-title">المجالات الثمانية</div>
       <div class="domains-grid" id="domainsGrid"></div>
-
-      <button class="add-goal-btn" id="openProgramsBtn" style="margin-top:14px">📁 إدارة البرامج والمشاريع</button>
     </section>
 
     <!-- ═══ قسم الأهداف ═══ -->
@@ -541,6 +590,12 @@
     <!-- ═══ قسم التذكيرات ═══ -->
     <section id="remindersSection" hidden>
       <button class="ok" id="addReminderBtn" style="width:100%;border:none;border-radius:12px;padding:14px;font-weight:800;font-size:15px;color:var(--accent-ink);background:var(--accent-soft);cursor:pointer;font-family:inherit;margin-bottom:14px">➕ إضافة تذكير</button>
+      <div class="tabs" id="remViewTabs">
+        <button data-rview="daily" class="active">يومي</button>
+        <button data-rview="weekly">أسبوعي</button>
+        <button data-rview="monthly">شهري</button>
+        <button data-rview="yearly">سنوي</button>
+      </div>
       <div id="remindersList"></div>
     </section>
 
@@ -564,8 +619,9 @@
       <button data-mode="plan" class="active"><span class="bi">🎯</span><span class="bl">الملخص</span></button>
       <button data-mode="timer"><span class="bi">⏱️</span><span class="bl">المؤقتات</span></button>
     </div>
-    <button class="nav-fab" id="navAdd" title="إضافة" aria-label="إضافة برنامج أو مشروع"><span class="plus">＋</span><span class="lbl">إضافة</span></button>
+    <button class="nav-fab" id="navAdd" title="إضافة" aria-label="إضافة برنامج أو مشروع"><span class="plus">＋</span></button>
     <div class="nav-group">
+      <button data-mode="projects"><span class="bi">📁</span><span class="bl">البرامج</span></button>
       <button data-mode="reminders"><span class="bi">🔔</span><span class="bl">تذكيرات</span></button>
     </div>
   </nav>
@@ -865,6 +921,9 @@
     function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
     let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
     let appMode = readUI(UI_MODE_KEY, ["plan", "projects", "timer", "reminders"], "plan");
+    const REM_VIEW_KEY = "ptt.ui.remview";
+    let reminderView = readUI(REM_VIEW_KEY, ["daily", "weekly", "monthly", "yearly"], "daily");
+    let remMonthOffset = 0, remYearOffset = 0, remSelDay = null, remSelMonth = null;
 
     function load() {
       try {
@@ -1852,12 +1911,6 @@
     });
     // زر الإضافة المركزي
     document.getElementById("navAdd").onclick = () => addSheet.showModal();
-    // فتح صفحة البرامج والمشاريع من الملخص
-    document.getElementById("openProgramsBtn").onclick = () => {
-      appMode = "projects";
-      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
-      saveUI(); render();
-    };
 
     // استعادة حالة التبويبات المحفوظة عند الإقلاع
     document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === appMode));
@@ -2277,10 +2330,11 @@
     function recurLabel(r) { return { daily: "يومي", weekly: "أسبوعي", monthly: "شهري", yearly: "سنوي" }[r] || r; }
     const AR_WD = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
     function remDetail(rem) {
-      if (rem.recurrence === "weekly") return "كل " + AR_WD[rem.weekday] + " " + rem.time;
-      if (rem.recurrence === "monthly") return "يوم " + rem.monthday + " من كل شهر " + rem.time;
-      if (rem.recurrence === "yearly") return (rem.date ? fmtDateShort(rem.date) : "") + " سنوياً " + rem.time;
-      return "كل يوم " + rem.time;
+      const tm = fmtRemTime(rem.time);
+      if (rem.recurrence === "weekly") return "كل " + AR_WD[rem.weekday] + " " + tm;
+      if (rem.recurrence === "monthly") return "يوم " + rem.monthday + " من كل شهر " + tm;
+      if (rem.recurrence === "yearly") return (rem.date ? fmtDateShort(rem.date) : "") + " سنوياً " + tm;
+      return "كل يوم " + tm;
     }
 
     function ensureNotifyPermission() {
@@ -2321,48 +2375,205 @@
       if (changed) save();
     }
 
+    // ---------- تقويم التذكيرات ----------
+    const WD_SHORT_SAT = ["سبت", "أحد", "إثن", "ثلا", "أرب", "خمي", "جمع"]; // ترتيب السبت→الجمعة
+    const WD_ORDER = [6, 0, 1, 2, 3, 4, 5]; // getDay() بترتيب العرض
+    function remClampMonthday(rem) { return Math.min(28, Math.max(1, rem.monthday || 1)); }
+    function remOccursOn(rem, date) {
+      if (rem.recurrence === "daily") return true;
+      if (rem.recurrence === "weekly") return date.getDay() === rem.weekday;
+      if (rem.recurrence === "monthly") return date.getDate() === remClampMonthday(rem);
+      if (rem.recurrence === "yearly") { if (!rem.date) return false; const p = rem.date.split("-").map(Number); return (date.getMonth() + 1) === p[1] && date.getDate() === p[2]; }
+      return false;
+    }
+    function remOccursInMonth(rem, year, month) {
+      if (rem.recurrence === "daily" || rem.recurrence === "weekly" || rem.recurrence === "monthly") return true;
+      if (rem.recurrence === "yearly" && rem.date) { const p = rem.date.split("-").map(Number); return (p[1] - 1) === month; }
+      return false;
+    }
+    function fmtHour12(h) { const am = h < 12; let hr = h % 12; if (hr === 0) hr = 12; return hr + (am ? " ص" : " م"); }
+    function fmtRemTime(t) { const [h, mi] = parseHM(t); return pad(h) + ":" + pad(mi); }
+
+    function remChip(rem, showBadge) {
+      const nm = reminderName(rem) || "(عنصر محذوف)";
+      const chip = document.createElement("div"); chip.className = "rem-chip" + (rem.enabled ? "" : " off");
+      const time = document.createElement("span"); time.className = "rc-time"; time.textContent = showBadge ? remDetail(rem) : fmtRemTime(rem.time);
+      const name = document.createElement("span"); name.className = "rc-name"; name.textContent = nm;
+      const tg = document.createElement("button"); tg.className = "rc-btn"; tg.textContent = rem.enabled ? "🔔" : "🔕"; tg.title = "تفعيل/تعطيل";
+      tg.onclick = (e) => { e.stopPropagation(); rem.enabled = !rem.enabled; if (rem.enabled) { rem.nextAt = computeNextAt(rem); scheduleTrigger(rem); } save(); renderReminders(); };
+      const del = document.createElement("button"); del.className = "rc-btn"; del.textContent = "🗑️"; del.title = "حذف";
+      del.onclick = (e) => { e.stopPropagation(); state.reminders = state.reminders.filter(x => x.id !== rem.id); save(); renderReminders(); };
+      chip.append(time, name, tg, del);
+      return chip;
+    }
+    function remsByTime(list) {
+      return list.slice().sort((a, b) => { const A = parseHM(a.time), B = parseHM(b.time); return A[0] - B[0] || A[1] - B[1]; });
+    }
+
+    // عرض يومي — محور الساعات مع تذكيرات اليوم
+    function buildRemDaily() {
+      const panel = document.createElement("div"); panel.className = "rem-panel";
+      const now = new Date();
+      const title = document.createElement("div"); title.className = "rem-cal-title";
+      title.textContent = fmtDayLong(dayStartOf(now.getTime()));
+      panel.append(title);
+      const todays = state.reminders.filter(r => remOccursOn(r, now));
+      const byHour = {};
+      for (const r of todays) { const [h] = parseHM(r.time); (byHour[h] = byHour[h] || []).push(r); }
+      const tl = document.createElement("div"); tl.className = "rem-day-timeline";
+      for (let i = 0; i < 24; i++) {
+        const h = (DAY_START_HOUR + i) % 24;
+        const row = document.createElement("div"); row.className = "hour-row" + (h === now.getHours() ? " now" : "");
+        const lbl = document.createElement("div"); lbl.className = "hour-label"; lbl.textContent = fmtHour12(h);
+        const slot = document.createElement("div"); slot.className = "hour-slot";
+        for (const r of remsByTime(byHour[h] || [])) slot.append(remChip(r, false));
+        row.append(lbl, slot); tl.append(row);
+      }
+      panel.append(tl);
+      if (!todays.length) { const e = document.createElement("div"); e.className = "rem-foot"; e.textContent = "لا تذكيرات مجدوَلة اليوم."; panel.append(e); }
+      return panel;
+    }
+
+    // عرض أسبوعي — أيام الأسبوع مع تذكيراتها
+    function buildRemWeekly() {
+      const wrap = document.createElement("div"); wrap.className = "rem-panel";
+      const today = new Date().getDay();
+      for (const wd of WD_ORDER) {
+        const list = remsByTime(state.reminders.filter(r => r.recurrence === "daily" || (r.recurrence === "weekly" && r.weekday === wd)));
+        const card = document.createElement("div"); card.className = "wk-day" + (wd === today ? " today" : "");
+        const nm = document.createElement("div"); nm.className = "wk-name";
+        nm.innerHTML = "<span>" + AR_WD[wd] + (wd === today ? " · اليوم" : "") + "</span><span class='wk-badge'>" + (list.length ? list.length + " تذكير" : "—") + "</span>";
+        card.append(nm);
+        if (list.length) { const slot = document.createElement("div"); slot.className = "wk-slot"; for (const r of list) slot.append(remChip(r, false)); card.append(slot); }
+        else { const e = document.createElement("div"); e.className = "wk-empty"; e.textContent = "لا تذكيرات"; card.append(e); }
+        wrap.append(card);
+      }
+      const my = state.reminders.filter(r => r.recurrence === "monthly" || r.recurrence === "yearly").length;
+      if (my) { const f = document.createElement("div"); f.className = "rem-foot"; f.textContent = "التذكيرات الشهرية والسنوية تظهر في تبويبَي «شهري» و«سنوي»."; wrap.append(f); }
+      return wrap;
+    }
+
+    // عرض شهري — شبكة تقويم
+    function buildRemMonthly() {
+      const wrap = document.createElement("div"); wrap.className = "rem-panel";
+      const base = new Date(); base.setDate(1); base.setMonth(base.getMonth() + remMonthOffset);
+      const year = base.getFullYear(), month = base.getMonth();
+      const today = new Date();
+      const isThisMonth = (today.getFullYear() === year && today.getMonth() === month);
+      if (remSelDay == null && isThisMonth) remSelDay = today.getDate();
+
+      const nav = document.createElement("div"); nav.className = "cal-nav";
+      const older = document.createElement("button"); older.textContent = "‹";
+      const newer = document.createElement("button"); newer.textContent = "›";
+      const title = document.createElement("div"); title.className = "rem-cal-title"; title.textContent = AR_MONTHS[month] + " " + year;
+      older.onclick = () => { remMonthOffset--; remSelDay = null; renderReminders(); };
+      newer.onclick = () => { remMonthOffset++; remSelDay = null; renderReminders(); };
+      nav.append(newer, title, older); // RTL: الأحدث يمين، الأقدم يسار
+      wrap.append(nav);
+
+      const grid = document.createElement("div"); grid.className = "cal-grid";
+      for (const h of WD_SHORT_SAT) { const c = document.createElement("div"); c.className = "cal-head"; c.textContent = h; grid.append(c); }
+      const firstDow = new Date(year, month, 1).getDay();
+      const startCol = (firstDow + 1) % 7;
+      const daysInMonth = new Date(year, month + 1, 0).getDate();
+      for (let i = 0; i < startCol; i++) { const c = document.createElement("div"); c.className = "cal-cell empty"; grid.append(c); }
+      for (let day = 1; day <= daysInMonth; day++) {
+        const d = new Date(year, month, day);
+        const has = state.reminders.some(r => remOccursOn(r, d));
+        const isToday = isThisMonth && day === today.getDate();
+        const sel = remSelDay === day;
+        const c = document.createElement("div");
+        c.className = "cal-cell" + (has ? " has" : "") + (isToday ? " today" : "") + (sel ? " sel" : "");
+        const num = document.createElement("div"); num.textContent = day; c.append(num);
+        if (has) { const dot = document.createElement("div"); dot.className = "dot"; c.append(dot); }
+        c.onclick = () => { remSelDay = day; renderReminders(); };
+        grid.append(c);
+      }
+      wrap.append(grid);
+
+      if (remSelDay != null) {
+        const d = new Date(year, month, remSelDay);
+        const list = remsByTime(state.reminders.filter(r => remOccursOn(r, d)));
+        const det = document.createElement("div"); det.className = "rem-detail";
+        const h4 = document.createElement("h4"); h4.textContent = remSelDay + " " + AR_MONTHS[month] + " — " + (list.length ? list.length + " تذكير" : "لا تذكيرات"); det.append(h4);
+        for (const r of list) det.append(remChip(r, false));
+        wrap.append(det);
+      }
+      return wrap;
+    }
+
+    // عرض سنوي — شبكة أشهر
+    function buildRemYearly() {
+      const wrap = document.createElement("div"); wrap.className = "rem-panel";
+      const now = new Date();
+      const year = now.getFullYear() + remYearOffset;
+      const isThisYear = remYearOffset === 0;
+      if (remSelMonth == null && isThisYear) remSelMonth = now.getMonth();
+
+      const nav = document.createElement("div"); nav.className = "cal-nav";
+      const older = document.createElement("button"); older.textContent = "‹";
+      const newer = document.createElement("button"); newer.textContent = "›";
+      const title = document.createElement("div"); title.className = "rem-cal-title"; title.textContent = "" + year;
+      older.onclick = () => { remYearOffset--; remSelMonth = null; renderReminders(); };
+      newer.onclick = () => { remYearOffset++; remSelMonth = null; renderReminders(); };
+      nav.append(newer, title, older);
+      wrap.append(nav);
+
+      const grid = document.createElement("div"); grid.className = "year-grid";
+      for (let m = 0; m < 12; m++) {
+        const cnt = state.reminders.filter(r => remOccursInMonth(r, year, m)).length;
+        const cell = document.createElement("div");
+        cell.className = "month-cell" + (isThisYear && m === now.getMonth() ? " cur" : "") + (remSelMonth === m ? " sel" : "");
+        const nm = document.createElement("div"); nm.className = "mc-name"; nm.textContent = AR_MONTHS[m];
+        const cc = document.createElement("div"); cc.className = "mc-count"; cc.textContent = cnt ? cnt + " تذكير" : "—";
+        cell.append(nm, cc);
+        cell.onclick = () => { remSelMonth = m; renderReminders(); };
+        grid.append(cell);
+      }
+      wrap.append(grid);
+
+      if (remSelMonth != null) {
+        const list = state.reminders.filter(r => remOccursInMonth(r, year, remSelMonth))
+          .sort((a, b) => { const A = parseHM(a.time), B = parseHM(b.time); return A[0] - B[0] || A[1] - B[1]; });
+        const det = document.createElement("div"); det.className = "rem-detail";
+        const h4 = document.createElement("h4"); h4.textContent = AR_MONTHS[remSelMonth] + " " + year + " — " + (list.length ? list.length + " تذكير" : "لا تذكيرات"); det.append(h4);
+        for (const r of list) det.append(remChip(r, true));
+        wrap.append(det);
+      }
+      return wrap;
+    }
+
     function renderReminders() {
       const frag = document.createDocumentFragment();
-      // بطاقة حالة الإذن
+      // تنبيه الإذن يظهر فقط عند الحاجة
       const perm = ("Notification" in window) ? Notification.permission : "unsupported";
-      const note = document.createElement("div"); note.className = "report-card";
-      if (perm === "granted") note.innerHTML = "<h4>الإشعارات</h4><div style='font-size:13px;color:var(--muted)'>مُفعّلة ✅ — تظهر التذكيرات كنوافذ إشعار. للجدولة في الخلفية أبقِ التطبيق مثبّتاً؛ الدعم الخلفي يختلف بين الأجهزة (آيفون لا يدعمه).</div>";
-      else { note.innerHTML = "<h4>الإشعارات</h4><div style='font-size:13px;color:var(--muted);margin-bottom:8px'>لتصلك التذكيرات كنوافذ إشعار، فعّل الإذن.</div>"; const btn = document.createElement("button"); btn.className = "add-goal-btn"; btn.textContent = "🔔 تفعيل الإشعارات"; btn.onclick = () => ensureNotifyPermission().then(() => renderReminders()); note.append(btn); }
-      frag.append(note);
-
-      const groups = [["daily", "يومية"], ["weekly", "أسبوعية"], ["monthly", "شهرية"], ["yearly", "سنوية"]];
-      let any = false;
-      for (const [key, label] of groups) {
-        const list = state.reminders.filter(r => r.recurrence === key);
-        if (!list.length) continue;
-        any = true;
-        const group = document.createElement("div"); group.className = "goals-group";
-        const head = document.createElement("div"); head.className = "goals-group-title";
-        head.innerHTML = "<span>🔔</span> <span>تذكيرات " + label + "</span><span class='ggcount'>" + list.length + "</span>";
-        group.append(head);
-        list.sort((a, b) => (a.nextAt || 0) - (b.nextAt || 0));
-        for (const rem of list) {
-          const nm = reminderName(rem);
-          const row = document.createElement("div"); row.className = "goalrow" + (rem.enabled ? "" : " done");
-          const toggle = document.createElement("button");
-          toggle.className = "gcheck" + (rem.enabled ? " done" : "");
-          toggle.textContent = rem.enabled ? "🔔" : "🔕"; toggle.title = "تفعيل/تعطيل"; toggle.style.fontSize = "13px";
-          toggle.onclick = () => { rem.enabled = !rem.enabled; if (rem.enabled) { rem.nextAt = computeNextAt(rem); scheduleTrigger(rem); } save(); renderReminders(); };
-          const main = document.createElement("div"); main.className = "gtitle";
-          const t = document.createElement("div"); t.textContent = nm || "(عنصر محذوف)";
-          const meta = document.createElement("div"); meta.className = "gmeta";
-          meta.innerHTML = "<span class='gbadge'>" + remDetail(rem) + "</span>";
-          main.append(t, meta);
-          const del = document.createElement("button"); del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
-          del.onclick = () => { state.reminders = state.reminders.filter(x => x.id !== rem.id); save(); renderReminders(); };
-          row.append(toggle, main, del);
-          group.append(row);
-        }
-        frag.append(group);
+      if (perm !== "granted") {
+        const note = document.createElement("div"); note.className = "report-card"; note.style.marginBottom = "12px";
+        note.innerHTML = "<h4>الإشعارات</h4><div style='font-size:13px;color:var(--muted);margin-bottom:8px'>لتصلك التذكيرات كنوافذ إشعار، فعّل الإذن.</div>";
+        const btn = document.createElement("button"); btn.className = "add-goal-btn"; btn.textContent = "🔔 تفعيل الإشعارات";
+        btn.onclick = () => ensureNotifyPermission().then(() => renderReminders()); note.append(btn);
+        frag.append(note);
       }
-      if (!any) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "لا تذكيرات بعد. اضغط «➕ إضافة تذكير» لربط تذكير ببرنامج أو مشروع."; frag.append(e); }
+      if (!state.reminders.length) {
+        const e = document.createElement("div"); e.className = "empty"; e.textContent = "لا تذكيرات بعد. اضغط «➕ إضافة تذكير» لربط تذكير ببرنامج أو مشروع.";
+        frag.append(e);
+      } else if (reminderView === "daily") frag.append(buildRemDaily());
+      else if (reminderView === "weekly") frag.append(buildRemWeekly());
+      else if (reminderView === "monthly") frag.append(buildRemMonthly());
+      else frag.append(buildRemYearly());
       els.remindersList.replaceChildren(frag);
     }
+
+    // تبويبات عرض التذكيرات
+    document.querySelectorAll("#remViewTabs button").forEach(btn => {
+      btn.onclick = () => {
+        reminderView = btn.dataset.rview; remSelDay = null; remSelMonth = null; remMonthOffset = 0; remYearOffset = 0;
+        document.querySelectorAll("#remViewTabs button").forEach(b => b.classList.toggle("active", b === btn));
+        try { localStorage.setItem(REM_VIEW_KEY, reminderView); } catch (_) {}
+        renderReminders();
+      };
+    });
+    document.querySelectorAll("#remViewTabs button").forEach(b => b.classList.toggle("active", b.dataset.rview === reminderView));
 
     // إضافة تذكير من صفحة التذكيرات فقط
     document.getElementById("addReminderBtn").onclick = () => openReminder();
