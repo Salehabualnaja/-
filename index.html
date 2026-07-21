@@ -436,8 +436,15 @@
     }
     #chList .goalrow .gbadge { background: var(--panel-2); }
     #chCount { text-transform: none; letter-spacing: 0; }
-    .ch-done-note { font-size: 12px; color: var(--muted); font-weight: 600; margin: -2px 0 12px; }
-    .ch-done-note b { color: var(--accent-ink); font-weight: 800; }
+    .ch-achieve {
+      display: flex; align-items: center; gap: 14px; margin: 4px 0 16px; padding: 14px 16px; border-radius: 16px;
+      background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent) 14%, var(--panel)));
+      border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+    }
+    .ch-achieve .ach-icon { font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(180,83,9,.3)); }
+    .ch-achieve .ach-body { display: flex; flex-direction: column; gap: 2px; }
+    .ch-achieve .ach-num { font-size: 34px; font-weight: 900; color: var(--accent-ink); line-height: 1; }
+    .ch-achieve .ach-lbl { font-size: 12.5px; font-weight: 700; color: var(--muted); }
 
     /* ═══ تقويم التذكيرات ═══ */
     .rem-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-top: 12px; box-shadow: var(--shadow); }
@@ -689,7 +696,13 @@
   <dialog id="challengeDlg">
     <div class="dlg">
       <h3>🔥 تحدي</h3>
-      <div class="ch-done-note" id="chDoneNote">أنجزت <b>0</b> تحدياً حتى الآن</div>
+      <div class="ch-achieve">
+        <span class="ach-icon">🏆</span>
+        <div class="ach-body">
+          <span class="ach-num" id="chAchNum">0</span>
+          <span class="ach-lbl">مهمة منجَزة</span>
+        </div>
+      </div>
       <p>قائمة مهام سريعة لفترات الضغط.</p>
       <div class="rows">
         <div>
@@ -986,11 +999,9 @@
       }
       // مهام التحدي السريعة
       if (!Array.isArray(p.challenges)) p.challenges = [];
-      // إحصاء التحديات المنجزة (يشمل ما تم مسحه) — يبدأ من المنجَز الحالي
+      // إحصاء التحديات المنجزة = المنجَز الحالي + المنجَز الذي حُذف (لا يعتمد على ضغطات الزر)
       if (!p.challengeStats || typeof p.challengeStats !== "object") p.challengeStats = {};
-      if (typeof p.challengeStats.completedEver !== "number") {
-        p.challengeStats.completedEver = p.challenges.filter(c => c && c.done).length;
-      }
+      if (typeof p.challengeStats.deletedDone !== "number") p.challengeStats.deletedDone = 0;
       // تاريخ آخر تحديث لكل مجال
       if (!p.domainUpdated || typeof p.domainUpdated !== "object") p.domainUpdated = {};
       // التذكيرات
@@ -2134,7 +2145,11 @@
     const chCount = document.getElementById("chCount");
     const chClear = document.getElementById("chClear");
     const chClose = document.getElementById("chClose");
-    const chDoneNote = document.getElementById("chDoneNote");
+    const chAchNum = document.getElementById("chAchNum");
+    // العدد المنجَز = المهام المنجزة حالياً + المنجَز الذي حُذف (لا يعتمد على ضغطات الزر)
+    function completedChallengeCount() {
+      return state.challenges.filter(c => c.done).length + ((state.challengeStats && state.challengeStats.deletedDone) || 0);
+    }
 
     (function fillChDomains() {
       for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; chDomain.append(o); }
@@ -2145,8 +2160,7 @@
       const list = state.challenges;
       const doneN = list.filter(c => c.done).length;
       chCount.textContent = list.length ? ("المهام · " + doneN + " من " + list.length) : "المهام";
-      const ever = (state.challengeStats && state.challengeStats.completedEver) || 0;
-      chDoneNote.querySelector("b").textContent = ever;
+      chAchNum.textContent = completedChallengeCount();
       chList.replaceChildren();
       if (!list.length) {
         const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا مهام بعد. أضِف مهمة سريعة."; chList.append(e); return;
@@ -2158,11 +2172,7 @@
         const check = document.createElement("button");
         check.className = "gcheck" + (c.done ? " done" : "");
         check.textContent = c.done ? "✓" : ""; check.title = "تبديل";
-        check.onclick = () => {
-          const wasDone = c.done; c.done = !c.done;
-          if (!wasDone && c.done) state.challengeStats.completedEver = ((state.challengeStats && state.challengeStats.completedEver) || 0) + 1;
-          save(); renderChallenges();
-        };
+        check.onclick = () => { c.done = !c.done; save(); renderChallenges(); };
         const main = document.createElement("div"); main.className = "gtitle";
         const t = document.createElement("div"); t.textContent = c.text;
         main.append(t);
@@ -2173,7 +2183,10 @@
         }
         const del = document.createElement("button");
         del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
-        del.onclick = () => { state.challenges = state.challenges.filter(x => x.id !== c.id); save(); renderChallenges(); };
+        del.onclick = () => {
+          if (c.done) state.challengeStats.deletedDone = ((state.challengeStats && state.challengeStats.deletedDone) || 0) + 1;
+          state.challenges = state.challenges.filter(x => x.id !== c.id); save(); renderChallenges();
+        };
         row.append(check, main, del);
         chList.append(row);
       }
@@ -2185,7 +2198,11 @@
     }
     chAdd.onclick = addChallenge;
     chInput.addEventListener("keydown", e => { if (e.key === "Enter") addChallenge(); });
-    chClear.onclick = () => { state.challenges = state.challenges.filter(c => !c.done); save(); renderChallenges(); };
+    chClear.onclick = () => {
+      const removed = state.challenges.filter(c => c.done).length;
+      state.challengeStats.deletedDone = ((state.challengeStats && state.challengeStats.deletedDone) || 0) + removed;
+      state.challenges = state.challenges.filter(c => !c.done); save(); renderChallenges();
+    };
     chClose.onclick = () => challengeDlg.close();
     const fabChallenge = document.getElementById("fabChallenge");
     // تفاعل الشعلة: نبضة/انفجار عند اللمس
