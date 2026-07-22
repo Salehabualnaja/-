@@ -564,6 +564,16 @@
     .prog-head .ph-pct { margin-inline-start: auto; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
     .prog-head .iconbtn { margin: 0; }
     .prog-block { margin-bottom: 18px; }
+    /* بطاقة إحصاءات البرامج والمشاريع */
+    .stats-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 12px; box-shadow: var(--shadow); }
+    .stats-card[hidden] { display: none; }
+    .stats-row { display: flex; gap: 8px; }
+    .stat-tile { flex: 1; background: var(--panel-2); border-radius: 10px; padding: 9px 4px; text-align: center; }
+    .stat-tile .st-num { font-size: 21px; font-weight: 900; color: var(--accent-ink); line-height: 1; font-variant-numeric: tabular-nums; }
+    .stat-tile .st-lbl { font-size: 10.5px; color: var(--muted); font-weight: 700; margin-top: 4px; }
+    .stats-doms { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .stat-dom { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 3px 9px; }
+    .stat-dom b { color: var(--accent-ink); font-weight: 900; margin-inline-start: 3px; }
     .prog-projects { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .prog-add { width: 100%; margin: 2px 0 0; border: 1.5px dashed var(--border-strong); background: var(--panel); color: var(--accent); font-family: inherit; font-weight: 700; font-size: 13.5px; padding: 10px 0; border-radius: 12px; cursor: pointer; grid-column: 1 / -1; }
 
@@ -609,7 +619,8 @@
     <!-- ═══ قسم الأهداف ═══ -->
     <!-- ═══ قسم البرامج ═══ -->
     <section id="projectsSection" hidden>
-      <button class="add-goal-btn" id="addProgramBtn">➕ إضافة برنامج جديد</button>
+      <div class="stats-card" id="projStats" hidden></div>
+      <button class="add-goal-btn" id="projectsAddBtn">➕ إضافة برنامج أو مشروع</button>
       <div id="projectsList"></div>
     </section>
 
@@ -1183,6 +1194,7 @@
       timerSection: document.getElementById("timerSection"),
       projectsSection: document.getElementById("projectsSection"),
       projectsList: document.getElementById("projectsList"),
+      projStats: document.getElementById("projStats"),
       remindersSection: document.getElementById("remindersSection"),
       remindersList: document.getElementById("remindersList"),
       domainsGrid: document.getElementById("domainsGrid"),
@@ -1502,14 +1514,43 @@
       return Math.round(s / list.length * 100);
     }
 
+    function statTile(num, lbl) {
+      const t = document.createElement("div"); t.className = "stat-tile";
+      const n = document.createElement("div"); n.className = "st-num"; n.textContent = num;
+      const l = document.createElement("div"); l.className = "st-lbl"; l.textContent = lbl;
+      t.append(n, l); return t;
+    }
+    function renderProjStats() {
+      const progN = state.programs.length, projN = state.plans.length;
+      if (!progN && !projN) { els.projStats.hidden = true; return; }
+      els.projStats.hidden = false;
+      const doneN = state.plans.filter(isComplete).length;
+      const favN = state.plans.filter(p => p.favorite).length;
+      const domCounts = {};
+      for (const pl of state.plans) { const d = planDomain(pl) || ""; domCounts[d] = (domCounts[d] || 0) + 1; }
+      els.projStats.replaceChildren();
+      const row = document.createElement("div"); row.className = "stats-row";
+      row.append(statTile(progN, "برنامج"), statTile(projN, "مشروع"), statTile(doneN, "مكتمل"), statTile(favN, "مفضّل"));
+      els.projStats.append(row);
+      const doms = document.createElement("div"); doms.className = "stats-doms"; let any = false;
+      for (const d of DOMAINS) {
+        const c = domCounts[d.id]; if (!c) continue; any = true;
+        const chip = document.createElement("span"); chip.className = "stat-dom";
+        chip.innerHTML = d.icon + " " + d.name + " <b>" + c + "</b>"; doms.append(chip);
+      }
+      if (domCounts[""]) { const chip = document.createElement("span"); chip.className = "stat-dom"; chip.innerHTML = "📌 بلا مجال <b>" + domCounts[""] + "</b>"; doms.append(chip); any = true; }
+      if (any) els.projStats.append(doms);
+    }
+
     function renderProjects() {
+      renderProjStats();
       const frag = document.createDocumentFragment();
       const ungroupedPlans = programProjects("");
 
       if (!state.programs.length && !ungroupedPlans.length) {
         const e = document.createElement("div");
         e.className = "empty";
-        e.textContent = "لا توجد برامج بعد. اضغط «إضافة برنامج جديد»، ثم أضِف مشاريع داخله.";
+        e.textContent = "لا توجد برامج أو مشاريع بعد. اضغط «➕ إضافة برنامج أو مشروع» للبدء.";
         els.projectsList.replaceChildren(e);
         return;
       }
@@ -1560,11 +1601,6 @@
         for (const pl of sorted) box.append(buildGoalRow(pl));
       }
       block.append(box);
-
-      const add = document.createElement("button"); add.className = "prog-add"; add.style.gridColumn = "";
-      add.textContent = "➕ مشروع في هذا البرنامج";
-      add.onclick = () => openItem(null, prog.id);
-      block.append(add);
       return block;
     }
 
@@ -2091,7 +2127,7 @@
       }
       save(); if (appMode === "projects") renderProjects();
     });
-    document.getElementById("addProgramBtn").onclick = () => openProgram(null);
+    document.getElementById("projectsAddBtn").onclick = () => addSheet.showModal();
 
     // ---------- نافذة هدف/مشروع جديد ----------
     const itemDlg = document.getElementById("itemDlg");
