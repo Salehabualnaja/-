@@ -205,14 +205,28 @@
 
     /* أهداف المجال */
     .domain-progress { margin-bottom: 16px; }
-    .goalrow { display: flex; align-items: center; gap: 10px; padding: 11px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
+    .goalrow { display: flex; align-items: flex-start; gap: 10px; padding: 13px 12px; border-bottom: 1px solid var(--border); font-size: 14px; }
     .goalrow:last-child { border-bottom: none; }
     .goalrow .gcheck { width: 24px; height: 24px; flex: none; border-radius: 7px; border: 2px solid var(--border-strong); background: var(--panel-2); cursor: pointer; display: grid; place-items: center; font-size: 15px; color: #fff; }
     .goalrow .gcheck.done { background: var(--run); border-color: var(--run); }
     .goalrow .gtitle { flex: 1; min-width: 0; }
-    .goalrow.done .gtitle { text-decoration: line-through; color: var(--muted); }
+    .goalrow .gtitle .gname { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: var(--text); }
+    .goalrow .gtitle .gfav-ind { color: var(--dial-gold); font-size: 13px; flex: none; }
+    .goalrow.done .gtitle .gname { text-decoration: line-through; color: var(--muted); }
+    /* قائمة الثلاث نقاط */
+    .gmenu { position: relative; flex: none; }
+    .gkebab { background: transparent; border: none; cursor: pointer; color: var(--muted); font-size: 20px; line-height: 1; padding: 6px 9px; border-radius: 9px; transition: background .15s; }
+    .gkebab:hover { background: var(--panel-2); }
+    .gkebab:active { background: var(--border); }
+    .gmenu-pop { position: absolute; left: 0; right: auto; top: calc(100% + 4px); z-index: 45; background: var(--panel); border: 1px solid var(--border-strong); border-radius: 12px; box-shadow: var(--shadow); padding: 6px; min-width: 170px; display: flex; flex-direction: column; gap: 2px; }
+    .gmenu-pop[hidden] { display: none; }
+    .gmenu-pop.up { top: auto; bottom: calc(100% + 4px); }
+    .gmenu-item { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--text); text-align: start; padding: 10px 12px; border-radius: 8px; }
+    .gmenu-item:hover { background: var(--panel-2); }
+    .gmenu-item.danger { color: var(--danger); }
+    .gmenu-item .gmi-ic { font-size: 15px; width: 20px; text-align: center; flex: none; }
     .goalrow .gyear { flex: none; font-size: 11px; font-weight: 700; border-radius: 7px; padding: 3px 9px; cursor: pointer; background: var(--accent-soft); color: var(--accent-ink); border: 1px solid var(--border); }
-    .goalrow .gmeta { font-size: 11px; color: var(--muted); margin-top: 2px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .goalrow .gmeta { font-size: 11px; color: var(--muted); margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
     .gbadge { font-size: 10.5px; font-weight: 700; border-radius: 6px; padding: 1px 7px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
     .gstar { flex: none; background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; padding: 4px; color: var(--dial-gold); }
     .gstep { display: inline-flex; gap: 4px; }
@@ -1416,7 +1430,9 @@
 
       const main = document.createElement("div");
       main.className = "gtitle";
-      const t = document.createElement("div"); t.textContent = g.name;
+      const t = document.createElement("div"); t.className = "gname";
+      if (g.favorite) { const fi = document.createElement("span"); fi.className = "gfav-ind"; fi.textContent = "★"; t.append(fi); }
+      const nameSpan = document.createElement("span"); nameSpan.textContent = g.name; t.append(nameSpan);
       const meta = document.createElement("div"); meta.className = "gmeta";
       const badges = ['<span class="gbadge">' + typeLabel(g.type) + '</span>'];
       const per = fmtPeriod(g);
@@ -1439,22 +1455,42 @@
       }
       main.append(t, meta);
 
-      const star = document.createElement("button");
-      star.className = "gstar"; star.textContent = g.favorite ? "★" : "☆";
-      star.title = "المفضلة";
-      star.style.color = g.favorite ? "var(--dial-gold)" : "var(--muted)";
-      star.onclick = () => { g.favorite = !g.favorite; save(); refreshViews(); };
-
-      const edit = document.createElement("button");
-      edit.className = "iconbtn"; edit.textContent = "✏️"; edit.title = "تعديل";
-      edit.onclick = () => openItem(g);
-
-      const del = document.createElement("button");
-      del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
-      del.onclick = () => { const d = planDomain(g); state.plans = state.plans.filter(x => x.id !== g.id); touchDomain(d); save(); refreshViews(); };
-
-      row.append(check, main, star, edit, del);
+      // قائمة الثلاث نقاط: المفضلة · تعديل · حذف
+      const menu = buildKebabMenu([
+        { icon: g.favorite ? "★" : "☆", label: g.favorite ? "إزالة من المفضلة" : "إضافة للمفضلة", onClick: () => { g.favorite = !g.favorite; save(); refreshViews(); } },
+        { icon: "✏️", label: "تعديل", onClick: () => openItem(g) },
+        { icon: "🗑️", label: "حذف", danger: true, onClick: () => { const d = planDomain(g); state.plans = state.plans.filter(x => x.id !== g.id); touchDomain(d); save(); refreshViews(); } }
+      ]);
+      row.append(check, main, menu);
       return row;
+    }
+    function gMenuItem(icon, label, danger, onClick) {
+      const b = document.createElement("button");
+      b.className = "gmenu-item" + (danger ? " danger" : "");
+      const ic = document.createElement("span"); ic.className = "gmi-ic"; ic.textContent = icon;
+      const tx = document.createElement("span"); tx.textContent = label;
+      b.append(ic, tx); b.onclick = onClick;
+      return b;
+    }
+    // بناء قائمة الثلاث نقاط (تُستخدم لبطاقات المشاريع والبرامج)
+    function buildKebabMenu(items) {
+      const menu = document.createElement("div"); menu.className = "gmenu";
+      const kebab = document.createElement("button"); kebab.className = "gkebab"; kebab.textContent = "⋮"; kebab.title = "خيارات";
+      const pop = document.createElement("div"); pop.className = "gmenu-pop"; pop.hidden = true;
+      for (const it of items) pop.append(gMenuItem(it.icon, it.label, !!it.danger, it.onClick));
+      kebab.onclick = (e) => {
+        e.stopPropagation();
+        const willOpen = pop.hidden;
+        document.querySelectorAll(".gmenu-pop:not([hidden])").forEach(p => p.hidden = true);
+        pop.hidden = !willOpen;
+        if (!pop.hidden) {
+          pop.classList.remove("up");
+          const r = pop.getBoundingClientRect();
+          if (r.bottom > window.innerHeight - 8) pop.classList.add("up");
+        }
+      };
+      menu.append(kebab, pop);
+      return menu;
     }
 
     // ---------- البرامج ← المشاريع (المشروع = وحدة القياس) ----------
@@ -1510,8 +1546,10 @@
       }
       const pctEl = document.createElement("span"); pctEl.className = "ph-pct"; pctEl.textContent = toArDigits(pct) + "٪";
       head.append(pctEl);
-      head.append(mkIcon("✏️", "تعديل البرنامج", () => openProgram(prog)));
-      head.append(mkIcon("🗑️", "حذف البرنامج", () => deleteProgram(prog)));
+      head.append(buildKebabMenu([
+        { icon: "✏️", label: "تعديل البرنامج", onClick: () => openProgram(prog) },
+        { icon: "🗑️", label: "حذف البرنامج", danger: true, onClick: () => deleteProgram(prog) }
+      ]));
       block.append(head);
 
       const box = document.createElement("div"); box.className = "goals-group";
@@ -1949,6 +1987,8 @@
     });
     // زر الإضافة المركزي
     document.getElementById("navAdd").onclick = () => addSheet.showModal();
+    // إغلاق قوائم الثلاث نقاط عند النقر خارجها
+    document.addEventListener("click", () => { document.querySelectorAll(".gmenu-pop:not([hidden])").forEach(p => p.hidden = true); });
 
     // استعادة حالة التبويبات المحفوظة عند الإقلاع
     document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === appMode));
