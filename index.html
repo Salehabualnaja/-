@@ -475,6 +475,11 @@
     .ch-add-row select { flex: 1; }
     .ch-add-row .ch-addbtn { flex: 0 0 auto; padding: 0 24px; border: none; border-radius: 10px; background: var(--fab); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; font-family: inherit; }
     .ch-add-row .ch-addbtn:active { transform: scale(.96); }
+    .ch-add-row .ch-canceledit { flex: 0 0 auto; width: 44px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--panel-2); color: var(--muted); font-size: 15px; cursor: pointer; font-family: inherit; }
+    .ch-add-row .ch-canceledit[hidden] { display: none; }
+    .ch-add.editing input { border-color: var(--accent); outline: 2px solid var(--accent-soft); }
+    .ch-task .ch-edit { flex: 0 0 auto; border: none; background: none; cursor: pointer; font-size: 15px; opacity: .65; padding: 4px; }
+    .ch-task .ch-edit:active { opacity: 1; }
     .ch-toolbar { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
     .ch-toolbar #chCount { font-size: 13px; font-weight: 800; color: var(--text); }
     .ch-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 12px 20px 6px; min-height: 140px; }
@@ -770,11 +775,12 @@
             <span class="ach-lbl">مهمة منجَزة</span>
           </div>
         </div>
-        <div class="ch-add">
+        <div class="ch-add" id="chAddWrap">
           <input id="chInput" type="text" placeholder="اكتب مهمة جديدة…" autocomplete="off" />
           <div class="ch-add-row">
             <select id="chDomain"></select>
             <button class="ch-addbtn" id="chAdd">➕ إضافة</button>
+            <button class="ch-canceledit" id="chCancelEdit" hidden title="إلغاء التعديل" aria-label="إلغاء التعديل">✕</button>
           </div>
         </div>
         <div class="ch-toolbar">
@@ -2254,6 +2260,8 @@
     const chInput = document.getElementById("chInput");
     const chDomain = document.getElementById("chDomain");
     const chAdd = document.getElementById("chAdd");
+    const chCancelEdit = document.getElementById("chCancelEdit");
+    const chAddWrap = document.getElementById("chAddWrap");
     const chList = document.getElementById("chList");
     const chCount = document.getElementById("chCount");
     const chClear = document.getElementById("chClear");
@@ -2269,19 +2277,39 @@
       chDomain.value = "career"; // المهنة هي الافتراضي
     })();
 
+    let editingChId = null;
     function chTaskRow(c) {
       const row = document.createElement("div"); row.className = "ch-task" + (c.done ? " done" : "");
       const check = document.createElement("button"); check.className = "ch-check" + (c.done ? " on" : "");
       check.textContent = c.done ? "✓" : ""; check.title = "تبديل الإنجاز";
       check.onclick = () => { c.done = !c.done; save(); renderChallenges(); };
       const txt = document.createElement("div"); txt.className = "ct-text"; txt.textContent = c.text;
+      const edit = document.createElement("button"); edit.className = "ch-edit"; edit.textContent = "✏️"; edit.title = "تعديل المهمة وتصنيفها";
+      edit.onclick = () => enterChEdit(c);
       const del = document.createElement("button"); del.className = "ch-del"; del.textContent = "🗑️"; del.title = "حذف";
       del.onclick = () => {
+        if (editingChId === c.id) exitChEdit();
         if (c.done) state.challengeStats.deletedDone = ((state.challengeStats && state.challengeStats.deletedDone) || 0) + 1;
         state.challenges = state.challenges.filter(x => x.id !== c.id); save(); renderChallenges();
       };
-      row.append(check, txt, del);
+      row.append(check, txt, edit, del);
       return row;
+    }
+    function enterChEdit(c) {
+      editingChId = c.id;
+      chInput.value = c.text;
+      chDomain.value = (c.domainId && DOMAINS.some(d => d.id === c.domainId)) ? c.domainId : "career";
+      chAdd.textContent = "💾 حفظ";
+      chCancelEdit.hidden = false;
+      chAddWrap.classList.add("editing");
+      chInput.focus(); chInput.select();
+    }
+    function exitChEdit() {
+      editingChId = null;
+      chInput.value = "";
+      chAdd.textContent = "➕ إضافة";
+      chCancelEdit.hidden = true;
+      chAddWrap.classList.remove("editing");
     }
 
     function renderChallenges() {
@@ -2316,11 +2344,17 @@
     }
     function addChallenge() {
       const t = chInput.value.trim(); if (!t) return;
+      if (editingChId) {
+        const c = state.challenges.find(x => x.id === editingChId);
+        if (c) { c.text = t; c.domainId = chDomain.value || ""; }
+        save(); exitChEdit(); renderChallenges(); return;
+      }
       state.challenges.push({ id: uid(), text: t, domainId: chDomain.value || "", done: false, created: Date.now() });
       save(); chInput.value = ""; renderChallenges(); chInput.focus();
     }
     chAdd.onclick = addChallenge;
-    chInput.addEventListener("keydown", e => { if (e.key === "Enter") addChallenge(); });
+    chCancelEdit.onclick = exitChEdit;
+    chInput.addEventListener("keydown", e => { if (e.key === "Enter") addChallenge(); if (e.key === "Escape" && editingChId) exitChEdit(); });
     chClear.onclick = () => {
       const removed = state.challenges.filter(c => c.done).length;
       state.challengeStats.deletedDone = ((state.challengeStats && state.challengeStats.deletedDone) || 0) + removed;
@@ -2334,7 +2368,8 @@
       fabChallenge.classList.remove("burst"); void fabChallenge.offsetWidth; fabChallenge.classList.add("burst");
     });
     fabChallenge.addEventListener("animationend", (e) => { if (e.animationName === "fab-pop") fabChallenge.classList.remove("burst"); });
-    fabChallenge.onclick = () => { chDomain.value = "career"; renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
+    fabChallenge.onclick = () => { exitChEdit(); chDomain.value = "career"; renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
+    challengeDlg.addEventListener("close", exitChEdit);
 
     // ---------- إدخال الأرقام (قبول الأرقام العربية) + إبقاء الحقل فوق الكيبورد ----------
     function normNum(s) {
