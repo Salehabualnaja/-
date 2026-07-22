@@ -1682,11 +1682,13 @@
     }
 
     function goalTimerLine(g, ms, running) {
+      // العدّاد يكمل من إجمالي الساعات المنجزة (يبدأ من الرصيد الحالي لا من الصفر)
+      const totalMs = Math.max(0, goalCurrent(g) * 3600000);
       const pct = g.target > 0 ? Math.round(goalProgress(g) * 100) : 0;
       const tot = g.target > 0
-        ? (" · الإجمالي " + fmtNum(goalCurrent(g)) + "/" + fmtNum(g.target) + " س (" + toArDigits(pct) + "٪)")
-        : "";
-      return "اليوم " + fmtClock(ms) + tot + (running ? " · يعمل الآن" : "");
+        ? (" من " + fmtNum(g.target) + " س (" + toArDigits(pct) + "٪)")
+        : " س";
+      return fmtClock(totalMs) + tot + (running ? " · يعمل الآن" : "");
     }
 
     function clockLine(ms, running) {
