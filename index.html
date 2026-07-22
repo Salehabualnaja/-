@@ -464,7 +464,11 @@
     #challengeDlg { width: 560px; max-width: 96vw; max-height: 92dvh; overflow: hidden; padding: 0; }
     .ch-dlg { display: flex; flex-direction: column; max-height: inherit; padding: 0; }
     .ch-head { padding: 18px 20px 12px; border-bottom: 1px solid var(--border); }
-    .ch-head h3 { margin: 0 0 12px; }
+    .ch-head-top { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; }
+    .ch-head-top h3 { margin: 0; }
+    .ch-x { flex: none; border: none; background: var(--panel-2); color: var(--muted); width: 32px; height: 32px; border-radius: 50%; font-size: 14px; line-height: 1; cursor: pointer; display: grid; place-items: center; transition: background .15s, color .15s; }
+    .ch-x:hover { background: var(--border); color: var(--text); }
+    .ch-x:active { transform: scale(.9); }
     .ch-head .ch-achieve { margin: 0 0 14px; }
     .ch-add { display: flex; flex-direction: column; gap: 8px; }
     .ch-add-row { display: flex; gap: 8px; }
@@ -475,7 +479,10 @@
     .ch-toolbar #chCount { font-size: 13px; font-weight: 800; color: var(--text); }
     .ch-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 12px 20px 6px; min-height: 140px; }
     .ch-foot { padding: 12px 20px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
-    .ch-foot .ch-closebtn { width: 100%; border: 1px solid var(--border); border-radius: 11px; padding: 13px 0; font-weight: 800; font-size: 15px; background: var(--panel-2); color: var(--text); cursor: pointer; font-family: inherit; }
+    .ch-foot .ch-closebtn { width: 100%; border: none; border-radius: 12px; padding: 14px 0; font-weight: 800; font-size: 15px; background: var(--accent); color: #fff; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(180,83,9,.28); transition: background .15s, transform .1s, box-shadow .2s; }
+    .ch-foot .ch-closebtn:hover { background: var(--accent-ink); box-shadow: 0 6px 16px rgba(180,83,9,.36); }
+    .ch-foot .ch-closebtn:active { transform: scale(.985); }
+    .ch-foot .ch-closebtn .cc-ic { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: rgba(255,255,255,.22); font-size: 12px; font-weight: 900; }
 
     .ch-group { margin-bottom: 16px; }
     .ch-group:last-child { margin-bottom: 4px; }
@@ -752,7 +759,10 @@
   <dialog id="challengeDlg">
     <div class="dlg ch-dlg">
       <div class="ch-head">
-        <h3>🔥 تحدي</h3>
+        <div class="ch-head-top">
+          <h3>🔥 تحدي</h3>
+          <button class="ch-x" id="chX" aria-label="إغلاق" title="إغلاق">✕</button>
+        </div>
         <div class="ch-achieve">
           <span class="ach-icon">🏆</span>
           <div class="ach-body">
@@ -774,7 +784,7 @@
       </div>
       <div class="ch-body" id="chList"></div>
       <div class="ch-foot">
-        <button class="ch-closebtn" id="chClose">إغلاق</button>
+        <button class="ch-closebtn" id="chClose"><span class="cc-ic">✓</span> تم</button>
       </div>
     </div>
   </dialog>
@@ -2317,6 +2327,7 @@
       state.challenges = state.challenges.filter(c => !c.done); save(); renderChallenges();
     };
     chClose.onclick = () => challengeDlg.close();
+    document.getElementById("chX").onclick = () => challengeDlg.close();
     const fabChallenge = document.getElementById("fabChallenge");
     // تفاعل الشعلة: نبضة/انفجار عند اللمس
     fabChallenge.addEventListener("pointerdown", () => {
