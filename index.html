@@ -446,6 +446,37 @@
     .ch-achieve .ach-num { font-size: 34px; font-weight: 900; color: var(--accent-ink); line-height: 1; }
     .ch-achieve .ach-lbl { font-size: 12.5px; font-weight: 700; color: var(--muted); }
 
+    /* نافذة التحدي الواسعة والمنظّمة */
+    #challengeDlg { width: 560px; max-width: 96vw; max-height: 92dvh; overflow: hidden; padding: 0; }
+    .ch-dlg { display: flex; flex-direction: column; max-height: inherit; padding: 0; }
+    .ch-head { padding: 18px 20px 12px; border-bottom: 1px solid var(--border); }
+    .ch-head h3 { margin: 0 0 12px; }
+    .ch-head .ch-achieve { margin: 0 0 14px; }
+    .ch-add { display: flex; flex-direction: column; gap: 8px; }
+    .ch-add-row { display: flex; gap: 8px; }
+    .ch-add-row select { flex: 1; }
+    .ch-add-row .ch-addbtn { flex: 0 0 auto; padding: 0 24px; border: none; border-radius: 10px; background: var(--fab); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; font-family: inherit; }
+    .ch-add-row .ch-addbtn:active { transform: scale(.96); }
+    .ch-toolbar { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+    .ch-toolbar #chCount { font-size: 13px; font-weight: 800; color: var(--text); }
+    .ch-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 12px 20px 6px; min-height: 140px; }
+    .ch-foot { padding: 12px 20px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
+    .ch-foot .ch-closebtn { width: 100%; border: 1px solid var(--border); border-radius: 11px; padding: 13px 0; font-weight: 800; font-size: 15px; background: var(--panel-2); color: var(--text); cursor: pointer; font-family: inherit; }
+
+    .ch-group { margin-bottom: 16px; }
+    .ch-group:last-child { margin-bottom: 4px; }
+    .ch-group-head { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 13px; color: var(--accent-ink); padding: 8px 4px; position: sticky; top: -12px; background: var(--panel); z-index: 1; }
+    .ch-group-head .cg-count { margin-inline-start: auto; font-size: 11px; color: var(--muted); font-weight: 700; }
+    .ch-task { display: flex; align-items: center; gap: 12px; padding: 13px 13px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; background: var(--panel-2); transition: opacity .15s; }
+    .ch-task.done { opacity: .6; }
+    .ch-check { flex: 0 0 auto; width: 27px; height: 27px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; cursor: pointer; display: grid; place-items: center; font-size: 15px; font-weight: 800; color: #fff; transition: background .15s, border-color .15s; }
+    .ch-check.on { background: var(--accent); border-color: var(--accent); }
+    .ch-task .ct-text { flex: 1; font-size: 14.5px; font-weight: 600; line-height: 1.4; word-break: break-word; }
+    .ch-task.done .ct-text { text-decoration: line-through; }
+    .ch-del { flex: 0 0 auto; border: none; background: none; cursor: pointer; font-size: 16px; opacity: .65; padding: 4px; }
+    .ch-del:active { opacity: 1; }
+    .ch-empty { text-align: center; color: var(--muted); font-size: 13.5px; padding: 36px 12px; line-height: 1.7; }
+
     /* ═══ تقويم التذكيرات ═══ */
     .rem-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-top: 12px; box-shadow: var(--shadow); }
     .rem-cal-title { font-weight: 800; font-size: 15px; text-align: center; margin-bottom: 10px; }
@@ -694,35 +725,31 @@
 
   <!-- قائمة مهام التحدي -->
   <dialog id="challengeDlg">
-    <div class="dlg">
-      <h3>🔥 تحدي</h3>
-      <div class="ch-achieve">
-        <span class="ach-icon">🏆</span>
-        <div class="ach-body">
-          <span class="ach-num" id="chAchNum">0</span>
-          <span class="ach-lbl">مهمة منجَزة</span>
-        </div>
-      </div>
-      <p>قائمة مهام سريعة لفترات الضغط.</p>
-      <div class="rows">
-        <div>
-          <label>المهمة</label>
-          <input id="chInput" type="text" placeholder="اكتب المهمة…" autocomplete="off" />
-        </div>
-        <div class="inline" style="align-items:flex-end">
-          <div style="flex:1">
-            <label>المجال</label>
-            <select id="chDomain"></select>
+    <div class="dlg ch-dlg">
+      <div class="ch-head">
+        <h3>🔥 تحدي</h3>
+        <div class="ch-achieve">
+          <span class="ach-icon">🏆</span>
+          <div class="ach-body">
+            <span class="ach-num" id="chAchNum">0</span>
+            <span class="ach-lbl">مهمة منجَزة</span>
           </div>
-          <button class="ok" id="chAdd" style="flex:none;padding:11px 22px;border:none;border-radius:10px;font-weight:800;color:#fff;background:var(--fab);cursor:pointer;font-family:inherit">إضافة</button>
+        </div>
+        <div class="ch-add">
+          <input id="chInput" type="text" placeholder="اكتب مهمة جديدة…" autocomplete="off" />
+          <div class="ch-add-row">
+            <select id="chDomain"></select>
+            <button class="ch-addbtn" id="chAdd">➕ إضافة</button>
+          </div>
+        </div>
+        <div class="ch-toolbar">
+          <span id="chCount">المهام</span>
+          <button class="linkbtn" id="chClear">مسح المكتمل</button>
         </div>
       </div>
-
-      <div class="loghdr"><h4 id="chCount">المهام</h4><button class="linkbtn" id="chClear">مسح المكتمل</button></div>
-      <div class="logbox" id="chList"></div>
-
-      <div class="actions" style="margin-top:14px">
-        <button class="cancel" id="chClose">إغلاق</button>
+      <div class="ch-body" id="chList"></div>
+      <div class="ch-foot">
+        <button class="ch-closebtn" id="chClose">إغلاق</button>
       </div>
     </div>
   </dialog>
@@ -2156,39 +2183,49 @@
       chDomain.value = "career"; // المهنة هي الافتراضي
     })();
 
+    function chTaskRow(c) {
+      const row = document.createElement("div"); row.className = "ch-task" + (c.done ? " done" : "");
+      const check = document.createElement("button"); check.className = "ch-check" + (c.done ? " on" : "");
+      check.textContent = c.done ? "✓" : ""; check.title = "تبديل الإنجاز";
+      check.onclick = () => { c.done = !c.done; save(); renderChallenges(); };
+      const txt = document.createElement("div"); txt.className = "ct-text"; txt.textContent = c.text;
+      const del = document.createElement("button"); del.className = "ch-del"; del.textContent = "🗑️"; del.title = "حذف";
+      del.onclick = () => {
+        if (c.done) state.challengeStats.deletedDone = ((state.challengeStats && state.challengeStats.deletedDone) || 0) + 1;
+        state.challenges = state.challenges.filter(x => x.id !== c.id); save(); renderChallenges();
+      };
+      row.append(check, txt, del);
+      return row;
+    }
+
     function renderChallenges() {
       const list = state.challenges;
       const doneN = list.filter(c => c.done).length;
-      chCount.textContent = list.length ? ("المهام · " + doneN + " من " + list.length) : "المهام";
+      chCount.textContent = list.length ? ("المنجَز " + doneN + " من " + list.length) : "لا مهام بعد";
       chAchNum.textContent = completedChallengeCount();
       chList.replaceChildren();
       if (!list.length) {
-        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا مهام بعد. أضِف مهمة سريعة."; chList.append(e); return;
+        const e = document.createElement("div"); e.className = "ch-empty"; e.textContent = "لا مهام بعد.\nاكتب أول مهمة في الأعلى وحدّد مجالها.";
+        e.style.whiteSpace = "pre-line"; chList.append(e); return;
       }
-      const sorted = list.slice().sort((a, b) => (a.done - b.done) || (b.created - a.created));
-      for (const c of sorted) {
-        const row = document.createElement("div");
-        row.className = "goalrow" + (c.done ? " done" : "");
-        const check = document.createElement("button");
-        check.className = "gcheck" + (c.done ? " done" : "");
-        check.textContent = c.done ? "✓" : ""; check.title = "تبديل";
-        check.onclick = () => { c.done = !c.done; save(); renderChallenges(); };
-        const main = document.createElement("div"); main.className = "gtitle";
-        const t = document.createElement("div"); t.textContent = c.text;
-        main.append(t);
-        if (c.domainId) {
-          const meta = document.createElement("div"); meta.className = "gmeta";
-          meta.innerHTML = '<span class="gbadge">' + domainIcon(c.domainId) + " " + domainName(c.domainId) + '</span>';
-          main.append(meta);
-        }
-        const del = document.createElement("button");
-        del.className = "iconbtn"; del.textContent = "🗑️"; del.title = "حذف";
-        del.onclick = () => {
-          if (c.done) state.challengeStats.deletedDone = ((state.challengeStats && state.challengeStats.deletedDone) || 0) + 1;
-          state.challenges = state.challenges.filter(x => x.id !== c.id); save(); renderChallenges();
-        };
-        row.append(check, main, del);
-        chList.append(row);
+      // تجميع حسب المجال (بترتيب المجالات الثمانية) ثم «بلا مجال»
+      const groups = [];
+      for (const d of DOMAINS) {
+        const items = list.filter(c => c.domainId === d.id);
+        if (items.length) groups.push({ icon: d.icon, name: d.name, items });
+      }
+      const noDom = list.filter(c => !c.domainId || !DOMAINS.some(d => d.id === c.domainId));
+      if (noDom.length) groups.push({ icon: "📌", name: "بلا مجال", items: noDom });
+
+      for (const g of groups) {
+        const sec = document.createElement("div"); sec.className = "ch-group";
+        const head = document.createElement("div"); head.className = "ch-group-head";
+        const pend = g.items.filter(c => !c.done).length;
+        head.innerHTML = "<span>" + g.icon + "</span><span>" + g.name + "</span><span class='cg-count'>" + (pend ? pend + " قيد التنفيذ" : "اكتملت ✓") + "</span>";
+        sec.append(head);
+        const sorted = g.items.slice().sort((a, b) => (a.done - b.done) || (b.created - a.created));
+        for (const c of sorted) sec.append(chTaskRow(c));
+        chList.append(sec);
       }
     }
     function addChallenge() {
