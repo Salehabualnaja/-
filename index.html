@@ -282,6 +282,10 @@
       overflow: hidden;
       transition: border-color .2s;
     }
+    /* بطاقة المؤقت الحر */
+    .project.free-timer { border-style: dashed; border-color: var(--border-strong); background: var(--panel-2); padding: 11px 14px; }
+    .project.free-timer .name { font-size: 14px; color: var(--accent-ink); }
+    .project.free-timer.running { border-style: solid; }
     /* شريط الحالة الجانبي عند التشغيل */
     .project.running { border-color: color-mix(in srgb, var(--run) 45%, var(--border)); }
     .project.running::before {
@@ -1140,6 +1144,9 @@
       if (!p.settings) p.settings = {};
       if (typeof p.settings.dailyGoalHours !== "number") p.settings.dailyGoalHours = 8;
       if (typeof p.settings.umbrella !== "string") p.settings.umbrella = "قُلْ إِنَّ صَلَاتِي وَنُسُكِي وَمَحْيَايَ وَمَمَاتِي لِلَّهِ رَبِّ الْعَالَمِينَ";
+      // المؤقت الحر: وقت غير مرتبط بمشروع محدّد
+      if (!p.freeTimer || typeof p.freeTimer !== "object") p.freeTimer = { id: "free", name: "مؤقت حر", type: "hours", sessions: [] };
+      if (!Array.isArray(p.freeTimer.sessions)) p.freeTimer.sessions = [];
       if (!Array.isArray(p.programs)) p.programs = [];
       if (!Array.isArray(p.plans)) p.plans = [];
 
@@ -1272,6 +1279,15 @@
     // ---------- منطق المؤقتات ----------
     function stopAllRunning(now) {
       for (const it of timerItems()) if (it.sessions) for (const s of it.sessions) if (!s.manual && s.end == null) s.end = now;
+      const f = state.freeTimer;
+      if (f && f.sessions) for (const s of f.sessions) if (!s.manual && s.end == null) s.end = now;
+    }
+    // بدء/إيقاف المؤقت الحر (غير مرتبط بمشروع)
+    function toggleFreeTimer() {
+      const f = state.freeTimer, now = Date.now();
+      if (isRunning(f)) { for (const s of f.sessions) if (!s.manual && s.end == null) s.end = now; }
+      else { stopAllRunning(now); if (!f.sessions) f.sessions = []; f.sessions.push({ start: now, end: null }); }
+      save(); render();
     }
     function startItem(item) {
       const now = Date.now();
@@ -1817,12 +1833,18 @@
     function renderToday(now, today) {
       let totalMs = 0;
       const frag = document.createDocumentFragment();
-      const goals = hoursGoals();
 
+      // المؤقت الحر دائماً في الأعلى
+      const free = state.freeTimer;
+      const freeMs = Math.max(0, projectMsInDay(free, today, now));
+      totalMs += freeMs;
+      frag.append(buildFreeCard(free, freeMs, isRunning(free)));
+
+      const goals = hoursGoals();
       if (goals.length === 0) {
         const div = document.createElement("div");
         div.className = "empty";
-        div.textContent = "لا توجد مشاريع بالساعات بعد. أنشئ مشروعاً من نوع «ساعات» ليظهر هنا مؤقّته.";
+        div.textContent = "لا مشاريع بالساعات بعد — استخدم المؤقت الحر أعلاه، أو أنشئ مشروعاً بالساعات من زر ➕.";
         frag.append(div);
       } else {
         for (const g of goals) {
@@ -1833,6 +1855,24 @@
       }
       els.content.replaceChildren(frag);
       renderSummary(totalMs, "مجموع ساعات العمل اليوم");
+    }
+
+    // بطاقة المؤقت الحر (مضغوطة)
+    function buildFreeCard(free, ms, running) {
+      const card = document.createElement("div");
+      card.className = "project free-timer" + (running ? " running" : "");
+      const info = document.createElement("div"); info.className = "info";
+      const name = document.createElement("div"); name.className = "name"; name.textContent = "⏱️ مؤقت حر";
+      const time = document.createElement("div"); time.className = "time"; time.dataset.free = "1"; time.textContent = clockLine(ms, running);
+      info.append(name, time);
+      card.append(info);
+      card.append(mkIcon("🕐", "تعديل وقت المؤقت الحر", () => openTimeEditor(free)));
+      const toggle = document.createElement("button");
+      toggle.className = "btn " + (running ? "stop" : "start");
+      toggle.textContent = running ? "إيقاف" : "بدء";
+      toggle.onclick = toggleFreeTimer;
+      card.append(toggle);
+      return card;
     }
 
     // بطاقة مؤقّت لمشروع أو هدف بالساعات
@@ -1973,7 +2013,7 @@
       const dayStarts = [];
       for (let i = days - 1; i >= 0; i--) dayStarts.push(dayStartAgo(i));
 
-      const items = timerItems();
+      const items = [...timerItems(), state.freeTimer];
       const dailyTotals = dayStarts.map(ds => {
         let t = 0;
         for (const it of items) t += Math.max(0, projectMsInDay(it, ds, now));
@@ -2037,10 +2077,16 @@
 
     // ---------- التحديث الحي ----------
     function tick() {
-      if (appMode !== "timer" || currentView !== "today") return;
+      if (!(appMode === "stats" && statsTab === "timer") || currentView !== "today") return;
       const now = Date.now();
       const today = dayStartOf(now);
       let totalMs = 0;
+      // المؤقت الحر
+      const free = state.freeTimer;
+      const freeMs = Math.max(0, projectMsInDay(free, today, now));
+      totalMs += freeMs;
+      const fel = els.content.querySelector('.time[data-free]');
+      if (fel) fel.textContent = clockLine(freeMs, isRunning(free));
       for (const g of hoursGoals()) {
         const ms = Math.max(0, projectMsInDay(g, today, now));
         totalMs += ms;
@@ -2105,7 +2151,7 @@
     segAdd.onclick = () => setSign(1);
     segSub.onclick = () => setSign(-1);
 
-    function timerItemById(id) { return state.plans.find(x => x.id === id) || state.projects.find(x => x.id === id) || null; }
+    function timerItemById(id) { if (id === "free") return state.freeTimer; return state.plans.find(x => x.id === id) || state.projects.find(x => x.id === id) || null; }
 
     function openTimeEditor(p) {
       timeProjectId = p.id;
