@@ -253,10 +253,13 @@
     /* قسم المفضلة */
     #favList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
     .favrow { display: flex; align-items: center; gap: 10px; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 11px 13px; box-shadow: var(--shadow); }
-    .favrow .fav-main { flex: 1; min-width: 0; }
+    .favrow .fav-main { flex: 1; min-width: 0; background: none; border: none; padding: 0; margin: 0; font-family: inherit; cursor: pointer; text-align: start; color: var(--text); border-radius: 8px; }
+    .favrow .fav-main:hover .fav-name { color: var(--accent-ink); }
     .favrow .fav-name { font-weight: 700; font-size: 14px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .favrow.done .fav-name { text-decoration: line-through; color: var(--muted); }
-    .favrow .fav-meta { font-size: 11px; color: var(--muted); margin-top: 1px; }
+    .favrow .fav-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .favrow .fav-open { flex: none; background: none; border: none; cursor: pointer; color: var(--muted); font-size: 22px; line-height: 1; padding: 2px 6px; border-radius: 8px; transition: background .15s, color .15s; }
+    .favrow .fav-open:hover { background: var(--panel-2); color: var(--accent-ink); }
 
     /* اختيار المفضلة في النموذج */
     .fav-select { display: flex; align-items: center; gap: 8px; width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 14px; font-family: inherit; cursor: pointer; font-weight: 700; }
@@ -1534,8 +1537,10 @@
         check.title = "تبديل الإكمال";
         check.onclick = () => { toggleComplete(g); save(); renderPlan(); };
 
-        const main = document.createElement("div");
+        const main = document.createElement("button");
         main.className = "fav-main";
+        main.title = "عرض تفاصيل المشروع";
+        main.onclick = () => openItem(g);
         const nm = document.createElement("div"); nm.className = "fav-name"; nm.textContent = g.name;
         const mt = document.createElement("div"); mt.className = "fav-meta";
         const per = fmtPeriod(g);
@@ -1544,11 +1549,15 @@
         mt.textContent = (did ? domainIcon(did) + " " + domainName(did) + " · " : "") + typeLabel(g.type) + tg + (per ? " · " + per : "");
         main.append(nm, mt);
 
+        const open = document.createElement("button");
+        open.className = "fav-open"; open.textContent = "‹"; open.title = "تفاصيل المشروع";
+        open.onclick = () => openItem(g);
+
         const star = document.createElement("button");
         star.className = "gstar"; star.textContent = "★"; star.title = "إزالة من المفضلة";
         star.onclick = () => { g.favorite = false; save(); renderPlan(); };
 
-        row.append(check, main, star);
+        row.append(check, main, open, star);
         frag.append(row);
       }
       favList.replaceChildren(frag);
