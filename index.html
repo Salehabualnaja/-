@@ -587,12 +587,20 @@
     .umbrella .orn { color: var(--dial-gold); font-size: 22px; flex: none; opacity: .9; }
 
     /* ترويسة مجموعة البرنامج */
-    .prog-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); margin-bottom: 10px; }
+    .prog-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); margin-bottom: 10px; cursor: pointer; }
+    .prog-head.open { margin-bottom: 6px; border-color: var(--border-strong); }
+    .prog-head .prog-chev { flex: none; font-size: 12px; color: var(--muted); transition: transform .2s; }
+    .prog-head:not(.open) .prog-chev { transform: rotate(-90deg); }
     .prog-head .ph-name { font-weight: 800; font-size: 15px; }
     .prog-head .ph-badge { font-size: 11px; font-weight: 700; background: var(--accent-soft); color: var(--accent-ink); border-radius: 7px; padding: 2px 8px; }
-    .prog-head .ph-pct { margin-inline-start: auto; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .prog-head .ph-count { margin-inline-start: auto; font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; }
+    .prog-head .ph-pct { font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
     .prog-head .iconbtn { margin: 0; }
     .prog-block { margin-bottom: 18px; }
+    /* زر الرجوع (صفحة المجال) */
+    .back-btn { border: none; background: var(--panel-2); color: var(--accent-ink); font-family: inherit; font-weight: 800; font-size: 14px; padding: 10px 16px; border-radius: 11px; cursor: pointer; margin-bottom: 14px; display: inline-flex; align-items: center; gap: 4px; }
+    .back-btn:hover { background: var(--accent-soft); }
+    .back-btn:active { transform: scale(.97); }
     /* تصنيف حسب المجال في صفحة المشاريع */
     .dom-section { margin-bottom: 22px; }
     .dom-section-head { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 15px; color: var(--accent-ink); padding: 6px 4px 12px; border-bottom: 2px solid var(--accent-soft); margin-bottom: 12px; }
@@ -791,6 +799,25 @@
         <button class="ok set-btn soft" id="setNotifyBtn">تفعيل الإشعارات</button>
         <span id="setNotifyState" class="set-desc" style="margin:8px 0 0;display:block"></span>
       </div>
+    </section>
+
+    <!-- ═══ صفحة المجال (كاملة) ═══ -->
+    <section id="domainSection" hidden>
+      <button class="back-btn" id="domainBack">‹ رجوع إلى الإحصاءات</button>
+      <div class="planbar-card">
+        <div class="pb-head"><span class="pb-title" id="domainTitle">المجال</span><span class="pb-pct" id="domainPct">0٪</span></div>
+        <div class="pb-track"><div class="pb-fill" id="domainFill"></div></div>
+        <div class="pb-sub" id="domainSub">0 من 0 مشروع مكتمل</div>
+      </div>
+      <div class="set-group">
+        <div class="set-title">⚖️ وزن المجال في الخطة</div>
+        <div class="inline" style="margin-top:10px;gap:10px">
+          <div style="flex:1"><label>وزن خطة 2026 (0–100)</label><input id="wDomain2026" type="text" inputmode="decimal" class="numfield set-input" placeholder="1" /></div>
+          <div style="flex:1"><label>وزن خطة 2030 (0–100)</label><input id="wDomain2030" type="text" inputmode="decimal" class="numfield set-input" placeholder="1" /></div>
+        </div>
+      </div>
+      <div class="section-title">برامج ومشاريع المجال</div>
+      <div id="goalsBox"></div>
     </section>
 
     <div class="install-wrap" id="installWrap" hidden>
@@ -1001,35 +1028,6 @@
     </div>
   </dialog>
 
-  <!-- أهداف المجال -->
-  <dialog id="domainDlg">
-    <div class="dlg">
-      <h3 id="domainTitle">المجال</h3>
-      <div class="domain-progress">
-        <div class="pb-track"><div class="pb-fill" id="domainFill"></div></div>
-        <div class="pb-sub" id="domainSub">0 من 0 مشروع مكتمل</div>
-      </div>
-
-      <label>وزن هذا المجال في الخطة</label>
-      <div class="inline" style="margin-bottom:6px">
-        <div>
-          <label>وزن خطة 2026 (0–100)</label>
-          <input id="wDomain2026" type="text" inputmode="decimal" class="numfield" min="0" max="100" step="1" placeholder="1" />
-        </div>
-        <div>
-          <label>وزن خطة 2030 (0–100)</label>
-          <input id="wDomain2030" type="text" inputmode="decimal" class="numfield" min="0" max="100" step="1" placeholder="1" />
-        </div>
-      </div>
-
-      <div class="loghdr"><h4>مشاريع هذا المجال</h4></div>
-      <div class="logbox" id="goalsBox"></div>
-
-      <div class="actions" style="margin-top:14px">
-        <button class="cancel" id="domainClose">إغلاق</button>
-      </div>
-    </div>
-  </dialog>
 
   <!-- برنامج جديد / تعديل -->
   <dialog id="programDlg">
@@ -1376,6 +1374,7 @@
       habitsList: document.getElementById("habitsList"),
       habitStats: document.getElementById("habitStats"),
       settingsSection: document.getElementById("settingsSection"),
+      domainSection: document.getElementById("domainSection"),
       statsTabs: document.getElementById("statsTabs"),
       domainsGrid: document.getElementById("domainsGrid"),
       pct2030: document.getElementById("pct2030"),
@@ -1416,6 +1415,7 @@
       els.projectsSection.hidden = appMode !== "projects";
       els.remindersSection.hidden = appMode !== "reminders";
       els.settingsSection.hidden = appMode !== "settings";
+      els.domainSection.hidden = appMode !== "domain";
       els.appTitle.textContent = "📖 الصحيفة";
       document.querySelectorAll("#statsTabs button").forEach(b => b.classList.toggle("active", b.dataset.stab === statsTab));
 
@@ -1432,6 +1432,9 @@
       } else if (appMode === "settings") {
         els.dayLabel.textContent = "الإعدادات — التخصيص والبيانات";
         renderSettings();
+      } else if (appMode === "domain") {
+        els.dayLabel.textContent = "تفاصيل المجال";
+        renderGoals();
       }
     }
 
@@ -1444,7 +1447,7 @@
       } else if (appMode === "projects") renderProjects();
       else if (appMode === "reminders") renderReminders();
       else if (appMode === "settings") renderSettings();
-      if (typeof domainDlg !== "undefined" && domainDlg.open) renderGoals();
+      else if (appMode === "domain") renderGoals();
     }
 
     // ---------- عرض المؤقتات ----------
@@ -1835,12 +1838,16 @@
       els.projectsList.replaceChildren(frag);
     }
 
+    const expandedPrograms = new Set();
     function buildProgramBlock(prog) {
       const block = document.createElement("div"); block.className = "prog-block";
       const pct = programPct(prog.id);
       const list = programProjects(prog.id);
+      const expanded = expandedPrograms.has(prog.id);
 
-      const head = document.createElement("div"); head.className = "prog-head";
+      const head = document.createElement("div"); head.className = "prog-head" + (expanded ? " open" : "");
+      const chev = document.createElement("span"); chev.className = "prog-chev"; chev.textContent = "▾";
+      head.append(chev);
       const nm = document.createElement("span"); nm.className = "ph-name";
       nm.innerHTML = '<span class="dc-icon">📁</span> ' + escapeHtml(prog.name);
       head.append(nm);
@@ -1849,15 +1856,24 @@
         bd.textContent = domainIcon(prog.domainId) + " " + domainName(prog.domainId);
         head.append(bd);
       }
+      const count = document.createElement("span"); count.className = "ph-count"; count.textContent = toArDigits(list.length) + " مشروع";
+      head.append(count);
       const pctEl = document.createElement("span"); pctEl.className = "ph-pct"; pctEl.textContent = toArDigits(pct) + "٪";
       head.append(pctEl);
       head.append(buildKebabMenu([
         { icon: "✏️", label: "تعديل البرنامج", onClick: () => openProgram(prog) },
         { icon: "🗑️", label: "حذف البرنامج", danger: true, onClick: () => deleteProgram(prog) }
       ]));
+      // النقر على رأس البرنامج يفتح/يطوي قائمة المشاريع
+      head.onclick = (e) => {
+        if (e.target.closest(".gmenu")) return;
+        if (expandedPrograms.has(prog.id)) expandedPrograms.delete(prog.id); else expandedPrograms.add(prog.id);
+        head.classList.toggle("open");
+        box.hidden = !expandedPrograms.has(prog.id);
+      };
       block.append(head);
 
-      const box = document.createElement("div"); box.className = "goals-group";
+      const box = document.createElement("div"); box.className = "goals-group"; box.hidden = !expanded;
       if (!list.length) {
         const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا مشاريع بعد في هذا البرنامج."; box.append(e);
       } else {
@@ -2363,12 +2379,12 @@
     }
 
     // ---------- نافذة أهداف المجال ----------
-    const domainDlg = document.getElementById("domainDlg");
+    const domainSection = document.getElementById("domainSection");
     const domainTitle = document.getElementById("domainTitle");
+    const domainPct = document.getElementById("domainPct");
     const domainFill = document.getElementById("domainFill");
     const domainSub = document.getElementById("domainSub");
     const goalsBox = document.getElementById("goalsBox");
-    const domainClose = document.getElementById("domainClose");
     let currentDomainId = null;
 
     const wDomain2026 = document.getElementById("wDomain2026");
@@ -2380,8 +2396,10 @@
       const w = state.domainWeights[d.id] || {};
       wDomain2026.value = (typeof w.w2026 === "number") ? w.w2026 : 1;
       wDomain2030.value = (typeof w.w2030 === "number") ? w.w2030 : 1;
-      renderGoals();
-      domainDlg.showModal();
+      appMode = "domain";
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
+      saveUI(); render();
+      window.scrollTo(0, 0);
     }
 
     function saveWeights() {
@@ -2403,6 +2421,7 @@
       const dd = domainDone(currentDomainId, false);
       const habitN = domainHabits(currentDomainId).length;
       domainFill.style.width = pct + "%";
+      if (domainPct) domainPct.textContent = toArDigits(pct) + "٪";
       domainSub.textContent = (list.length || habitN)
         ? ("التقدّم " + toArDigits(pct) + "٪ · " + toArDigits(dd.done) + " من " + toArDigits(dd.total) + " مشروع مكتمل" + (habitN ? " · " + toArDigits(habitN) + " عادة" : ""))
         : "لا برامج أو مشاريع بعد في مجال «" + (d ? d.name : "") + "»";
@@ -2425,8 +2444,12 @@
       }
     }
 
-    domainClose.onclick = () => domainDlg.close();
-    domainDlg.addEventListener("close", () => { if (appMode === "stats" && statsTab === "plan") renderPlan(); });
+    document.getElementById("domainBack").onclick = () => {
+      appMode = "stats"; statsTab = "plan";
+      try { localStorage.setItem(STATS_TAB_KEY, statsTab); } catch (_) {}
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === "stats"));
+      saveUI(); render(); window.scrollTo(0, 0);
+    };
 
     // ---------- نافذة البرنامج ----------
     const programDlg = document.getElementById("programDlg");
