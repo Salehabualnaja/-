@@ -162,6 +162,7 @@
 
     /* التبويبات الفرعية */
     .tabs { display: flex; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 18px; gap: 4px; }
+    .tabs[hidden] { display: none; }
     .tabs button { flex: 1; border: none; background: transparent; color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 700; padding: 9px 2px; border-radius: 9px; cursor: pointer; transition: color .15s, background .15s; white-space: nowrap; }
     .tabs button.active { background: var(--panel); color: var(--accent); box-shadow: var(--shadow); }
 
@@ -596,6 +597,20 @@
     .stats-doms { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
     .stat-dom { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 3px 9px; }
     .stat-dom b { color: var(--accent-ink); font-weight: 900; margin-inline-start: 3px; }
+    /* ═══ صفحة الإعدادات ═══ */
+    .set-group { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+    .set-title { font-weight: 800; font-size: 15px; }
+    .set-desc { font-size: 12.5px; color: var(--muted); margin: 6px 0 12px; line-height: 1.6; }
+    .set-input { width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 11px 12px; font-size: 15px; font-family: inherit; resize: vertical; }
+    .set-input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+    .set-row { display: flex; gap: 8px; align-items: stretch; }
+    .set-row .set-input { flex: 1; }
+    .set-btn { border: none; border-radius: 10px; padding: 12px 18px; font-weight: 800; font-size: 14px; color: #fff; background: var(--accent); cursor: pointer; font-family: inherit; margin-top: 10px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .set-row .set-btn { margin-top: 0; flex: none; }
+    .set-btn.soft { color: var(--accent-ink); background: var(--accent-soft); }
+    .set-btn:active { transform: scale(.98); }
+    textarea.set-input { margin-bottom: 0; }
+
     /* أزرار ورقة الإضافة */
     .addsheet-btn { border: none; border-radius: 12px; padding: 14px; font-weight: 800; font-size: 15px; color: #fff; background: var(--accent); cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
     .addsheet-btn.soft { color: var(--accent-ink); background: var(--accent-soft); }
@@ -634,11 +649,18 @@
       <div class="date" id="dayLabel"></div>
     </header>
 
+    <!-- شريط تبويبات فرعي لصفحة الإحصاءات -->
+    <div class="tabs" id="statsTabs" hidden>
+      <button data-stab="plan" class="active">الخطة</button>
+      <button data-stab="timer">المؤقتات</button>
+      <button data-stab="habits">العادات</button>
+    </div>
+
     <!-- ═══ قسم الخطة (الصفحة الرئيسية) ═══ -->
     <section id="planSection">
       <div class="umbrella">
         <span class="orn">﴿</span>
-        <span class="verse">قُلْ إِنَّ صَلَاتِي وَنُسُكِي وَمَحْيَايَ وَمَمَاتِي لِلَّهِ رَبِّ الْعَالَمِينَ</span>
+        <span class="verse" id="umbrellaVerse">قُلْ إِنَّ صَلَاتِي وَنُسُكِي وَمَحْيَايَ وَمَمَاتِي لِلَّهِ رَبِّ الْعَالَمِينَ</span>
         <span class="orn">﴾</span>
       </div>
 
@@ -715,11 +737,46 @@
       <div id="habitsList"></div>
     </section>
 
-    <div class="footer-tools">
-      <button class="linkbtn" id="exportBtn">تصدير البيانات</button>
-      &nbsp;·&nbsp;
-      <button class="linkbtn" id="importBtn">استيراد</button>
-    </div>
+    <!-- ═══ قسم الإعدادات ═══ -->
+    <section id="settingsSection" hidden>
+      <div class="set-group">
+        <div class="set-title">✨ العبارة المتصدِّرة</div>
+        <p class="set-desc">تظهر في أعلى صفحة الإحصاءات لتحفيزك.</p>
+        <textarea id="setUmbrella" class="set-input" rows="3" placeholder="اكتب عبارتك أو آيتك…"></textarea>
+        <button class="ok set-btn" id="setUmbrellaSave">💾 حفظ العبارة</button>
+      </div>
+
+      <div class="set-group">
+        <div class="set-title">🔔 التذكيرات</div>
+        <p class="set-desc">تذكيرات يومية وأسبوعية وشهرية وسنوية مرتبطة ببرامجك ومشاريعك.</p>
+        <button class="ok set-btn soft" id="setRemindersBtn">فتح صفحة التذكيرات ›</button>
+      </div>
+
+      <div class="set-group">
+        <div class="set-title">🎯 الهدف اليومي للساعات</div>
+        <p class="set-desc">عدد ساعات العمل المستهدفة يومياً في المؤقتات.</p>
+        <div class="set-row">
+          <input id="setDailyGoal" type="text" inputmode="decimal" class="numfield set-input" placeholder="8" />
+          <button class="ok set-btn" id="setDailyGoalSave">حفظ</button>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="set-title">💾 البيانات</div>
+        <p class="set-desc">احتفظ بنسخة احتياطية من بياناتك أو انقلها بين الأجهزة.</p>
+        <div class="set-row">
+          <button class="ok set-btn" id="exportBtn">⬇️ تصدير</button>
+          <button class="ok set-btn soft" id="importBtn">⬆️ استيراد</button>
+        </div>
+      </div>
+
+      <div class="set-group">
+        <div class="set-title">🔔 الإشعارات</div>
+        <p class="set-desc">فعّل الإذن لتصلك التذكيرات كنوافذ إشعار على جهازك.</p>
+        <button class="ok set-btn soft" id="setNotifyBtn">تفعيل الإشعارات</button>
+        <span id="setNotifyState" class="set-desc" style="margin:8px 0 0;display:block"></span>
+      </div>
+    </section>
 
     <div class="install-wrap" id="installWrap" hidden>
       <button id="installBtn">⬇️ تثبيت التطبيق على جهازك</button>
@@ -732,13 +789,11 @@
   <!-- الشريط السفلي للتنقل + زر الإضافة المركزي -->
   <nav class="bottomnav" id="bottomnav">
     <div class="nav-group">
-      <button data-mode="plan" class="active"><span class="bi">📊</span><span class="bl">إحصاءات</span></button>
-      <button data-mode="timer"><span class="bi">⏱️</span><span class="bl">المؤقتات</span></button>
+      <button data-mode="stats" class="active"><span class="bi">📊</span><span class="bl">إحصاءات</span></button>
     </div>
-    <button class="nav-fab" id="navAdd" title="إضافة" aria-label="إضافة برنامج أو مشروع"><span class="plus">＋</span></button>
+    <button class="nav-fab" id="navAdd" title="إضافة" aria-label="إضافة برنامج أو مشروع أو عادة"><span class="plus">＋</span></button>
     <div class="nav-group">
-      <button data-mode="projects"><span class="bi">📁</span><span class="bl">البرامج</span></button>
-      <button data-mode="habits"><span class="bi">🌱</span><span class="bl">العادات</span></button>
+      <button data-mode="settings"><span class="bi">⚙️</span><span class="bl">الإعدادات</span></button>
     </div>
   </nav>
 
@@ -1065,7 +1120,9 @@
     function readUI(key, allowed, def) { try { const v = localStorage.getItem(key); return allowed.indexOf(v) >= 0 ? v : def; } catch (e) { return def; } }
     function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
     let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
-    let appMode = readUI(UI_MODE_KEY, ["plan", "projects", "timer", "reminders", "habits"], "plan");
+    let appMode = readUI(UI_MODE_KEY, ["stats", "settings", "reminders"], "stats");
+    const STATS_TAB_KEY = "ptt.ui.statstab";
+    let statsTab = readUI(STATS_TAB_KEY, ["plan", "timer", "habits"], "plan");
     const REM_VIEW_KEY = "ptt.ui.remview";
     let reminderView = readUI(REM_VIEW_KEY, ["daily", "weekly", "monthly", "yearly"], "daily");
     let remMonthOffset = 0, remYearOffset = 0, remSelDay = null, remSelMonth = null;
@@ -1082,6 +1139,7 @@
     function withDefaults(p) {
       if (!p.settings) p.settings = {};
       if (typeof p.settings.dailyGoalHours !== "number") p.settings.dailyGoalHours = 8;
+      if (typeof p.settings.umbrella !== "string") p.settings.umbrella = "قُلْ إِنَّ صَلَاتِي وَنُسُكِي وَمَحْيَايَ وَمَمَاتِي لِلَّهِ رَبِّ الْعَالَمِينَ";
       if (!Array.isArray(p.programs)) p.programs = [];
       if (!Array.isArray(p.plans)) p.plans = [];
 
@@ -1288,6 +1346,8 @@
       habitsSection: document.getElementById("habitsSection"),
       habitsList: document.getElementById("habitsList"),
       habitStats: document.getElementById("habitStats"),
+      settingsSection: document.getElementById("settingsSection"),
+      statsTabs: document.getElementById("statsTabs"),
       domainsGrid: document.getElementById("domainsGrid"),
       pct2030: document.getElementById("pct2030"),
       fill2030: document.getElementById("fill2030"),
@@ -1319,36 +1379,38 @@
 
     // ---------- التبديل بين الأوضاع ----------
     function render() {
-      els.planSection.hidden = appMode !== "plan";
-      els.projectsSection.hidden = appMode !== "projects";
-      els.timerSection.hidden = appMode !== "timer";
+      const isStats = appMode === "stats";
+      els.statsTabs.hidden = !isStats;
+      els.planSection.hidden = !(isStats && statsTab === "plan");
+      els.timerSection.hidden = !(isStats && statsTab === "timer");
+      els.habitsSection.hidden = !(isStats && statsTab === "habits");
+      els.projectsSection.hidden = true; // البرامج تُعرض الآن عبر بطاقة المجال
       els.remindersSection.hidden = appMode !== "reminders";
-      els.habitsSection.hidden = appMode !== "habits";
+      els.settingsSection.hidden = appMode !== "settings";
       els.appTitle.textContent = "📖 الصحيفة";
-      if (appMode === "plan") {
-        els.dayLabel.textContent = "الإحصاءات — نظرة عامة على الخطة";
-        renderPlan();
-      } else if (appMode === "projects") {
-        els.dayLabel.textContent = "البرامج — كل برنامج يضمّ مشاريعه";
-        renderProjects();
+      document.querySelectorAll("#statsTabs button").forEach(b => b.classList.toggle("active", b.dataset.stab === statsTab));
+
+      if (isStats) {
+        if (statsTab === "plan") renderPlan();
+        else if (statsTab === "timer") renderTimer();
+        else { els.dayLabel.textContent = "العادات — تابِع استمراريتك اليومية 🔥"; renderHabits(); }
       } else if (appMode === "reminders") {
         els.dayLabel.textContent = "التذكيرات — يومية · أسبوعية · شهرية · سنوية";
         renderReminders();
-      } else if (appMode === "habits") {
-        els.dayLabel.textContent = "العادات — تابِع استمراريتك اليومية 🔥";
-        renderHabits();
-      } else {
-        renderTimer();
+      } else if (appMode === "settings") {
+        els.dayLabel.textContent = "الإعدادات — التخصيص والبيانات";
+        renderSettings();
       }
     }
 
     // إعادة رسم ما هو ظاهر حالياً بعد أي تعديل
     function refreshViews() {
-      if (appMode === "plan") renderPlan();
-      else if (appMode === "projects") renderProjects();
-      else if (appMode === "reminders") renderReminders();
-      else if (appMode === "habits") renderHabits();
-      else if (appMode === "timer") renderTimer();
+      if (appMode === "stats") {
+        if (statsTab === "plan") renderPlan();
+        else if (statsTab === "timer") renderTimer();
+        else renderHabits();
+      } else if (appMode === "reminders") renderReminders();
+      else if (appMode === "settings") renderSettings();
       if (typeof domainDlg !== "undefined" && domainDlg.open) renderGoals();
     }
 
@@ -1460,6 +1522,8 @@
 
     function renderPlan() {
       els.dayLabel.textContent = "الإحصاءات · لوحة الخطة الشخصية · 8 مجالات";
+      const uv = document.getElementById("umbrellaVerse");
+      if (uv) uv.textContent = state.settings.umbrella || "";
 
       // البارات الكبيرة (متوسط مرجّح لتقدّم المجالات)
       const pct30 = planPct(false), pct26 = planPct(true);
@@ -1744,9 +1808,10 @@
 
     function deleteProgram(prog) {
       if (!confirm("حذف البرنامج «" + prog.name + "»؟ ستبقى مشاريعه لكن بلا برنامج.")) return;
+      const dom = prog.domainId || "";
       for (const pl of state.plans) if (pl.programId === prog.id) pl.programId = "";
       state.programs = state.programs.filter(x => x.id !== prog.id);
-      save(); renderProjects();
+      touchDomain(dom); save(); refreshViews();
     }
 
     function renderToday(now, today) {
@@ -2144,12 +2209,22 @@
       input.click();
     };
 
-    // ---------- التبويبات الفرعية (المؤقتات) ----------
-    document.querySelectorAll(".tabs button").forEach(btn => {
+    // ---------- التبويبات الفرعية للمؤقتات (المدد الزمنية) ----------
+    document.querySelectorAll("#periodTabs button").forEach(btn => {
       btn.onclick = () => {
         currentView = btn.dataset.view;
-        document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("active", b === btn));
+        document.querySelectorAll("#periodTabs button").forEach(b => b.classList.toggle("active", b === btn));
         saveUI(); render();
+      };
+    });
+
+    // ---------- تبويبات صفحة الإحصاءات (الخطة/المؤقتات/العادات) ----------
+    document.querySelectorAll("#statsTabs button").forEach(btn => {
+      btn.onclick = () => {
+        statsTab = btn.dataset.stab;
+        document.querySelectorAll("#statsTabs button").forEach(b => b.classList.toggle("active", b === btn));
+        try { localStorage.setItem(STATS_TAB_KEY, statsTab); } catch (_) {}
+        render();
       };
     });
 
@@ -2168,7 +2243,8 @@
 
     // استعادة حالة التبويبات المحفوظة عند الإقلاع
     document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === appMode));
-    document.querySelectorAll(".tabs button").forEach(b => b.classList.toggle("active", b.dataset.view === currentView));
+    document.querySelectorAll("#periodTabs button").forEach(b => b.classList.toggle("active", b.dataset.view === currentView));
+    document.querySelectorAll("#statsTabs button").forEach(b => b.classList.toggle("active", b.dataset.stab === statsTab));
 
     function fmtDateShort(val) {
       if (!val) return "";
@@ -2222,21 +2298,32 @@
       const list = domainPlans(currentDomainId);
       const pct = Math.round(domainProgress(currentDomainId, false) * 100);
       const dd = domainDone(currentDomainId, false);
+      const habitN = domainHabits(currentDomainId).length;
       domainFill.style.width = pct + "%";
-      domainSub.textContent = list.length
-        ? ("التقدّم " + toArDigits(pct) + "٪ · " + toArDigits(dd.done) + " من " + toArDigits(dd.total) + " مكتمل")
-        : "لا مشاريع بعد في مجال «" + (d ? d.name : "") + "»";
+      domainSub.textContent = (list.length || habitN)
+        ? ("التقدّم " + toArDigits(pct) + "٪ · " + toArDigits(dd.done) + " من " + toArDigits(dd.total) + " مشروع مكتمل" + (habitN ? " · " + toArDigits(habitN) + " عادة" : ""))
+        : "لا برامج أو مشاريع بعد في مجال «" + (d ? d.name : "") + "»";
 
       goalsBox.replaceChildren();
-      if (!list.length) {
-        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد مشاريع في هذا المجال."; goalsBox.append(e); return;
+      const progs = state.programs.filter(pr => (pr.domainId || "") === currentDomainId);
+      const ungrouped = list.filter(pl => !pl.programId);
+      if (!progs.length && !ungrouped.length) {
+        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد برامج أو مشاريع في هذا المجال. أضِفها من زر ➕."; goalsBox.append(e); return;
       }
-      const sorted = list.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
-      for (const g of sorted) goalsBox.append(buildGoalRow(g));
+      for (const prog of progs) goalsBox.append(buildProgramBlock(prog));
+      if (ungrouped.length) {
+        const block = document.createElement("div"); block.className = "prog-block";
+        const head = document.createElement("div"); head.className = "prog-head";
+        head.innerHTML = '<span class="ph-name"><span class="dc-icon">🗂️</span> مشاريع بلا برنامج</span>';
+        block.append(head);
+        const box = document.createElement("div"); box.className = "goals-group";
+        for (const pl of ungrouped.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created))) box.append(buildGoalRow(pl));
+        block.append(box); goalsBox.append(block);
+      }
     }
 
     domainClose.onclick = () => domainDlg.close();
-    domainDlg.addEventListener("close", () => { if (appMode === "plan") renderPlan(); });
+    domainDlg.addEventListener("close", () => { if (appMode === "stats" && statsTab === "plan") renderPlan(); });
 
     // ---------- نافذة البرنامج ----------
     const programDlg = document.getElementById("programDlg");
@@ -2265,9 +2352,10 @@
         const np = { id: uid(), name: nm, domainId: programDomain.value || "" };
         state.programs.push(np); touchDomain(np.domainId);
       }
-      save(); if (appMode === "projects") renderProjects();
+      save(); refreshViews();
     });
-    document.getElementById("projectsAddBtn").onclick = () => addSheet.showModal();
+    const projectsAddBtnEl = document.getElementById("projectsAddBtn");
+    if (projectsAddBtnEl) projectsAddBtnEl.onclick = () => addSheet.showModal();
 
     // ---------- نافذة هدف/مشروع جديد ----------
     const itemDlg = document.getElementById("itemDlg");
@@ -2605,11 +2693,43 @@
     }
 
     // فتح التذكيرات من زر الجرس في الرأس
-    document.getElementById("openReminders").onclick = () => {
+    function openRemindersView() {
       appMode = "reminders";
       document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
       saveUI(); render();
+    }
+    document.getElementById("openReminders").onclick = openRemindersView;
+
+    // ---------- الإعدادات ----------
+    const setUmbrella = document.getElementById("setUmbrella");
+    const setDailyGoal = document.getElementById("setDailyGoal");
+    const setNotifyState = document.getElementById("setNotifyState");
+    function renderSettings() {
+      setUmbrella.value = state.settings.umbrella || "";
+      setDailyGoal.value = state.settings.dailyGoalHours;
+      const perm = ("Notification" in window) ? Notification.permission : "unsupported";
+      setNotifyState.textContent = perm === "granted" ? "الإشعارات مُفعّلة ✅"
+        : perm === "denied" ? "الإشعارات مرفوضة — فعّلها من إعدادات المتصفح."
+        : perm === "unsupported" ? "جهازك لا يدعم الإشعارات."
+        : "الإشعارات غير مُفعّلة بعد.";
+    }
+    document.getElementById("setUmbrellaSave").onclick = () => {
+      state.settings.umbrella = setUmbrella.value.trim();
+      save();
+      const uv = document.getElementById("umbrellaVerse"); if (uv) uv.textContent = state.settings.umbrella;
+      setUmbrellaSaveFlash();
     };
+    function setUmbrellaSaveFlash() {
+      const b = document.getElementById("setUmbrellaSave"); const t = b.textContent;
+      b.textContent = "✓ تم الحفظ"; setTimeout(() => { b.textContent = t; }, 1200);
+    }
+    document.getElementById("setDailyGoalSave").onclick = () => {
+      let v = parseFloat(setDailyGoal.value); if (!isFinite(v) || v < 0) v = 0; if (v > 24) v = 24;
+      state.settings.dailyGoalHours = v; setDailyGoal.value = v; save();
+      const b = document.getElementById("setDailyGoalSave"); b.textContent = "✓"; setTimeout(() => { b.textContent = "حفظ"; }, 1000);
+    };
+    document.getElementById("setRemindersBtn").onclick = openRemindersView;
+    document.getElementById("setNotifyBtn").onclick = () => ensureNotifyPermission().then(() => renderSettings());
 
     // ---------- إدخال الأرقام (قبول الأرقام العربية) + إبقاء الحقل فوق الكيبورد ----------
     function normNum(s) {
