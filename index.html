@@ -110,9 +110,11 @@
 
     /* الرأس */
     header.app { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0 2px; }
-    .hdr-bell { position: absolute; top: 0; inset-inline-start: 0; border: none; background: var(--panel-2); color: var(--accent-ink); width: 38px; height: 38px; border-radius: 12px; font-size: 17px; cursor: pointer; display: grid; place-items: center; box-shadow: var(--shadow); transition: transform .1s, background .15s; }
-    .hdr-bell:hover { background: var(--accent-soft); }
-    .hdr-bell:active { transform: scale(.92); }
+    .hdr-bell, .hdr-gear { position: absolute; top: 0; border: none; background: var(--panel-2); color: var(--accent-ink); width: 38px; height: 38px; border-radius: 12px; font-size: 17px; cursor: pointer; display: grid; place-items: center; box-shadow: var(--shadow); transition: transform .1s, background .15s; }
+    .hdr-bell { inset-inline-start: 0; }
+    .hdr-gear { inset-inline-end: 0; }
+    .hdr-bell:hover, .hdr-gear:hover { background: var(--accent-soft); }
+    .hdr-bell:active, .hdr-gear:active { transform: scale(.92); }
     header.app h1 { font-size: 17px; margin: 0; font-weight: 800; letter-spacing: .2px; }
     header.app .date { color: var(--muted); font-size: 12.5px; }
 
@@ -591,6 +593,10 @@
     .prog-head .ph-pct { margin-inline-start: auto; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
     .prog-head .iconbtn { margin: 0; }
     .prog-block { margin-bottom: 18px; }
+    /* تصنيف حسب المجال في صفحة المشاريع */
+    .dom-section { margin-bottom: 22px; }
+    .dom-section-head { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 15px; color: var(--accent-ink); padding: 6px 4px 12px; border-bottom: 2px solid var(--accent-soft); margin-bottom: 12px; }
+    .dom-section-head .dsh-pct { font-size: 13px; color: var(--accent); font-variant-numeric: tabular-nums; }
     /* بطاقة إحصاءات البرامج والمشاريع */
     .stats-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 12px; box-shadow: var(--shadow); }
     .stats-card[hidden] { display: none; }
@@ -649,6 +655,7 @@
   <div class="wrap">
     <header class="app">
       <button class="hdr-bell" id="openReminders" title="التذكيرات" aria-label="التذكيرات">🔔</button>
+      <button class="hdr-gear" id="openSettings" title="الإعدادات" aria-label="الإعدادات">⚙️</button>
       <h1 id="appTitle">📖 الصحيفة</h1>
       <div class="date" id="dayLabel"></div>
     </header>
@@ -693,6 +700,10 @@
     <section id="projectsSection" hidden>
       <div class="stats-card" id="projStats" hidden></div>
       <button class="add-goal-btn" id="projectsAddBtn">➕ إضافة برنامج أو مشروع</button>
+      <div class="tabs" id="projViewTabs">
+        <button data-pview="program" class="active">حسب البرامج</button>
+        <button data-pview="domain">حسب المجالات</button>
+      </div>
       <div id="projectsList"></div>
     </section>
 
@@ -797,7 +808,7 @@
     </div>
     <button class="nav-fab" id="navAdd" title="إضافة" aria-label="إضافة برنامج أو مشروع أو عادة"><span class="plus">＋</span></button>
     <div class="nav-group">
-      <button data-mode="settings"><span class="bi">⚙️</span><span class="bl">الإعدادات</span></button>
+      <button data-mode="projects"><span class="bi">📁</span><span class="bl">المشاريع</span></button>
     </div>
   </nav>
 
@@ -1124,9 +1135,11 @@
     function readUI(key, allowed, def) { try { const v = localStorage.getItem(key); return allowed.indexOf(v) >= 0 ? v : def; } catch (e) { return def; } }
     function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
     let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
-    let appMode = readUI(UI_MODE_KEY, ["stats", "settings", "reminders"], "stats");
+    let appMode = readUI(UI_MODE_KEY, ["stats", "projects", "settings", "reminders"], "stats");
     const STATS_TAB_KEY = "ptt.ui.statstab";
     let statsTab = readUI(STATS_TAB_KEY, ["plan", "timer", "habits"], "plan");
+    const PROJ_VIEW_KEY = "ptt.ui.projview";
+    let projectsView = readUI(PROJ_VIEW_KEY, ["program", "domain"], "program");
     const REM_VIEW_KEY = "ptt.ui.remview";
     let reminderView = readUI(REM_VIEW_KEY, ["daily", "weekly", "monthly", "yearly"], "daily");
     let remMonthOffset = 0, remYearOffset = 0, remSelDay = null, remSelMonth = null;
@@ -1400,7 +1413,7 @@
       els.planSection.hidden = !(isStats && statsTab === "plan");
       els.timerSection.hidden = !(isStats && statsTab === "timer");
       els.habitsSection.hidden = !(isStats && statsTab === "habits");
-      els.projectsSection.hidden = true; // البرامج تُعرض الآن عبر بطاقة المجال
+      els.projectsSection.hidden = appMode !== "projects";
       els.remindersSection.hidden = appMode !== "reminders";
       els.settingsSection.hidden = appMode !== "settings";
       els.appTitle.textContent = "📖 الصحيفة";
@@ -1410,6 +1423,9 @@
         if (statsTab === "plan") renderPlan();
         else if (statsTab === "timer") renderTimer();
         else { els.dayLabel.textContent = "العادات — تابِع استمراريتك اليومية 🔥"; renderHabits(); }
+      } else if (appMode === "projects") {
+        els.dayLabel.textContent = "المشاريع — برامجك ومشاريعك مصنّفة";
+        renderProjects();
       } else if (appMode === "reminders") {
         els.dayLabel.textContent = "التذكيرات — يومية · أسبوعية · شهرية · سنوية";
         renderReminders();
@@ -1425,7 +1441,8 @@
         if (statsTab === "plan") renderPlan();
         else if (statsTab === "timer") renderTimer();
         else renderHabits();
-      } else if (appMode === "reminders") renderReminders();
+      } else if (appMode === "projects") renderProjects();
+      else if (appMode === "reminders") renderReminders();
       else if (appMode === "settings") renderSettings();
       if (typeof domainDlg !== "undefined" && domainDlg.open) renderGoals();
     }
@@ -1760,8 +1777,21 @@
       if (any) els.projStats.append(doms);
     }
 
+    function ungroupedBlock(plans) {
+      const block = document.createElement("div"); block.className = "prog-block";
+      const head = document.createElement("div"); head.className = "prog-head";
+      head.innerHTML = '<span class="ph-name"><span class="dc-icon">🗂️</span> مشاريع بلا برنامج</span>';
+      block.append(head);
+      const box = document.createElement("div"); box.className = "goals-group";
+      const sorted = plans.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
+      for (const pl of sorted) box.append(buildGoalRow(pl));
+      block.append(box);
+      return block;
+    }
+
     function renderProjects() {
       renderProjStats();
+      document.querySelectorAll("#projViewTabs button").forEach(b => b.classList.toggle("active", b.dataset.pview === projectsView));
       const frag = document.createDocumentFragment();
       const ungroupedPlans = programProjects("");
 
@@ -1773,18 +1803,34 @@
         return;
       }
 
-      for (const prog of state.programs) frag.append(buildProgramBlock(prog));
-
-      if (ungroupedPlans.length) {
-        const block = document.createElement("div"); block.className = "prog-block";
-        const head = document.createElement("div"); head.className = "prog-head";
-        head.innerHTML = '<span class="ph-name"><span class="dc-icon">🗂️</span> مشاريع بلا برنامج</span>';
-        block.append(head);
-        const box = document.createElement("div"); box.className = "goals-group";
-        const sorted = ungroupedPlans.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
-        for (const pl of sorted) box.append(buildGoalRow(pl));
-        block.append(box);
-        frag.append(block);
+      if (projectsView === "domain") {
+        // مصنّفة حسب المجالات الثمانية
+        for (const d of DOMAINS) {
+          const progs = state.programs.filter(pr => (pr.domainId || "") === d.id);
+          if (!progs.length) continue;
+          const sec = document.createElement("div"); sec.className = "dom-section";
+          const head = document.createElement("div"); head.className = "dom-section-head";
+          const pct = Math.round(domainProgress(d.id, false) * 100);
+          head.innerHTML = "<span>" + d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪</span>";
+          sec.append(head);
+          for (const prog of progs) sec.append(buildProgramBlock(prog));
+          frag.append(sec);
+        }
+        // برامج بلا مجال
+        const noDomProgs = state.programs.filter(pr => !pr.domainId || !DOMAINS.some(d => d.id === pr.domainId));
+        if (noDomProgs.length) {
+          const sec = document.createElement("div"); sec.className = "dom-section";
+          const head = document.createElement("div"); head.className = "dom-section-head";
+          head.innerHTML = "<span>📌 برامج بلا مجال</span>";
+          sec.append(head);
+          for (const prog of noDomProgs) sec.append(buildProgramBlock(prog));
+          frag.append(sec);
+        }
+        if (ungroupedPlans.length) frag.append(ungroupedBlock(ungroupedPlans));
+      } else {
+        // حسب البرامج (الترتيب الافتراضي)
+        for (const prog of state.programs) frag.append(buildProgramBlock(prog));
+        if (ungroupedPlans.length) frag.append(ungroupedBlock(ungroupedPlans));
       }
       els.projectsList.replaceChildren(frag);
     }
@@ -2274,6 +2320,16 @@
       };
     });
 
+    // ---------- تبويبات عرض المشاريع (حسب البرامج/المجالات) ----------
+    document.querySelectorAll("#projViewTabs button").forEach(btn => {
+      btn.onclick = () => {
+        projectsView = btn.dataset.pview;
+        document.querySelectorAll("#projViewTabs button").forEach(b => b.classList.toggle("active", b === btn));
+        try { localStorage.setItem(PROJ_VIEW_KEY, projectsView); } catch (_) {}
+        renderProjects();
+      };
+    });
+
     // ---------- الشريط السفلي للتنقل ----------
     document.querySelectorAll(".bottomnav button[data-mode]").forEach(btn => {
       btn.onclick = () => {
@@ -2291,6 +2347,7 @@
     document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === appMode));
     document.querySelectorAll("#periodTabs button").forEach(b => b.classList.toggle("active", b.dataset.view === currentView));
     document.querySelectorAll("#statsTabs button").forEach(b => b.classList.toggle("active", b.dataset.stab === statsTab));
+    document.querySelectorAll("#projViewTabs button").forEach(b => b.classList.toggle("active", b.dataset.pview === projectsView));
 
     function fmtDateShort(val) {
       if (!val) return "";
@@ -2745,6 +2802,12 @@
       saveUI(); render();
     }
     document.getElementById("openReminders").onclick = openRemindersView;
+    // فتح الإعدادات من زر الترس في الرأس
+    document.getElementById("openSettings").onclick = () => {
+      appMode = "settings";
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
+      saveUI(); render();
+    };
 
     // ---------- الإعدادات ----------
     const setUmbrella = document.getElementById("setUmbrella");
