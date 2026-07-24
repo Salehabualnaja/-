@@ -725,7 +725,7 @@
   <!-- الشريط السفلي للتنقل + زر الإضافة المركزي -->
   <nav class="bottomnav" id="bottomnav">
     <div class="nav-group">
-      <button data-mode="plan" class="active"><span class="bi">🎯</span><span class="bl">الملخص</span></button>
+      <button data-mode="plan" class="active"><span class="bi">📊</span><span class="bl">إحصاءات</span></button>
       <button data-mode="timer"><span class="bi">⏱️</span><span class="bl">المؤقتات</span></button>
     </div>
     <button class="nav-fab" id="navAdd" title="إضافة" aria-label="إضافة برنامج أو مشروع"><span class="plus">＋</span></button>
@@ -1319,7 +1319,7 @@
       els.habitsSection.hidden = appMode !== "habits";
       els.appTitle.textContent = "📖 الصحيفة";
       if (appMode === "plan") {
-        els.dayLabel.textContent = "الملخص التنفيذي — نظرة عامة على الخطة";
+        els.dayLabel.textContent = "الإحصاءات — نظرة عامة على الخطة";
         renderPlan();
       } else if (appMode === "projects") {
         els.dayLabel.textContent = "البرامج — كل برنامج يضمّ مشاريعه";
@@ -1452,7 +1452,7 @@
     }
 
     function renderPlan() {
-      els.dayLabel.textContent = "لوحة الخطة الشخصية · 8 مجالات";
+      els.dayLabel.textContent = "الإحصاءات · لوحة الخطة الشخصية · 8 مجالات";
 
       // البارات الكبيرة (متوسط مرجّح لتقدّم المجالات)
       const pct30 = planPct(false), pct26 = planPct(true);
