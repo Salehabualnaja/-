@@ -221,13 +221,17 @@
     .gkebab { background: transparent; border: none; cursor: pointer; color: var(--muted); font-size: 20px; line-height: 1; padding: 6px 9px; border-radius: 9px; transition: background .15s; }
     .gkebab:hover { background: var(--panel-2); }
     .gkebab:active { background: var(--border); }
-    .gmenu-pop { position: absolute; left: 0; right: auto; top: calc(100% + 4px); z-index: 45; background: var(--panel); border: 1px solid var(--border-strong); border-radius: 12px; box-shadow: var(--shadow); padding: 6px; min-width: 170px; display: flex; flex-direction: column; gap: 2px; }
+    .gmenu-pop { position: absolute; left: 0; right: auto; top: calc(100% + 6px); z-index: 45; background: var(--panel); border: 1px solid var(--border-strong); border-radius: 14px; box-shadow: 0 12px 32px rgba(20,15,8,.24), 0 3px 10px rgba(20,15,8,.12); padding: 7px; min-width: 210px; display: flex; flex-direction: column; gap: 2px; transform-origin: top left; animation: gmenu-in .15s ease; }
     .gmenu-pop[hidden] { display: none; }
-    .gmenu-pop.up { top: auto; bottom: calc(100% + 4px); }
-    .gmenu-item { display: flex; align-items: center; gap: 10px; width: 100%; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 13.5px; font-weight: 600; color: var(--text); text-align: start; padding: 10px 12px; border-radius: 8px; }
-    .gmenu-item:hover { background: var(--panel-2); }
-    .gmenu-item.danger { color: var(--danger); }
-    .gmenu-item .gmi-ic { font-size: 15px; width: 20px; text-align: center; flex: none; }
+    .gmenu-pop.up { top: auto; bottom: calc(100% + 6px); transform-origin: bottom left; }
+    @keyframes gmenu-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
+    .gmenu-item { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; color: var(--text); text-align: start; padding: 12px 12px; border-radius: 10px; transition: background .12s; }
+    .gmenu-item:hover, .gmenu-item:active { background: var(--panel-2); }
+    .gmenu-item .gmi-ic { font-size: 16px; width: 30px; height: 30px; display: grid; place-items: center; flex: none; background: var(--panel-2); border-radius: 9px; }
+    .gmenu-item:hover .gmi-ic { background: var(--panel); }
+    .gmenu-item.danger { color: var(--danger); margin-top: 5px; padding-top: 13px; border-top: 1px solid var(--border); }
+    .gmenu-item.danger .gmi-ic { background: color-mix(in srgb, var(--danger) 13%, transparent); }
+    .gmenu-item.danger:hover { background: color-mix(in srgb, var(--danger) 12%, transparent); }
     .goalrow .gyear { flex: none; font-size: 11px; font-weight: 700; border-radius: 7px; padding: 3px 9px; cursor: pointer; background: var(--accent-soft); color: var(--accent-ink); border: 1px solid var(--border); }
     .goalrow .gmeta { font-size: 11px; color: var(--muted); margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
     .gbadge { font-size: 10.5px; font-weight: 700; border-radius: 6px; padding: 1px 7px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
@@ -237,7 +241,7 @@
     .gstep button:active { background: var(--accent-soft); }
 
     /* صفحة الأهداف */
-    .goals-group { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; }
+    .goals-group { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 12px; }
     .goals-group-title { display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-weight: 800; font-size: 14px; border-bottom: 1px solid var(--border); background: var(--panel-2); }
     .goals-group-title .ggcount { margin-inline-start: auto; font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
     .goals-group .goalrow { padding-inline: 14px; }
