@@ -109,7 +109,10 @@
     .wrap { max-width: 620px; margin: 0 auto; padding: 20px 16px calc(96px + env(safe-area-inset-bottom)); }
 
     /* الرأس */
-    header.app { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0 2px; }
+    header.app { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0 2px; }
+    .hdr-bell { position: absolute; top: 0; inset-inline-start: 0; border: none; background: var(--panel-2); color: var(--accent-ink); width: 38px; height: 38px; border-radius: 12px; font-size: 17px; cursor: pointer; display: grid; place-items: center; box-shadow: var(--shadow); transition: transform .1s, background .15s; }
+    .hdr-bell:hover { background: var(--accent-soft); }
+    .hdr-bell:active { transform: scale(.92); }
     header.app h1 { font-size: 17px; margin: 0; font-weight: 800; letter-spacing: .2px; }
     header.app .date { color: var(--muted); font-size: 12.5px; }
 
@@ -586,6 +589,29 @@
     .stats-doms { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
     .stat-dom { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 3px 9px; }
     .stat-dom b { color: var(--accent-ink); font-weight: 900; margin-inline-start: 3px; }
+    /* أزرار ورقة الإضافة */
+    .addsheet-btn { border: none; border-radius: 12px; padding: 14px; font-weight: 800; font-size: 15px; color: #fff; background: var(--accent); cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .addsheet-btn.soft { color: var(--accent-ink); background: var(--accent-soft); }
+    .addsheet-btn:active { transform: scale(.98); }
+
+    /* ═══ صفحة العادات (تتبّع الاسترايك) ═══ */
+    .habit-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px; margin-bottom: 10px; box-shadow: var(--shadow); }
+    .habit-top { display: flex; align-items: flex-start; gap: 10px; }
+    .habit-top .hb-name { flex: 1; min-width: 0; }
+    .habit-top .hb-title { font-weight: 800; font-size: 15px; }
+    .habit-top .hb-dom { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 4px; }
+    .habit-streak { display: flex; align-items: center; gap: 5px; font-weight: 900; color: var(--accent-ink); background: var(--accent-soft); border-radius: 10px; padding: 6px 11px; font-size: 15px; white-space: nowrap; flex: none; font-variant-numeric: tabular-nums; }
+    .habit-streak.zero { color: var(--muted); background: var(--panel-2); }
+    .habit-days { display: flex; gap: 5px; margin-top: 13px; }
+    .hday { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+    .hday .hd-dot { width: 100%; max-width: 34px; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: 13px; background: var(--panel-2); border: 1.5px solid var(--border); color: var(--muted); cursor: pointer; }
+    .hday .hd-dot.on { background: var(--run); border-color: var(--run); color: #fff; }
+    .hday .hd-dot.today { border-color: var(--accent); border-width: 2px; }
+    .hday .hd-lbl { font-size: 9px; color: var(--muted); font-weight: 700; }
+    .habit-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 13px; gap: 10px; }
+    .habit-check { flex: 1; border: 1px solid var(--border-strong); border-radius: 11px; padding: 11px 0; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; background: var(--panel-2); color: var(--text); display: flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s; }
+    .habit-check.on { background: var(--run); color: #fff; border-color: var(--run); }
+    .habit-best { font-size: 11px; color: var(--muted); font-weight: 700; white-space: nowrap; }
     .prog-projects { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .prog-add { width: 100%; margin: 2px 0 0; border: 1.5px dashed var(--border-strong); background: var(--panel); color: var(--accent); font-family: inherit; font-weight: 700; font-size: 13.5px; padding: 10px 0; border-radius: 12px; cursor: pointer; grid-column: 1 / -1; }
 
@@ -596,6 +622,7 @@
 <body>
   <div class="wrap">
     <header class="app">
+      <button class="hdr-bell" id="openReminders" title="التذكيرات" aria-label="التذكيرات">🔔</button>
       <h1 id="appTitle">📖 الصحيفة</h1>
       <div class="date" id="dayLabel"></div>
     </header>
@@ -674,6 +701,13 @@
       <div id="remindersList"></div>
     </section>
 
+    <!-- ═══ قسم العادات ═══ -->
+    <section id="habitsSection" hidden>
+      <div class="stats-card" id="habitStats" hidden></div>
+      <button class="add-goal-btn" id="habitsAddBtn">➕ عادة يومية جديدة</button>
+      <div id="habitsList"></div>
+    </section>
+
     <div class="footer-tools">
       <button class="linkbtn" id="exportBtn">تصدير البيانات</button>
       &nbsp;·&nbsp;
@@ -697,7 +731,7 @@
     <button class="nav-fab" id="navAdd" title="إضافة" aria-label="إضافة برنامج أو مشروع"><span class="plus">＋</span></button>
     <div class="nav-group">
       <button data-mode="projects"><span class="bi">📁</span><span class="bl">البرامج</span></button>
-      <button data-mode="reminders"><span class="bi">🔔</span><span class="bl">تذكيرات</span></button>
+      <button data-mode="habits"><span class="bi">🌱</span><span class="bl">العادات</span></button>
     </div>
   </nav>
 
@@ -706,10 +740,33 @@
     <div class="dlg">
       <h3>➕ إضافة</h3>
       <div class="rows">
-        <button class="ok" id="addSheetProgram" style="border:none;border-radius:12px;padding:14px;font-weight:800;font-size:15px;color:#fff;background:var(--accent);cursor:pointer;font-family:inherit">📁 برنامج جديد</button>
-        <button class="ok" id="addSheetProject" style="border:none;border-radius:12px;padding:14px;font-weight:800;font-size:15px;color:var(--accent-ink);background:var(--accent-soft);cursor:pointer;font-family:inherit">📄 مشروع جديد</button>
+        <button class="ok addsheet-btn" id="addSheetProject">📄 مشروع (نقاط أو ساعات)</button>
+        <button class="ok addsheet-btn soft" id="addSheetHabit">🌱 عادة يومية</button>
+        <button class="ok addsheet-btn soft" id="addSheetProgram">📁 برنامج جديد</button>
       </div>
       <div class="actions"><button class="cancel" id="addSheetClose">إلغاء</button></div>
+    </div>
+  </dialog>
+
+  <!-- عادة يومية جديدة / تعديل -->
+  <dialog id="habitDlg">
+    <div class="dlg">
+      <h3 id="habitDlgTitle">🌱 عادة يومية جديدة</h3>
+      <p>تُتابَع يومياً وتُعزّز الاستمرارية (الاسترايك 🔥)، وتصبّ في خطتك السنوية و٢٠٣٠.</p>
+      <div class="rows">
+        <div>
+          <label>اسم العادة</label>
+          <input id="habitName" type="text" placeholder="مثال: قراءة وِرد القرآن" autocomplete="off" />
+        </div>
+        <div>
+          <label>المجال</label>
+          <select id="habitDomain"></select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="ok" id="habitSave">حفظ</button>
+        <button class="cancel" id="habitCancel">إلغاء</button>
+      </div>
     </div>
   </dialog>
 
@@ -1001,7 +1058,7 @@
     function readUI(key, allowed, def) { try { const v = localStorage.getItem(key); return allowed.indexOf(v) >= 0 ? v : def; } catch (e) { return def; } }
     function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
     let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
-    let appMode = readUI(UI_MODE_KEY, ["plan", "projects", "timer", "reminders"], "plan");
+    let appMode = readUI(UI_MODE_KEY, ["plan", "projects", "timer", "reminders", "habits"], "plan");
     const REM_VIEW_KEY = "ptt.ui.remview";
     let reminderView = readUI(REM_VIEW_KEY, ["daily", "weekly", "monthly", "yearly"], "daily");
     let remMonthOffset = 0, remYearOffset = 0, remSelDay = null, remSelMonth = null;
@@ -1070,6 +1127,14 @@
       // إحصاء التحديات المنجزة = المنجَز الحالي + المنجَز الذي حُذف (لا يعتمد على ضغطات الزر)
       if (!p.challengeStats || typeof p.challengeStats !== "object") p.challengeStats = {};
       if (typeof p.challengeStats.deletedDone !== "number") p.challengeStats.deletedDone = 0;
+      // العادات اليومية: { id, name, domainId, created, log: { "YYYY-MM-DD": true } }
+      if (!Array.isArray(p.habits)) p.habits = [];
+      for (const h of p.habits) {
+        if (typeof h.name !== "string") h.name = "عادة";
+        if (typeof h.domainId !== "string") h.domainId = "";
+        if (typeof h.created !== "number") h.created = Date.now();
+        if (!h.log || typeof h.log !== "object") h.log = {};
+      }
       // تاريخ آخر تحديث لكل مجال
       if (!p.domainUpdated || typeof p.domainUpdated !== "object") p.domainUpdated = {};
       // التذكيرات
@@ -1213,6 +1278,9 @@
       projStats: document.getElementById("projStats"),
       remindersSection: document.getElementById("remindersSection"),
       remindersList: document.getElementById("remindersList"),
+      habitsSection: document.getElementById("habitsSection"),
+      habitsList: document.getElementById("habitsList"),
+      habitStats: document.getElementById("habitStats"),
       domainsGrid: document.getElementById("domainsGrid"),
       pct2030: document.getElementById("pct2030"),
       fill2030: document.getElementById("fill2030"),
@@ -1248,6 +1316,7 @@
       els.projectsSection.hidden = appMode !== "projects";
       els.timerSection.hidden = appMode !== "timer";
       els.remindersSection.hidden = appMode !== "reminders";
+      els.habitsSection.hidden = appMode !== "habits";
       els.appTitle.textContent = "📖 الصحيفة";
       if (appMode === "plan") {
         els.dayLabel.textContent = "الملخص التنفيذي — نظرة عامة على الخطة";
@@ -1258,6 +1327,9 @@
       } else if (appMode === "reminders") {
         els.dayLabel.textContent = "التذكيرات — يومية · أسبوعية · شهرية · سنوية";
         renderReminders();
+      } else if (appMode === "habits") {
+        els.dayLabel.textContent = "العادات — تابِع استمراريتك اليومية 🔥";
+        renderHabits();
       } else {
         renderTimer();
       }
@@ -1268,6 +1340,7 @@
       if (appMode === "plan") renderPlan();
       else if (appMode === "projects") renderProjects();
       else if (appMode === "reminders") renderReminders();
+      else if (appMode === "habits") renderHabits();
       else if (appMode === "timer") renderTimer();
       if (typeof domainDlg !== "undefined" && domainDlg.open) renderGoals();
     }
@@ -1313,12 +1386,48 @@
         g.done = isComplete(g);
       } else g.done = !g.done;
     }
+    // ---------- العادات اليومية (تتبّع الاسترايك) ----------
+    function habitKey(dayStartMs) { return toDateInput(dayStartMs); }
+    function habitDoneOn(h, dayStartMs) { return !!(h.log && h.log[habitKey(dayStartMs)]); }
+    function habitDoneToday(h) { return habitDoneOn(h, dayStartOf(Date.now())); }
+    function toggleHabitToday(h) {
+      const k = habitKey(dayStartOf(Date.now()));
+      if (!h.log) h.log = {};
+      if (h.log[k]) delete h.log[k]; else h.log[k] = true;
+    }
+    function habitStreak(h) {
+      if (!h.log) return 0;
+      let streak = 0, d = dayStartOf(Date.now());
+      if (!h.log[habitKey(d)]) d -= DAY_MS; // اليوم لم يُعلَّم بعد: احسب الاسترايك حتى الأمس
+      while (h.log[habitKey(d)]) { streak++; d -= DAY_MS; }
+      return streak;
+    }
+    function habitBest(h) {
+      if (!h.log) return 0;
+      const days = Object.keys(h.log).filter(k => h.log[k]).map(dateInputToDayStart).sort((a, b) => a - b);
+      let best = 0, cur = 0, prev = null;
+      for (const t of days) {
+        if (prev !== null && Math.round((t - prev) / DAY_MS) === 1) cur++; else cur = 1;
+        if (cur > best) best = cur; prev = t;
+      }
+      return best;
+    }
+    function habitDoneCount(h) { return h.log ? Object.keys(h.log).filter(k => h.log[k]).length : 0; }
+    // اتساق العادة منذ الإنشاء (0..1) — تُساهم في تقدّم المجال والخطة
+    function habitProgress(h) {
+      const start = dayStartOf(h.created || Date.now()), today = dayStartOf(Date.now());
+      const elapsed = Math.max(1, Math.round((today - start) / DAY_MS) + 1);
+      return Math.max(0, Math.min(1, habitDoneCount(h) / elapsed));
+    }
+    function domainHabits(domainId) { return state.habits.filter(h => (h.domainId || "") === domainId); }
+
     function domainProgress(domainId, only2026) {
       let list = domainPlans(domainId);
       if (only2026) list = list.filter(g => planYear(g) <= 2026);
-      if (!list.length) return 0;
-      let s = 0; for (const g of list) s += goalProgress(g);
-      return s / list.length;
+      const vals = list.map(goalProgress);
+      for (const h of domainHabits(domainId)) vals.push(habitProgress(h)); // العادات تصبّ في الخطتين
+      if (!vals.length) return 0;
+      return vals.reduce((a, b) => a + b, 0) / vals.length;
     }
     function domainDone(domainId, only2026) {
       let list = domainPlans(domainId);
@@ -2373,6 +2482,122 @@
     fabChallenge.onclick = () => { exitChEdit(); chDomain.value = "career"; renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
     challengeDlg.addEventListener("close", exitChEdit);
 
+    // ---------- العادات اليومية ----------
+    const habitDlg = document.getElementById("habitDlg");
+    const habitName = document.getElementById("habitName");
+    const habitDomain = document.getElementById("habitDomain");
+    const habitDlgTitle = document.getElementById("habitDlgTitle");
+    const habitSave = document.getElementById("habitSave");
+    const habitCancel = document.getElementById("habitCancel");
+    let editingHabitId = null;
+
+    (function fillHabitDomains() {
+      for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; habitDomain.append(o); }
+      habitDomain.value = "worship";
+    })();
+
+    function openHabit(h) {
+      editingHabitId = h ? h.id : null;
+      habitDlgTitle.textContent = h ? "✏️ تعديل العادة" : "🌱 عادة يومية جديدة";
+      habitSave.textContent = h ? "حفظ" : "إضافة";
+      habitName.value = h ? h.name : "";
+      habitDomain.value = (h && DOMAINS.some(d => d.id === h.domainId)) ? h.domainId : "worship";
+      habitDlg.showModal(); habitName.focus();
+    }
+    habitSave.onclick = () => {
+      const t = habitName.value.trim(); if (!t) { habitName.focus(); return; }
+      const dom = habitDomain.value || "";
+      if (editingHabitId) {
+        const h = state.habits.find(x => x.id === editingHabitId);
+        if (h) { h.name = t; h.domainId = dom; touchDomain(dom); }
+      } else {
+        state.habits.push({ id: uid(), name: t, domainId: dom, created: Date.now(), log: {} });
+        touchDomain(dom);
+      }
+      save(); habitDlg.close(); refreshViews();
+    };
+    habitCancel.onclick = () => habitDlg.close();
+    habitName.addEventListener("keydown", e => { if (e.key === "Enter") habitSave.click(); });
+    document.getElementById("habitsAddBtn").onclick = () => openHabit(null);
+
+    const AR_WD_MINI = ["أحد", "إثن", "ثلا", "أرب", "خمي", "جمع", "سبت"]; // getDay(): الأحد..السبت
+    function habitCard(h) {
+      const card = document.createElement("div"); card.className = "habit-card";
+      const top = document.createElement("div"); top.className = "habit-top";
+      const nameWrap = document.createElement("div"); nameWrap.className = "hb-name";
+      const title = document.createElement("div"); title.className = "hb-title"; title.textContent = h.name;
+      const dom = document.createElement("div"); dom.className = "hb-dom";
+      dom.textContent = h.domainId ? (domainIcon(h.domainId) + " " + domainName(h.domainId)) : "📌 بلا مجال";
+      nameWrap.append(title, dom);
+      const streak = habitStreak(h);
+      const st = document.createElement("div"); st.className = "habit-streak" + (streak ? "" : " zero");
+      st.innerHTML = "<span>🔥</span> " + streak + " يوم";
+      const menu = buildKebabMenu([
+        { icon: "✏️", label: "تعديل العادة", onClick: () => openHabit(h) },
+        { icon: "🗑️", label: "حذف العادة", danger: true, onClick: () => { const d = h.domainId; state.habits = state.habits.filter(x => x.id !== h.id); touchDomain(d); save(); refreshViews(); } }
+      ]);
+      top.append(nameWrap, st, menu);
+      card.append(top);
+
+      // آخر 7 أيام
+      const days = document.createElement("div"); days.className = "habit-days";
+      const today = dayStartOf(Date.now());
+      for (let i = 6; i >= 0; i--) {
+        const dayMs = today - i * DAY_MS;
+        const cell = document.createElement("div"); cell.className = "hday";
+        const dot = document.createElement("button");
+        const on = habitDoneOn(h, dayMs), isToday = i === 0;
+        dot.className = "hd-dot" + (on ? " on" : "") + (isToday ? " today" : "");
+        dot.textContent = on ? "✓" : "";
+        dot.title = fmtDayShort(dayMs);
+        dot.onclick = () => { const k = habitKey(dayMs); if (!h.log) h.log = {}; if (h.log[k]) delete h.log[k]; else h.log[k] = true; touchDomain(h.domainId); save(); refreshViews(); };
+        const lbl = document.createElement("div"); lbl.className = "hd-lbl"; lbl.textContent = AR_WD_MINI[new Date(dayMs).getDay()];
+        cell.append(dot, lbl); days.append(cell);
+      }
+      card.append(days);
+
+      const foot = document.createElement("div"); foot.className = "habit-foot";
+      const check = document.createElement("button");
+      const doneToday = habitDoneToday(h);
+      check.className = "habit-check" + (doneToday ? " on" : "");
+      check.innerHTML = doneToday ? "✓ تمّت اليوم" : "وسّم اليوم كمُنجَز";
+      check.onclick = () => { toggleHabitToday(h); touchDomain(h.domainId); save(); refreshViews(); };
+      const best = document.createElement("div"); best.className = "habit-best"; best.textContent = "أطول استرايك: " + habitBest(h) + " يوم";
+      foot.append(check, best);
+      card.append(foot);
+      return card;
+    }
+
+    function renderHabits() {
+      const list = state.habits;
+      // إحصاءات موجزة
+      if (!list.length) { els.habitStats.hidden = true; }
+      else {
+        els.habitStats.hidden = false;
+        const doneToday = list.filter(habitDoneToday).length;
+        const bestAll = list.reduce((m, h) => Math.max(m, habitStreak(h)), 0);
+        els.habitStats.replaceChildren();
+        const row = document.createElement("div"); row.className = "stats-row";
+        row.append(statTile(list.length, "عادة"), statTile(doneToday, "أُنجزت اليوم"), statTile(bestAll, "أطول استرايك حالي"));
+        els.habitStats.append(row);
+      }
+      els.habitsList.replaceChildren();
+      if (!list.length) {
+        const e = document.createElement("div"); e.className = "empty";
+        e.textContent = "لا عادات بعد. اضغط «➕ عادة يومية جديدة» وابدأ استرايك يومك 🔥";
+        els.habitsList.append(e); return;
+      }
+      const sorted = list.slice().sort((a, b) => habitStreak(b) - habitStreak(a) || (b.created - a.created));
+      for (const h of sorted) els.habitsList.append(habitCard(h));
+    }
+
+    // فتح التذكيرات من زر الجرس في الرأس
+    document.getElementById("openReminders").onclick = () => {
+      appMode = "reminders";
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
+      saveUI(); render();
+    };
+
     // ---------- إدخال الأرقام (قبول الأرقام العربية) + إبقاء الحقل فوق الكيبورد ----------
     function normNum(s) {
       s = s.replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660))
@@ -2420,6 +2645,7 @@
     document.getElementById("addSheetClose").onclick = () => addSheet.close();
     document.getElementById("addSheetProgram").onclick = () => { addSheet.close(); openProgram(null); };
     document.getElementById("addSheetProject").onclick = () => { addSheet.close(); openItem(null, null); };
+    document.getElementById("addSheetHabit").onclick = () => { addSheet.close(); openHabit(null); };
 
     // ---------- التذكيرات ----------
     const reminderDlg = document.getElementById("reminderDlg");
