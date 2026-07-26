@@ -1,6 +1,6 @@
 /* Service Worker — مؤقت المشاريع
    يخزّن ملفات التطبيق ليعمل بدون اتصال بالإنترنت. */
-const CACHE = "ptt-cache-v44";
+const CACHE = "ptt-cache-v45";
 const ASSETS = [
   "./",
   "./index.html",

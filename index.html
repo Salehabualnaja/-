@@ -596,6 +596,8 @@
     .prog-head .ph-count { margin-inline-start: auto; font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; }
     .prog-head .ph-pct { font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
     .prog-head .iconbtn { margin: 0; }
+    /* حقول إدخال أرقام الإنجاز — أوسع وأوضح */
+    .dlg input.numfield-lg { width: 100%; padding: 14px 16px; font-size: 20px; font-weight: 800; text-align: center; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
     .prog-block { margin-bottom: 18px; }
     /* زر الرجوع (صفحة المجال) */
     .back-btn { border: none; background: var(--panel-2); color: var(--accent-ink); font-family: inherit; font-weight: 800; font-size: 14px; padding: 10px 16px; border-radius: 11px; cursor: pointer; margin-bottom: 14px; display: inline-flex; align-items: center; gap: 4px; }
@@ -1070,15 +1072,13 @@
             <button type="button" id="itemTPoints">⭐ نقاط</button>
           </div>
         </div>
-        <div class="inline">
-          <div>
-            <label id="itemTargetLabel">الساعات المستهدفة</label>
-            <input id="itemTarget" type="text" inputmode="decimal" class="numfield" min="0" step="1" placeholder="0" />
-          </div>
-          <div>
-            <label>المُنجَز حالياً</label>
-            <input id="itemCurrent" type="text" inputmode="decimal" class="numfield" min="0" step="1" placeholder="0" />
-          </div>
+        <div>
+          <label id="itemTargetLabel">الساعات المستهدفة</label>
+          <input id="itemTarget" type="text" inputmode="decimal" class="numfield numfield-lg" min="0" step="1" placeholder="0" />
+        </div>
+        <div>
+          <label>المُنجَز حالياً</label>
+          <input id="itemCurrent" type="text" inputmode="decimal" class="numfield numfield-lg" min="0" step="1" placeholder="0" />
         </div>
         <div class="inline">
           <div>
@@ -1856,7 +1856,8 @@
         bd.textContent = domainIcon(prog.domainId) + " " + domainName(prog.domainId);
         head.append(bd);
       }
-      const count = document.createElement("span"); count.className = "ph-count"; count.textContent = toArDigits(list.length) + " مشروع";
+      const count = document.createElement("span"); count.className = "ph-count"; count.textContent = "(" + toArDigits(list.length) + ")";
+      count.title = list.length + " مشروع";
       head.append(count);
       const pctEl = document.createElement("span"); pctEl.className = "ph-pct"; pctEl.textContent = toArDigits(pct) + "٪";
       head.append(pctEl);
