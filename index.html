@@ -599,6 +599,9 @@
     /* حقول إدخال أرقام الإنجاز — أوسع وأوضح */
     .dlg input.numfield-lg { width: 100%; padding: 14px 16px; font-size: 20px; font-weight: 800; text-align: center; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
     .prog-block { margin-bottom: 18px; }
+    /* صفوف أرقام المجال */
+    .dstat-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 2px; border-top: 1px solid var(--border); font-size: 13.5px; font-weight: 600; }
+    .dstat-row b { color: var(--accent-ink); font-weight: 800; }
     /* زر الرجوع (صفحة المجال) */
     .back-btn { border: none; background: var(--panel-2); color: var(--accent-ink); font-family: inherit; font-weight: 800; font-size: 14px; padding: 10px 16px; border-radius: 11px; cursor: pointer; margin-bottom: 14px; display: inline-flex; align-items: center; gap: 4px; }
     .back-btn:hover { background: var(--accent-soft); }
@@ -811,15 +814,27 @@
         <div class="pb-track"><div class="pb-fill" id="domainFill"></div></div>
         <div class="pb-sub" id="domainSub">0 من 0 مشروع مكتمل</div>
       </div>
-      <div class="set-group">
-        <div class="set-title">⚖️ وزن المجال في الخطة</div>
-        <div class="inline" style="margin-top:10px;gap:10px">
-          <div style="flex:1"><label>وزن خطة 2026 (0–100)</label><input id="wDomain2026" type="text" inputmode="decimal" class="numfield set-input" placeholder="1" /></div>
-          <div style="flex:1"><label>وزن خطة 2030 (0–100)</label><input id="wDomain2030" type="text" inputmode="decimal" class="numfield set-input" placeholder="1" /></div>
-        </div>
+      <div class="tabs" id="domainTabs">
+        <button data-dtab="stats" class="active">الأرقام</button>
+        <button data-dtab="items">البرامج والمشاريع</button>
       </div>
-      <div class="section-title">برامج ومشاريع المجال</div>
-      <div id="goalsBox"></div>
+
+      <!-- تبويب الأرقام -->
+      <div id="domainStatsView"></div>
+
+      <!-- تبويب البرامج والمشاريع -->
+      <div id="domainItemsView" hidden>
+        <div class="set-group">
+          <div class="set-title">⚖️ وزن المجال في الخطة</div>
+          <div class="inline" style="margin-top:10px;gap:10px">
+            <div style="flex:1"><label>وزن خطة 2026 (0–100)</label><input id="wDomain2026" type="text" inputmode="decimal" class="numfield set-input" placeholder="1" /></div>
+            <div style="flex:1"><label>وزن خطة 2030 (0–100)</label><input id="wDomain2030" type="text" inputmode="decimal" class="numfield set-input" placeholder="1" /></div>
+          </div>
+        </div>
+        <button class="add-goal-btn" id="domainAddBtn">➕ إضافة برنامج أو مشروع</button>
+        <div class="section-title">برامج ومشاريع المجال</div>
+        <div id="goalsBox"></div>
+      </div>
     </section>
 
     <div class="install-wrap" id="installWrap" hidden>
@@ -1434,7 +1449,7 @@
         renderSettings();
       } else if (appMode === "domain") {
         els.dayLabel.textContent = "تفاصيل المجال";
-        renderGoals();
+        renderDomainPage();
       }
     }
 
@@ -1447,7 +1462,7 @@
       } else if (appMode === "projects") renderProjects();
       else if (appMode === "reminders") renderReminders();
       else if (appMode === "settings") renderSettings();
-      else if (appMode === "domain") renderGoals();
+      else if (appMode === "domain") renderDomainPage();
     }
 
     // ---------- عرض المؤقتات ----------
@@ -2387,6 +2402,7 @@
     const domainSub = document.getElementById("domainSub");
     const goalsBox = document.getElementById("goalsBox");
     let currentDomainId = null;
+    let domainTab = "stats";
 
     const wDomain2026 = document.getElementById("wDomain2026");
     const wDomain2030 = document.getElementById("wDomain2030");
@@ -2397,10 +2413,60 @@
       const w = state.domainWeights[d.id] || {};
       wDomain2026.value = (typeof w.w2026 === "number") ? w.w2026 : 1;
       wDomain2030.value = (typeof w.w2030 === "number") ? w.w2030 : 1;
-      appMode = "domain";
+      appMode = "domain"; domainTab = "stats";
       document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
       saveUI(); render();
       window.scrollTo(0, 0);
+    }
+
+    // صفحة المجال بتبويبين: الأرقام + البرامج والمشاريع
+    function renderDomainPage() {
+      renderGoals(); // الرأس + قائمة العناصر (goalsBox)
+      renderDomainStats();
+      document.getElementById("domainStatsView").hidden = domainTab !== "stats";
+      document.getElementById("domainItemsView").hidden = domainTab !== "items";
+      document.querySelectorAll("#domainTabs button").forEach(b => b.classList.toggle("active", b.dataset.dtab === domainTab));
+    }
+    function domBar(title, pct, alt) {
+      const c = document.createElement("div"); c.className = "planbar-card";
+      c.innerHTML = '<div class="pb-head"><span class="pb-title">' + title + '</span><span class="pb-pct">' + toArDigits(pct) + '٪</span></div>'
+        + '<div class="pb-track"><div class="pb-fill' + (alt ? ' alt' : '') + '" style="width:' + pct + '%"></div></div>';
+      return c;
+    }
+    function domInfoRow(label, val) { return "<div class='dstat-row'><span>" + label + "</span><b>" + val + "</b></div>"; }
+    function renderDomainStats() {
+      const id = currentDomainId;
+      const view = document.getElementById("domainStatsView");
+      view.replaceChildren();
+      const progN = state.programs.filter(pr => (pr.domainId || "") === id).length;
+      const plans = domainPlans(id);
+      const projN = plans.length;
+      const doneN = plans.filter(isComplete).length;
+      const favN = plans.filter(p => p.favorite).length;
+      const chN = state.challenges.filter(c => c.domainId === id).length;
+      const habN = domainHabits(id).length;
+      const pct30 = Math.round(domainProgress(id, false) * 100);
+      const pct26 = Math.round(domainProgress(id, true) * 100);
+      let hoursMs = 0; for (const pl of plans) if (pl.type === "hours") hoursMs += sessionHoursTotal(pl) * 3600000;
+
+      view.append(domBar("🌟 إنجاز المجال في خطة 2030", pct30, false));
+      view.append(domBar("📅 إنجاز المجال في خطة 2026", pct26, true));
+
+      const card = document.createElement("div"); card.className = "stats-card";
+      const row1 = document.createElement("div"); row1.className = "stats-row";
+      row1.append(statTile(progN, "برامج"), statTile(projN, "مشاريع"), statTile(doneN, "مكتملة"));
+      const row2 = document.createElement("div"); row2.className = "stats-row"; row2.style.marginTop = "8px";
+      row2.append(statTile(favN, "مفضّلة"), statTile(chN, "تحديات"), statTile(habN, "عادات"));
+      card.append(row1, row2);
+      view.append(card);
+
+      const extra = document.createElement("div"); extra.className = "stats-card"; extra.style.marginTop = "12px";
+      extra.innerHTML = "<div class='set-title'>أرقام مفيدة</div>"
+        + domInfoRow("✅ المكتمل من المشاريع", toArDigits(doneN) + " من " + toArDigits(projN))
+        + domInfoRow("⏱️ الساعات المسجّلة", fmtHours(Math.max(0, hoursMs)))
+        + domInfoRow("⚖️ وزن خطة 2026", toArDigits(weightOf(id, 2026)))
+        + domInfoRow("⚖️ وزن خطة 2030", toArDigits(weightOf(id, 2030)));
+      view.append(extra);
     }
 
     function saveWeights() {
@@ -2414,6 +2480,11 @@
     }
     wDomain2026.addEventListener("change", saveWeights);
     wDomain2030.addEventListener("change", saveWeights);
+    // تبويبا صفحة المجال
+    document.querySelectorAll("#domainTabs button").forEach(btn => {
+      btn.onclick = () => { domainTab = btn.dataset.dtab; renderDomainPage(); window.scrollTo(0, 0); };
+    });
+    document.getElementById("domainAddBtn").onclick = () => addSheet.showModal();
 
     function renderGoals() {
       const d = DOMAINS.find(x => x.id === currentDomainId);
