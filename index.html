@@ -1827,7 +1827,7 @@
           const pct = Math.round(domainProgress(d.id, false) * 100);
           head.innerHTML = "<span>" + d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪</span>";
           sec.append(head);
-          for (const prog of progs) sec.append(buildProgramBlock(prog));
+          for (const prog of progs) sec.append(buildProgramBlock(prog, true));
           frag.append(sec);
         }
         // برامج بلا مجال
@@ -1850,7 +1850,7 @@
     }
 
     const expandedPrograms = new Set();
-    function buildProgramBlock(prog) {
+    function buildProgramBlock(prog, hideDomainBadge) {
       const block = document.createElement("div"); block.className = "prog-block";
       const pct = programPct(prog.id);
       const list = programProjects(prog.id);
@@ -1862,7 +1862,7 @@
       const nm = document.createElement("span"); nm.className = "ph-name";
       nm.innerHTML = '<span class="dc-icon">📁</span> ' + escapeHtml(prog.name);
       head.append(nm);
-      if (prog.domainId) {
+      if (prog.domainId && !hideDomainBadge) {
         const bd = document.createElement("span"); bd.className = "ph-badge";
         bd.textContent = domainIcon(prog.domainId) + " " + domainName(prog.domainId);
         head.append(bd);
@@ -2529,7 +2529,7 @@
       if (!progs.length && !ungrouped.length) {
         const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد برامج أو مشاريع في هذا المجال. أضِفها من زر ➕."; goalsBox.append(e); return;
       }
-      for (const prog of progs) goalsBox.append(buildProgramBlock(prog));
+      for (const prog of progs) goalsBox.append(buildProgramBlock(prog, true));
       if (ungrouped.length) {
         const block = document.createElement("div"); block.className = "prog-block";
         const head = document.createElement("div"); head.className = "prog-head";
