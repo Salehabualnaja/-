@@ -165,6 +165,7 @@
     /* التبويبات الفرعية */
     .tabs { display: flex; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 4px; margin-bottom: 18px; gap: 4px; }
     .tabs[hidden] { display: none; }
+    [hidden] { display: none !important; }
     .tabs button { flex: 1; border: none; background: transparent; color: var(--muted); font-family: inherit; font-size: 13px; font-weight: 700; padding: 9px 2px; border-radius: 9px; cursor: pointer; transition: color .15s, background .15s; white-space: nowrap; }
     .tabs button.active { background: var(--panel); color: var(--accent); box-shadow: var(--shadow); }
 
@@ -392,6 +393,8 @@
     .seg { display: flex; border: 1px solid var(--border-strong); border-radius: 10px; overflow: hidden; }
     .seg button { flex: 1; border: none; background: var(--panel-2); color: var(--muted); font-family: inherit; font-weight: 700; padding: 9px 0; cursor: pointer; font-size: 14px; transition: background .15s, color .15s; }
     .seg button.active { background: var(--accent); color: #fff; }
+    .seg button + button { border-inline-start: 1px solid var(--border-strong); }
+    .seg3 button { font-size: 13px; padding: 10px 0; }
 
     .loghdr { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 8px; }
     .loghdr h4 { margin: 0; font-size: 11px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; }
@@ -861,33 +864,10 @@
     <div class="dlg">
       <h3>➕ إضافة</h3>
       <div class="rows">
-        <button class="ok addsheet-btn" id="addSheetProject">📄 مشروع (نقاط أو ساعات)</button>
-        <button class="ok addsheet-btn soft" id="addSheetHabit">🌱 عادة يومية</button>
+        <button class="ok addsheet-btn" id="addSheetProject">📄 مشروع جديد (ساعات · نقاط · عادة)</button>
         <button class="ok addsheet-btn soft" id="addSheetProgram">📁 برنامج جديد</button>
       </div>
       <div class="actions"><button class="cancel" id="addSheetClose">إلغاء</button></div>
-    </div>
-  </dialog>
-
-  <!-- عادة يومية جديدة / تعديل -->
-  <dialog id="habitDlg">
-    <div class="dlg">
-      <h3 id="habitDlgTitle">🌱 عادة يومية جديدة</h3>
-      <p>تُتابَع يومياً وتُعزّز الاستمرارية (الاسترايك 🔥)، وتصبّ في خطتك السنوية و٢٠٣٠.</p>
-      <div class="rows">
-        <div>
-          <label>اسم العادة</label>
-          <input id="habitName" type="text" placeholder="مثال: قراءة وِرد القرآن" autocomplete="off" />
-        </div>
-        <div>
-          <label>المجال</label>
-          <select id="habitDomain"></select>
-        </div>
-      </div>
-      <div class="actions">
-        <button class="ok" id="habitSave">حفظ</button>
-        <button class="cancel" id="habitCancel">إلغاء</button>
-      </div>
     </div>
   </dialog>
 
@@ -1067,35 +1047,45 @@
     </form>
   </dialog>
 
-  <!-- مشروع جديد / تعديل -->
+  <!-- مشروع جديد / تعديل (بثلاثة أنواع: عادة/ساعات/نقاط) -->
   <dialog id="itemDlg">
     <div class="dlg">
       <h3 id="itemDlgTitle">📄 مشروع جديد</h3>
       <div class="rows">
         <div>
-          <label>اسم المشروع</label>
+          <label id="itemNameLabel">اسم المشروع</label>
           <input id="itemName" type="text" placeholder="مثال: قراءة 12 كتاباً" autocomplete="off" />
         </div>
         <div>
+          <label>النوع</label>
+          <div class="seg seg3">
+            <button type="button" id="itemTHours" class="active">⏱️ ساعات</button>
+            <button type="button" id="itemTPoints">⭐ نقاط</button>
+            <button type="button" id="itemTHabit">🔁 عادة</button>
+          </div>
+        </div>
+        <div id="itemProgramRow">
           <label>البرنامج (ضمن مجال)</label>
           <select id="itemProgram"></select>
         </div>
-        <div>
-          <label>النوع</label>
-          <div class="seg">
-            <button type="button" id="itemTHours" class="active">⏱️ ساعات</button>
-            <button type="button" id="itemTPoints">⭐ نقاط</button>
-          </div>
+        <div id="itemHabitDomainRow" hidden>
+          <label>المجال</label>
+          <select id="itemHabitDomain"></select>
         </div>
-        <div>
+        <div id="itemTargetRow">
           <label id="itemTargetLabel">الساعات المستهدفة</label>
           <input id="itemTarget" type="text" inputmode="decimal" class="numfield numfield-lg" min="0" step="1" placeholder="0" />
         </div>
-        <div>
+        <div id="itemCurrentRow">
           <label>المُنجَز حالياً</label>
           <input id="itemCurrent" type="text" inputmode="decimal" class="numfield numfield-lg" min="0" step="1" placeholder="0" />
         </div>
-        <div class="inline">
+        <div id="itemHabitDaysRow" hidden>
+          <label>مدة الاستمرار المستهدفة (أيام)</label>
+          <input id="itemHabitDays" type="text" inputmode="numeric" class="numfield numfield-lg" min="0" step="1" placeholder="21" />
+          <p class="set-desc" style="margin:8px 0 0">نسبة إنجاز العادة = عدد أيام الاستمرار المتتالية ÷ المدة المستهدفة.</p>
+        </div>
+        <div class="inline" id="itemDatesRow">
           <div>
             <label>من تاريخ</label>
             <input id="itemStart" type="date" />
@@ -1231,6 +1221,7 @@
         if (typeof h.name !== "string") h.name = "عادة";
         if (typeof h.domainId !== "string") h.domainId = "";
         if (typeof h.created !== "number") h.created = Date.now();
+        if (typeof h.targetDays !== "number") h.targetDays = 0;
         if (!h.log || typeof h.log !== "object") h.log = {};
       }
       // تاريخ آخر تحديث لكل مجال
@@ -1535,6 +1526,10 @@
     function habitDoneCount(h) { return h.log ? Object.keys(h.log).filter(k => h.log[k]).length : 0; }
     // اتساق العادة منذ الإنشاء (0..1) — تُساهم في تقدّم المجال والخطة
     function habitProgress(h) {
+      // مع هدف مدة الاستمرار: نسبة الاسترايك الحالي ÷ المدة المستهدفة
+      const tgt = h.targetDays || 0;
+      if (tgt > 0) return Math.max(0, Math.min(1, habitStreak(h) / tgt));
+      // بلا هدف: الاتساق منذ الإنشاء
       const start = dayStartOf(h.created || Date.now()), today = dayStartOf(Date.now());
       const elapsed = Math.max(1, Math.round((today - start) / DAY_MS) + 1);
       return Math.max(0, Math.min(1, habitDoneCount(h) / elapsed));
@@ -2555,14 +2550,18 @@
     const projectsAddBtnEl = document.getElementById("projectsAddBtn");
     if (projectsAddBtnEl) projectsAddBtnEl.onclick = () => addSheet.showModal();
 
-    // ---------- نافذة هدف/مشروع جديد ----------
+    // ---------- نافذة المشروع/العادة الموحّدة (3 أنواع) ----------
     const itemDlg = document.getElementById("itemDlg");
     const itemName = document.getElementById("itemName");
+    const itemNameLabel = document.getElementById("itemNameLabel");
     const itemStart = document.getElementById("itemStart");
     const itemEnd = document.getElementById("itemEnd");
     const itemProgram = document.getElementById("itemProgram");
+    const itemHabitDomain = document.getElementById("itemHabitDomain");
+    const itemHabitDays = document.getElementById("itemHabitDays");
     const itemTHours = document.getElementById("itemTHours");
     const itemTPoints = document.getElementById("itemTPoints");
+    const itemTHabit = document.getElementById("itemTHabit");
     const itemFav = document.getElementById("itemFav");
     const itemFavText = document.getElementById("itemFavText");
     const itemDlgTitleEl = document.getElementById("itemDlgTitle");
@@ -2571,9 +2570,14 @@
     const itemTargetLabel = document.getElementById("itemTargetLabel");
     const itemSave = document.getElementById("itemSave");
     const itemCancel = document.getElementById("itemCancel");
-    let niType = "hours", niFav = false, editingGoalId = null;
+    const itemProgramRow = document.getElementById("itemProgramRow");
+    const itemHabitDomainRow = document.getElementById("itemHabitDomainRow");
+    const itemTargetRow = document.getElementById("itemTargetRow");
+    const itemCurrentRow = document.getElementById("itemCurrentRow");
+    const itemHabitDaysRow = document.getElementById("itemHabitDaysRow");
+    const itemDatesRow = document.getElementById("itemDatesRow");
+    let niType = "hours", niFav = false, editingGoalId = null, editingHabitId = null;
 
-    // تعبئة قائمة البرامج (تُبنى عند كل فتح لأنها تتغيّر) — مع مجال كل برنامج
     function fillProgramSelect(selected) {
       itemProgram.replaceChildren();
       if (!state.programs.length) {
@@ -2587,55 +2591,86 @@
       }
       itemProgram.value = (selected && state.programs.some(pr => pr.id === selected)) ? selected : state.programs[0].id;
     }
+    function fillHabitDomainSelect(selected) {
+      itemHabitDomain.replaceChildren();
+      for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; itemHabitDomain.append(o); }
+      itemHabitDomain.value = (selected && DOMAINS.some(d => d.id === selected)) ? selected : "worship";
+    }
     function setNiType(t) {
       niType = t;
+      const habit = t === "habit";
       itemTHours.classList.toggle("active", t === "hours");
       itemTPoints.classList.toggle("active", t === "points");
+      itemTHabit.classList.toggle("active", habit);
+      itemProgramRow.hidden = habit;
+      itemTargetRow.hidden = habit;
+      itemCurrentRow.hidden = habit;
+      itemDatesRow.hidden = habit;
+      itemFav.hidden = habit;
+      itemHabitDomainRow.hidden = !habit;
+      itemHabitDaysRow.hidden = !habit;
+      itemNameLabel.textContent = habit ? "اسم العادة" : "اسم المشروع";
+      itemName.placeholder = habit ? "مثال: قراءة وِرد القرآن" : "مثال: قراءة 12 كتاباً";
       itemTargetLabel.textContent = t === "points" ? "النقاط المستهدفة" : "الساعات المستهدفة";
     }
     function setNiFav(v) { niFav = v; itemFav.classList.toggle("on", v); itemFav.querySelector(".fav-star").textContent = v ? "★" : "☆"; itemFavText.textContent = v ? "مضاف إلى المفضلة" : "إضافة إلى المفضلة"; }
     itemTHours.onclick = () => setNiType("hours");
     itemTPoints.onclick = () => setNiType("points");
+    itemTHabit.onclick = () => setNiType("habit");
     itemFav.onclick = () => setNiFav(!niFav);
 
-    // openItem(goal|null, presetDomainId, presetProjectId) — تعديل هدف قائم أو إنشاء جديد
-    // openItem(project|null, presetProgramId) — تعديل مشروع قائم أو إنشاء جديد
-    function openItem(pl, presetProgramId) {
-      if (!pl && !state.programs.length) {
-        alert("أنشئ برنامجاً أولاً، فكل مشروع يجب أن يكون ضمن برنامج.");
-        openProgram(null);
-        return;
-      }
-      if (pl) {
-        editingGoalId = pl.id;
-        itemDlgTitleEl.textContent = "✏️ تعديل المشروع";
-        itemSave.textContent = "حفظ";
-        itemName.value = pl.name;
-        itemStart.value = pl.startDate || "";
-        itemEnd.value = pl.endDate || "";
-        fillProgramSelect(pl.programId || "");
-        setNiType(pl.type || "hours");
-        itemTarget.value = pl.target ? pl.target : "";
-        itemCurrent.value = pl.current ? pl.current : "";
-        setNiFav(!!pl.favorite);
+    // openItem(item|null, presetProgramId, presetType) — عنصر جديد أو تعديل مشروع/عادة
+    function openItem(item, presetProgramId, presetType) {
+      editingGoalId = null; editingHabitId = null;
+      let type;
+      if (item && presetType === "habit") {
+        editingHabitId = item.id; type = "habit";
+        itemDlgTitleEl.textContent = "✏️ تعديل العادة"; itemSave.textContent = "حفظ";
+        itemName.value = item.name || "";
+        fillHabitDomainSelect(item.domainId || "");
+        itemHabitDays.value = item.targetDays ? item.targetDays : "";
+        itemTHours.hidden = true; itemTPoints.hidden = true; itemTHabit.hidden = false;
+      } else if (item) {
+        editingGoalId = item.id; type = item.type || "hours";
+        itemDlgTitleEl.textContent = "✏️ تعديل المشروع"; itemSave.textContent = "حفظ";
+        itemName.value = item.name;
+        itemStart.value = item.startDate || ""; itemEnd.value = item.endDate || "";
+        fillProgramSelect(item.programId || "");
+        itemTarget.value = item.target ? item.target : "";
+        itemCurrent.value = item.current ? item.current : "";
+        setNiFav(!!item.favorite);
+        itemTHours.hidden = false; itemTPoints.hidden = false; itemTHabit.hidden = true;
       } else {
-        editingGoalId = null;
-        itemDlgTitleEl.textContent = "📄 مشروع جديد";
-        itemSave.textContent = "إضافة";
-        itemName.value = "";
-        itemStart.value = ""; itemEnd.value = "";
+        type = presetType || "hours";
+        itemDlgTitleEl.textContent = "📄 مشروع جديد"; itemSave.textContent = "إضافة";
+        itemName.value = ""; itemStart.value = ""; itemEnd.value = "";
         fillProgramSelect(presetProgramId || "");
-        setNiType("hours"); setNiFav(false);
-        itemTarget.value = ""; itemCurrent.value = "";
+        fillHabitDomainSelect("");
+        itemHabitDays.value = ""; itemTarget.value = ""; itemCurrent.value = ""; setNiFav(false);
+        itemTHours.hidden = false; itemTPoints.hidden = false; itemTHabit.hidden = false;
       }
+      setNiType(type);
       itemDlg.showModal();
       itemName.focus();
     }
     itemSave.onclick = () => {
       const t = itemName.value.trim();
       if (!t) { itemName.focus(); return; }
+      if (niType === "habit") {
+        const dom = itemHabitDomain.value || "";
+        let days = parseInt(itemHabitDays.value, 10); if (!isFinite(days) || days < 0) days = 0;
+        if (editingHabitId) {
+          const h = state.habits.find(x => x.id === editingHabitId);
+          if (h) { h.name = t; h.domainId = dom; h.targetDays = days; touchDomain(dom); }
+        } else {
+          state.habits.push({ id: uid(), name: t, domainId: dom, targetDays: days, created: Date.now(), log: {} });
+          touchDomain(dom);
+        }
+        save(); itemDlg.close(); refreshViews(); return;
+      }
+      // مشروع (ساعات/نقاط)
       const programId = itemProgram.value || "";
-      if (!programId) { alert("اختر برنامجاً للمشروع."); return; }
+      if (!programId) { alert("اختر برنامجاً للمشروع، أو أنشئ برنامجاً أولاً من زر ➕."); return; }
       let target = parseFloat(itemTarget.value); if (!isFinite(target) || target < 0) target = 0;
       let current = parseFloat(itemCurrent.value); if (!isFinite(current) || current < 0) current = 0;
       if (editingGoalId) {
@@ -2782,42 +2817,7 @@
     challengeDlg.addEventListener("close", exitChEdit);
 
     // ---------- العادات اليومية ----------
-    const habitDlg = document.getElementById("habitDlg");
-    const habitName = document.getElementById("habitName");
-    const habitDomain = document.getElementById("habitDomain");
-    const habitDlgTitle = document.getElementById("habitDlgTitle");
-    const habitSave = document.getElementById("habitSave");
-    const habitCancel = document.getElementById("habitCancel");
-    let editingHabitId = null;
-
-    (function fillHabitDomains() {
-      for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; habitDomain.append(o); }
-      habitDomain.value = "worship";
-    })();
-
-    function openHabit(h) {
-      editingHabitId = h ? h.id : null;
-      habitDlgTitle.textContent = h ? "✏️ تعديل العادة" : "🌱 عادة يومية جديدة";
-      habitSave.textContent = h ? "حفظ" : "إضافة";
-      habitName.value = h ? h.name : "";
-      habitDomain.value = (h && DOMAINS.some(d => d.id === h.domainId)) ? h.domainId : "worship";
-      habitDlg.showModal(); habitName.focus();
-    }
-    habitSave.onclick = () => {
-      const t = habitName.value.trim(); if (!t) { habitName.focus(); return; }
-      const dom = habitDomain.value || "";
-      if (editingHabitId) {
-        const h = state.habits.find(x => x.id === editingHabitId);
-        if (h) { h.name = t; h.domainId = dom; touchDomain(dom); }
-      } else {
-        state.habits.push({ id: uid(), name: t, domainId: dom, created: Date.now(), log: {} });
-        touchDomain(dom);
-      }
-      save(); habitDlg.close(); refreshViews();
-    };
-    habitCancel.onclick = () => habitDlg.close();
-    habitName.addEventListener("keydown", e => { if (e.key === "Enter") habitSave.click(); });
-    document.getElementById("habitsAddBtn").onclick = () => openHabit(null);
+    document.getElementById("habitsAddBtn").onclick = () => openItem(null, null, "habit");
 
     const AR_WD_MINI = ["أحد", "إثن", "ثلا", "أرب", "خمي", "جمع", "سبت"]; // getDay(): الأحد..السبت
     function habitCard(h) {
@@ -2830,9 +2830,9 @@
       nameWrap.append(title, dom);
       const streak = habitStreak(h);
       const st = document.createElement("div"); st.className = "habit-streak" + (streak ? "" : " zero");
-      st.innerHTML = "<span>🔥</span> " + streak + " يوم";
+      st.innerHTML = "<span>🔥</span> " + streak + (h.targetDays > 0 ? " / " + h.targetDays : "") + " يوم";
       const menu = buildKebabMenu([
-        { icon: "✏️", label: "تعديل العادة", onClick: () => openHabit(h) },
+        { icon: "✏️", label: "تعديل العادة", onClick: () => openItem(h, null, "habit") },
         { icon: "🗑️", label: "حذف العادة", danger: true, onClick: () => { const d = h.domainId; state.habits = state.habits.filter(x => x.id !== h.id); touchDomain(d); save(); refreshViews(); } }
       ]);
       top.append(nameWrap, st, menu);
@@ -2982,7 +2982,6 @@
     document.getElementById("addSheetClose").onclick = () => addSheet.close();
     document.getElementById("addSheetProgram").onclick = () => { addSheet.close(); openProgram(null); };
     document.getElementById("addSheetProject").onclick = () => { addSheet.close(); openItem(null, null); };
-    document.getElementById("addSheetHabit").onclick = () => { addSheet.close(); openHabit(null); };
 
     // ---------- التذكيرات ----------
     const reminderDlg = document.getElementById("reminderDlg");
