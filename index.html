@@ -240,9 +240,14 @@
     .goalrow .gmeta { font-size: 11px; color: var(--muted); margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
     .gbadge { font-size: 10.5px; font-weight: 700; border-radius: 6px; padding: 1px 7px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
     .gstar { flex: none; background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; padding: 4px; color: var(--dial-gold); }
-    .gstep { display: inline-flex; gap: 4px; }
-    .gstep button { width: 26px; height: 24px; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--accent); border-radius: 7px; font-size: 16px; font-weight: 800; line-height: 1; cursor: pointer; font-family: inherit; }
-    .gstep button:active { background: var(--accent-soft); }
+    /* لوحة إدخال التقدّم — أزرار كبيرة وحقل قابل للتحرير */
+    .gprogress { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+    .gprogress .gp-btn { width: 42px; height: 42px; flex: none; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--accent); border-radius: 12px; font-size: 26px; font-weight: 800; line-height: 1; cursor: pointer; font-family: inherit; display: grid; place-items: center; transition: background .12s, transform .1s; }
+    .gprogress .gp-btn:hover { background: var(--accent-soft); }
+    .gprogress .gp-btn:active { transform: scale(.9); background: var(--accent-soft); }
+    .gprogress .gp-val { width: 68px; height: 42px; flex: none; text-align: center; font-size: 18px; font-weight: 800; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); color: var(--text); font-family: inherit; font-variant-numeric: tabular-nums; }
+    .gprogress .gp-val:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+    .gprogress .gp-of { font-size: 12.5px; color: var(--muted); font-weight: 700; }
 
     /* صفحة الأهداف */
     .goals-group { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 12px; }
@@ -1698,23 +1703,38 @@
       const badges = ['<span class="gbadge">' + typeLabel(g.type) + '</span>'];
       const per = fmtPeriod(g);
       if (per) badges.push('<span class="gbadge">' + per + '</span>');
-      if (hasTarget) {
+      if (hasTarget && g.type === "hours") {
         const pct = Math.round(goalProgress(g) * 100);
-        badges.push('<span class="gbadge">' + fmtNum(goalCurrent(g)) + " / " + fmtNum(g.target) + " (" + toArDigits(pct) + "٪)</span>");
-        if (g.type === "hours") badges.push('<span class="gbadge">⏱️ يُوقَّت في المؤقتات</span>');
+        badges.push('<span class="gbadge">الإجمالي ' + fmtNum(goalCurrent(g)) + " / " + fmtNum(g.target) + " س (" + toArDigits(pct) + "٪)</span>");
+        badges.push('<span class="gbadge">⏱️ يُوقَّت في المؤقتات</span>');
       }
       meta.innerHTML = badges.join(" ");
-      // خطوات يدوية للأهداف بالنقاط فقط (الساعات تُقاس بالمؤقّت)
-      if (hasTarget && g.type === "points") {
-        const step = document.createElement("div"); step.className = "gstep";
-        const minus = document.createElement("button"); minus.textContent = "−"; minus.title = "إنقاص";
-        minus.onclick = () => { g.current = Math.max(0, (g.current || 0) - 1); g.done = g.current >= g.target; touchDomain(planDomain(g)); save(); refreshViews(); };
-        const plus = document.createElement("button"); plus.textContent = "+"; plus.title = "زيادة";
-        plus.onclick = () => { g.current = Math.min(g.target, (g.current || 0) + 1); g.done = g.current >= g.target; touchDomain(planDomain(g)); save(); refreshViews(); };
-        step.append(minus, plus);
-        meta.append(step);
-      }
       main.append(t, meta);
+
+      // لوحة إدخال التقدّم — أزرار كبيرة + حقل قابل للتحرير (للنقاط والساعات)
+      if (hasTarget) {
+        const setCur = (v) => {
+          let n = parseFloat(v); if (!isFinite(n) || n < 0) n = 0;
+          n = Math.min(n, g.target * 4); // سقف أمان
+          g.current = n; g.done = goalCurrent(g) >= g.target;
+          touchDomain(planDomain(g)); save(); refreshViews();
+        };
+        const gp = document.createElement("div"); gp.className = "gprogress";
+        const minus = document.createElement("button"); minus.className = "gp-btn"; minus.textContent = "−"; minus.title = "إنقاص";
+        minus.onclick = () => setCur((g.current || 0) - 1);
+        const val = document.createElement("input");
+        val.className = "gp-val numfield"; val.type = "text"; val.inputMode = "decimal";
+        val.value = fmtNum(g.current || 0); val.title = "التقدّم المُدخَل يدوياً";
+        val.onchange = () => setCur(val.value);
+        val.addEventListener("keydown", e => { if (e.key === "Enter") { setCur(val.value); val.blur(); } });
+        const plus = document.createElement("button"); plus.className = "gp-btn"; plus.textContent = "+"; plus.title = "زيادة";
+        plus.onclick = () => setCur((g.current || 0) + 1);
+        const of = document.createElement("span"); of.className = "gp-of";
+        const pct = Math.round(goalProgress(g) * 100);
+        of.textContent = "من " + fmtNum(g.target) + (g.type === "hours" ? " ساعة" : " نقطة") + " · " + toArDigits(pct) + "٪";
+        gp.append(minus, val, plus, of);
+        main.append(gp);
+      }
 
       // قائمة الثلاث نقاط: المفضلة · تعديل · حذف
       const menu = buildKebabMenu([
