@@ -794,11 +794,12 @@
 
       <div class="set-group">
         <div class="set-title">💾 البيانات</div>
-        <p class="set-desc">احتفظ بنسخة احتياطية من بياناتك أو انقلها بين الأجهزة.</p>
+        <p class="set-desc">احتفظ بنسخة احتياطية أو انقلها بين الأجهزة. «دمج» يضيف برامج ومشاريع وعادات ملف بدون حذف بياناتك الحالية.</p>
         <div class="set-row">
           <button class="ok set-btn" id="exportBtn">⬇️ تصدير</button>
           <button class="ok set-btn soft" id="importBtn">⬆️ استيراد</button>
         </div>
+        <button class="ok set-btn soft" id="mergeBtn" style="width:100%;margin-top:8px">➕ استيراد ودمج (بدون حذف)</button>
       </div>
 
       <div class="set-group">
@@ -2321,6 +2322,35 @@
             const parsed = JSON.parse(reader.result);
             if (parsed && Array.isArray(parsed.projects)) { state = withDefaults(parsed); save(); render(); }
             else alert("ملف غير صالح");
+          } catch (e) { alert("تعذّر قراءة الملف"); }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
+    };
+    // استيراد ودمج: يضيف عناصر الملف دون حذف الموجود
+    document.getElementById("mergeBtn").onclick = () => {
+      const input = document.createElement("input"); input.type = "file"; input.accept = "application/json,.json";
+      input.onchange = () => {
+        const file = input.files && input.files[0]; if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const d = JSON.parse(reader.result);
+            const addBy = (arr, key) => {
+              if (!Array.isArray(arr)) return 0;
+              const have = new Set(state[key].map(x => x.id)); let n = 0;
+              for (const it of arr) { if (it && it.id && !have.has(it.id)) { state[key].push(it); have.add(it.id); n++; } }
+              return n;
+            };
+            const np = addBy(d.programs, "programs");
+            const npl = addBy(d.plans, "plans");
+            const nh = addBy(d.habits, "habits");
+            const nc = addBy(d.challenges, "challenges");
+            const nr = addBy(d.reminders, "reminders");
+            state = withDefaults(state);
+            save(); refreshViews();
+            alert("تمّ الدمج: " + np + " برنامج · " + npl + " مشروع · " + nh + " عادة" + (nc ? " · " + nc + " تحدٍّ" : "") + (nr ? " · " + nr + " تذكير" : ""));
           } catch (e) { alert("تعذّر قراءة الملف"); }
         };
         reader.readAsText(file);
