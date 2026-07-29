@@ -1495,8 +1495,14 @@
     function isComplete(g) { return goalProgress(g) >= 1; }
     function toggleComplete(g) {
       if (g.target && g.target > 0) {
-        if (isComplete(g)) g.current = 0;
-        else g.current = g.type === "hours" ? Math.max(0, g.target - sessionHoursTotal(g)) : g.target;
+        if (isComplete(g)) {
+          // إلغاء الاكتمال: استرجع القيمة التي كانت قبل التعليم بدل التصفير
+          g.current = (typeof g._prevCurrent === "number") ? g._prevCurrent : 0;
+          delete g._prevCurrent;
+        } else {
+          g._prevCurrent = g.current || 0; // احفظ القيمة الحالية قبل الإكمال
+          g.current = g.type === "hours" ? Math.max(0, g.target - sessionHoursTotal(g)) : g.target;
+        }
         g.done = isComplete(g);
       } else g.done = !g.done;
     }
@@ -1717,6 +1723,7 @@
           let n = parseFloat(v); if (!isFinite(n) || n < 0) n = 0;
           n = Math.min(n, g.target * 4); // سقف أمان
           g.current = n; g.done = goalCurrent(g) >= g.target;
+          delete g._prevCurrent; // إدخال يدوي يُلغي القيمة المحفوظة
           touchDomain(planDomain(g)); save(); refreshViews();
         };
         const gp = document.createElement("div"); gp.className = "gprogress";
