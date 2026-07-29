@@ -1069,10 +1069,6 @@
           <label>البرنامج (ضمن مجال)</label>
           <select id="itemProgram"></select>
         </div>
-        <div id="itemHabitDomainRow" hidden>
-          <label>المجال</label>
-          <select id="itemHabitDomain"></select>
-        </div>
         <div id="itemTargetRow">
           <label id="itemTargetLabel">الساعات المستهدفة</label>
           <input id="itemTarget" type="text" inputmode="decimal" class="numfield numfield-lg" min="0" step="1" placeholder="0" />
@@ -1220,6 +1216,7 @@
       if (!Array.isArray(p.habits)) p.habits = [];
       for (const h of p.habits) {
         if (typeof h.name !== "string") h.name = "عادة";
+        if (typeof h.programId !== "string") h.programId = "";
         if (typeof h.domainId !== "string") h.domainId = "";
         if (typeof h.created !== "number") h.created = Date.now();
         if (typeof h.targetDays !== "number") h.targetDays = 0;
@@ -1535,7 +1532,10 @@
       const elapsed = Math.max(1, Math.round((today - start) / DAY_MS) + 1);
       return Math.max(0, Math.min(1, habitDoneCount(h) / elapsed));
     }
-    function domainHabits(domainId) { return state.habits.filter(h => (h.domainId || "") === domainId); }
+    function habitProgramOf(h) { return state.programs.find(pr => pr.id === h.programId) || null; }
+    function habitDomain(h) { const pr = habitProgramOf(h); return pr ? (pr.domainId || "") : (h.domainId || ""); }
+    function domainHabits(domainId) { return state.habits.filter(h => habitDomain(h) === domainId); }
+    function programHabits(progId) { return state.habits.filter(h => (h.programId || "") === progId); }
 
     function domainProgress(domainId, only2026) {
       let list = domainPlans(domainId);
@@ -2587,7 +2587,6 @@
     const itemStart = document.getElementById("itemStart");
     const itemEnd = document.getElementById("itemEnd");
     const itemProgram = document.getElementById("itemProgram");
-    const itemHabitDomain = document.getElementById("itemHabitDomain");
     const itemHabitDays = document.getElementById("itemHabitDays");
     const itemTHours = document.getElementById("itemTHours");
     const itemTPoints = document.getElementById("itemTPoints");
@@ -2601,7 +2600,6 @@
     const itemSave = document.getElementById("itemSave");
     const itemCancel = document.getElementById("itemCancel");
     const itemProgramRow = document.getElementById("itemProgramRow");
-    const itemHabitDomainRow = document.getElementById("itemHabitDomainRow");
     const itemTargetRow = document.getElementById("itemTargetRow");
     const itemCurrentRow = document.getElementById("itemCurrentRow");
     const itemHabitDaysRow = document.getElementById("itemHabitDaysRow");
@@ -2621,23 +2619,17 @@
       }
       itemProgram.value = (selected && state.programs.some(pr => pr.id === selected)) ? selected : state.programs[0].id;
     }
-    function fillHabitDomainSelect(selected) {
-      itemHabitDomain.replaceChildren();
-      for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; itemHabitDomain.append(o); }
-      itemHabitDomain.value = (selected && DOMAINS.some(d => d.id === selected)) ? selected : "worship";
-    }
     function setNiType(t) {
       niType = t;
       const habit = t === "habit";
       itemTHours.classList.toggle("active", t === "hours");
       itemTPoints.classList.toggle("active", t === "points");
       itemTHabit.classList.toggle("active", habit);
-      itemProgramRow.hidden = habit;
+      itemProgramRow.hidden = false; // البرنامج مطلوب لكل الأنواع (بما فيها العادة)
       itemTargetRow.hidden = habit;
       itemCurrentRow.hidden = habit;
       itemDatesRow.hidden = habit;
       itemFav.hidden = habit;
-      itemHabitDomainRow.hidden = !habit;
       itemHabitDaysRow.hidden = !habit;
       itemNameLabel.textContent = habit ? "اسم العادة" : "اسم المشروع";
       itemName.placeholder = habit ? "مثال: قراءة وِرد القرآن" : "مثال: قراءة 12 كتاباً";
@@ -2657,7 +2649,7 @@
         editingHabitId = item.id; type = "habit";
         itemDlgTitleEl.textContent = "✏️ تعديل العادة"; itemSave.textContent = "حفظ";
         itemName.value = item.name || "";
-        fillHabitDomainSelect(item.domainId || "");
+        fillProgramSelect(item.programId || "");
         itemHabitDays.value = item.targetDays ? item.targetDays : "";
         itemTHours.hidden = true; itemTPoints.hidden = true; itemTHabit.hidden = false;
       } else if (item) {
@@ -2675,7 +2667,6 @@
         itemDlgTitleEl.textContent = "📄 مشروع جديد"; itemSave.textContent = "إضافة";
         itemName.value = ""; itemStart.value = ""; itemEnd.value = "";
         fillProgramSelect(presetProgramId || "");
-        fillHabitDomainSelect("");
         itemHabitDays.value = ""; itemTarget.value = ""; itemCurrent.value = ""; setNiFav(false);
         itemTHours.hidden = false; itemTPoints.hidden = false; itemTHabit.hidden = false;
       }
@@ -2687,14 +2678,15 @@
       const t = itemName.value.trim();
       if (!t) { itemName.focus(); return; }
       if (niType === "habit") {
-        const dom = itemHabitDomain.value || "";
+        const programId = itemProgram.value || "";
+        if (!programId) { alert("اختر برنامجاً للعادة، أو أنشئ برنامجاً أولاً من زر ➕."); return; }
         let days = parseInt(itemHabitDays.value, 10); if (!isFinite(days) || days < 0) days = 0;
         if (editingHabitId) {
           const h = state.habits.find(x => x.id === editingHabitId);
-          if (h) { h.name = t; h.domainId = dom; h.targetDays = days; touchDomain(dom); }
+          if (h) { const old = habitDomain(h); h.name = t; h.programId = programId; h.targetDays = days; touchDomain(old); touchDomain(habitDomain(h)); }
         } else {
-          state.habits.push({ id: uid(), name: t, domainId: dom, targetDays: days, created: Date.now(), log: {} });
-          touchDomain(dom);
+          const nh = { id: uid(), name: t, programId: programId, domainId: "", targetDays: days, created: Date.now(), log: {} };
+          state.habits.push(nh); touchDomain(habitDomain(nh));
         }
         save(); itemDlg.close(); refreshViews(); return;
       }
@@ -2856,14 +2848,15 @@
       const nameWrap = document.createElement("div"); nameWrap.className = "hb-name";
       const title = document.createElement("div"); title.className = "hb-title"; title.textContent = h.name;
       const dom = document.createElement("div"); dom.className = "hb-dom";
-      dom.textContent = h.domainId ? (domainIcon(h.domainId) + " " + domainName(h.domainId)) : "📌 بلا مجال";
+      const prog = habitProgramOf(h); const dId = habitDomain(h);
+      dom.textContent = (prog ? "📁 " + prog.name : "🗂️ بلا برنامج") + (dId ? " · " + domainIcon(dId) + " " + domainName(dId) : "");
       nameWrap.append(title, dom);
       const streak = habitStreak(h);
       const st = document.createElement("div"); st.className = "habit-streak" + (streak ? "" : " zero");
       st.innerHTML = "<span>🔥</span> " + streak + (h.targetDays > 0 ? " / " + h.targetDays : "") + " يوم";
       const menu = buildKebabMenu([
         { icon: "✏️", label: "تعديل العادة", onClick: () => openItem(h, null, "habit") },
-        { icon: "🗑️", label: "حذف العادة", danger: true, onClick: () => { const d = h.domainId; state.habits = state.habits.filter(x => x.id !== h.id); touchDomain(d); save(); refreshViews(); } }
+        { icon: "🗑️", label: "حذف العادة", danger: true, onClick: () => { const d = habitDomain(h); state.habits = state.habits.filter(x => x.id !== h.id); touchDomain(d); save(); refreshViews(); } }
       ]);
       top.append(nameWrap, st, menu);
       card.append(top);
@@ -2879,7 +2872,7 @@
         dot.className = "hd-dot" + (on ? " on" : "") + (isToday ? " today" : "");
         dot.textContent = on ? "✓" : "";
         dot.title = fmtDayShort(dayMs);
-        dot.onclick = () => { const k = habitKey(dayMs); if (!h.log) h.log = {}; if (h.log[k]) delete h.log[k]; else h.log[k] = true; touchDomain(h.domainId); save(); refreshViews(); };
+        dot.onclick = () => { const k = habitKey(dayMs); if (!h.log) h.log = {}; if (h.log[k]) delete h.log[k]; else h.log[k] = true; touchDomain(habitDomain(h)); save(); refreshViews(); };
         const lbl = document.createElement("div"); lbl.className = "hd-lbl"; lbl.textContent = AR_WD_MINI[new Date(dayMs).getDay()];
         cell.append(dot, lbl); days.append(cell);
       }
@@ -2890,7 +2883,7 @@
       const doneToday = habitDoneToday(h);
       check.className = "habit-check" + (doneToday ? " on" : "");
       check.innerHTML = doneToday ? "✓ تمّت اليوم" : "وسّم اليوم كمُنجَز";
-      check.onclick = () => { toggleHabitToday(h); touchDomain(h.domainId); save(); refreshViews(); };
+      check.onclick = () => { toggleHabitToday(h); touchDomain(habitDomain(h)); save(); refreshViews(); };
       const best = document.createElement("div"); best.className = "habit-best"; best.textContent = "أطول استرايك: " + habitBest(h) + " يوم";
       foot.append(check, best);
       card.append(foot);
