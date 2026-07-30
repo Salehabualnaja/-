@@ -220,6 +220,9 @@
     .tk-need-item .tn-name { font-weight: 700; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .tk-need-item .tn-dom { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
     .tk-need-item .tn-amt { flex: none; font-size: 12.5px; font-weight: 800; color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); border-radius: 8px; padding: 4px 10px; white-space: nowrap; }
+    .tk-need-list.scroll { max-height: 58vh; overflow-y: auto; padding-inline: 2px; -webkit-overflow-scrolling: touch; }
+    .tk-toggle { width: 100%; margin-top: 4px; border: 1px dashed var(--border-strong); background: var(--panel-2); color: var(--accent-ink); border-radius: 11px; padding: 11px; font-weight: 800; font-size: 13px; font-family: inherit; cursor: pointer; transition: background .12s, border-color .12s; }
+    .tk-toggle:hover { background: var(--accent-soft); border-color: var(--accent); }
     .tk-allgood { font-size: 13px; color: var(--run); font-weight: 700; background: var(--run-soft); border-radius: 11px; padding: 12px; text-align: center; }
     .tk-empty { font-size: 12.5px; color: var(--muted); text-align: center; padding: 8px 0; }
 
@@ -1621,6 +1624,7 @@
 
     // ═══ مسار خطة 2030 (تتبّع الوتيرة الزمنية) ═══
     const PLAN_END_2030 = new Date(2030, 11, 31, 23, 59, 59).getTime();
+    let trackShowAll = false; // عرض كل المتأخرات أم أهمّها فقط
     function planStartMs(g) {
       if (g.startDate) { const t = dateInputToDayStart(g.startDate); if (isFinite(t)) return t; }
       return g.created || Date.now();
@@ -1716,8 +1720,15 @@
       if (!behind.length) {
         needWrap.innerHTML = '<div class="tk-allgood">🎉 كل مشاريعك ضمن الجدول الزمني لخطة 2030</div>';
       } else {
-        needWrap.innerHTML = '<div class="tk-need-title">🔧 ماذا تحتاج الآن لتعود إلى الخطة</div>';
-        for (const b of behind.slice(0, 6)) {
+        const LIMIT = 6;
+        const hasMore = behind.length > LIMIT;
+        const title = document.createElement("div"); title.className = "tk-need-title";
+        title.textContent = "🔧 ماذا تحتاج الآن لتعود إلى الخطة (" + toArDigits(behind.length) + ")";
+        needWrap.append(title);
+        const listBox = document.createElement("div");
+        listBox.className = "tk-need-list" + (trackShowAll && hasMore ? " scroll" : "");
+        const shown = trackShowAll ? behind : behind.slice(0, LIMIT);
+        for (const b of shown) {
           const item = document.createElement("div");
           item.className = "tk-need-item";
           let amtTxt, ic;
@@ -1734,13 +1745,15 @@
             + '<div class="tn-body"><div class="tn-name">' + escapeHtml(b.ref.name || "") + '</div>'
             + '<div class="tn-dom">' + (b.domain ? domainIcon(b.domain) + " " + escapeHtml(domainName(b.domain)) : "بلا مجال") + '</div></div>'
             + '<span class="tn-amt">' + amtTxt + '</span>';
-          needWrap.append(item);
+          listBox.append(item);
         }
-        if (behind.length > 6) {
-          const more = document.createElement("div");
-          more.className = "tk-empty";
-          more.textContent = "و" + toArDigits(behind.length - 6) + " عنصراً آخر متأخّراً";
-          needWrap.append(more);
+        needWrap.append(listBox);
+        if (hasMore) {
+          const toggle = document.createElement("button");
+          toggle.className = "tk-toggle";
+          toggle.textContent = trackShowAll ? "⌃ عرض أقل" : ("⌄ عرض كل المتأخرات (" + toArDigits(behind.length) + ")");
+          toggle.onclick = () => { trackShowAll = !trackShowAll; renderTrack(); };
+          needWrap.append(toggle);
         }
       }
       card.append(needWrap);
