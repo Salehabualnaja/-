@@ -250,6 +250,7 @@
     .goalrow .gtitle { flex: 1; min-width: 0; }
     .goalrow .gtitle .gname { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 700; color: var(--text); }
     .goalrow .gtitle .gfav-ind { color: var(--dial-gold); font-size: 13px; flex: none; }
+    .hb-title .gfav-ind { color: var(--dial-gold); font-size: 13px; margin-inline-end: 5px; }
     .goalrow.done .gtitle .gname { text-decoration: line-through; color: var(--muted); }
     /* قائمة الثلاث نقاط */
     .gmenu { position: relative; flex: none; }
@@ -1259,6 +1260,7 @@
         if (typeof h.domainId !== "string") h.domainId = "";
         if (typeof h.created !== "number") h.created = Date.now();
         if (typeof h.targetDays !== "number") h.targetDays = 0;
+        if (typeof h.favorite !== "boolean") h.favorite = false;
         if (!h.log || typeof h.log !== "object") h.log = {};
       }
       // تاريخ آخر تحديث لكل مجال
@@ -1804,47 +1806,19 @@
     function typeLabel(t) { return t === "points" ? "⭐ نقاط" : "⏱️ ساعات"; }
 
     function renderFavorites() {
-      const favs = state.plans.filter(g => g.favorite);
+      const favPlans = state.plans.filter(g => g.favorite);
+      const favHabits = state.habits.filter(h => h.favorite);
       const favWrap = document.getElementById("favWrap");
       const favList = document.getElementById("favList");
-      if (!favs.length) { favWrap.hidden = true; favList.replaceChildren(); return; }
+      if (!favPlans.length && !favHabits.length) { favWrap.hidden = true; favList.replaceChildren(); return; }
       favWrap.hidden = false;
       const frag = document.createDocumentFragment();
-      favs.sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
-      for (const g of favs) {
-        const complete = isComplete(g);
-        const row = document.createElement("div");
-        row.className = "favrow" + (complete ? " done" : "");
-
-        const check = document.createElement("button");
-        check.className = "gcheck" + (complete ? " done" : "");
-        check.textContent = complete ? "✓" : "";
-        check.title = "تبديل الإكمال";
-        check.onclick = () => { toggleComplete(g); save(); renderPlan(); };
-
-        const main = document.createElement("button");
-        main.className = "fav-main";
-        main.title = "عرض تفاصيل المشروع";
-        main.onclick = () => openItem(g);
-        const nm = document.createElement("div"); nm.className = "fav-name"; nm.textContent = g.name;
-        const mt = document.createElement("div"); mt.className = "fav-meta";
-        const per = fmtPeriod(g);
-        const tg = (g.target && g.target > 0) ? " · " + fmtNum(goalCurrent(g)) + "/" + fmtNum(g.target) : "";
-        const did = planDomain(g);
-        mt.textContent = (did ? domainIcon(did) + " " + domainName(did) + " · " : "") + typeLabel(g.type) + tg + (per ? " · " + per : "");
-        main.append(nm, mt);
-
-        const open = document.createElement("button");
-        open.className = "fav-open"; open.textContent = "‹"; open.title = "تفاصيل المشروع";
-        open.onclick = () => openItem(g);
-
-        const star = document.createElement("button");
-        star.className = "gstar"; star.textContent = "★"; star.title = "إزالة من المفضلة";
-        star.onclick = () => { g.favorite = false; save(); renderPlan(); };
-
-        row.append(check, main, open, star);
-        frag.append(row);
-      }
+      // المشاريع (نقاط/ساعات): بطاقة كاملة قابلة للتعديل وإدخال التقدّم
+      favPlans.sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
+      for (const g of favPlans) frag.append(buildGoalRow(g));
+      // العادات: بطاقة العادة الكاملة (وسم اليوم + الاسترايك + تعديل)
+      favHabits.sort((a, b) => habitStreak(b) - habitStreak(a) || (b.created - a.created));
+      for (const h of favHabits) frag.append(habitCard(h));
       favList.replaceChildren(frag);
     }
 
@@ -3036,7 +3010,9 @@
       const card = document.createElement("div"); card.className = "habit-card";
       const top = document.createElement("div"); top.className = "habit-top";
       const nameWrap = document.createElement("div"); nameWrap.className = "hb-name";
-      const title = document.createElement("div"); title.className = "hb-title"; title.textContent = h.name;
+      const title = document.createElement("div"); title.className = "hb-title";
+      if (h.favorite) { const fi = document.createElement("span"); fi.className = "gfav-ind"; fi.textContent = "★"; title.append(fi); }
+      const tnm = document.createElement("span"); tnm.textContent = h.name; title.append(tnm);
       const dom = document.createElement("div"); dom.className = "hb-dom";
       const prog = habitProgramOf(h); const dId = habitDomain(h);
       dom.textContent = (prog ? "📁 " + prog.name : "🗂️ بلا برنامج") + (dId ? " · " + domainIcon(dId) + " " + domainName(dId) : "");
@@ -3045,6 +3021,7 @@
       const st = document.createElement("div"); st.className = "habit-streak" + (streak ? "" : " zero");
       st.innerHTML = "<span>🔥</span> " + streak + (h.targetDays > 0 ? " / " + h.targetDays : "") + " يوم";
       const menu = buildKebabMenu([
+        { icon: h.favorite ? "★" : "☆", label: h.favorite ? "إزالة من المفضلة" : "إضافة للمفضلة", onClick: () => { h.favorite = !h.favorite; save(); refreshViews(); } },
         { icon: "✏️", label: "تعديل العادة", onClick: () => openItem(h, null, "habit") },
         { icon: "🗑️", label: "حذف العادة", danger: true, onClick: () => { const d = habitDomain(h); state.habits = state.habits.filter(x => x.id !== h.id); touchDomain(d); save(); refreshViews(); } }
       ]);
