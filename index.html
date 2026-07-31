@@ -225,6 +225,28 @@
     .tk-toggle:hover { background: var(--accent-soft); border-color: var(--accent); }
     .tk-allgood { font-size: 13px; color: var(--run); font-weight: 700; background: var(--run-soft); border-radius: 11px; padding: 12px; text-align: center; }
     .tk-empty { font-size: 12.5px; color: var(--muted); text-align: center; padding: 8px 0; }
+    /* قراءة الأداء (الإحصاءات) */
+    .perf-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+    .perf-row { display: flex; align-items: center; gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+    .perf-row:last-child { border-bottom: none; }
+    .perf-l { flex: 1; min-width: 0; }
+    .perf-l .pr-lbl { font-weight: 800; font-size: 14px; }
+    .perf-l .pr-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .perf-val { flex: none; font-weight: 800; font-size: 14px; color: var(--text); font-variant-numeric: tabular-nums; }
+    .perf-delta { flex: none; font-size: 12px; font-weight: 800; border-radius: 8px; padding: 4px 9px; font-variant-numeric: tabular-nums; min-width: 62px; text-align: center; }
+    .perf-delta.up { color: var(--run); background: var(--run-soft); }
+    .perf-delta.down { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
+    .perf-delta.flat { color: var(--muted); background: var(--panel-2); }
+    .perf-empty { font-size: 12.5px; color: var(--muted); text-align: center; padding: 14px; background: var(--panel-2); border-radius: 12px; margin-bottom: 12px; }
+    /* توصية المتابعة */
+    .fu-rec { display: block; width: 100%; text-align: start; border: none; cursor: pointer; font-family: inherit; border-radius: var(--radius); padding: 15px 16px; margin-bottom: 12px; color: var(--accent-ink);
+      background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent) 16%, var(--panel))); box-shadow: var(--shadow); }
+    .fu-rec:active { transform: scale(.99); }
+    .fu-rec-tag { font-size: 12px; font-weight: 800; opacity: .9; }
+    .fu-rec-name { font-size: 18px; font-weight: 900; margin-top: 6px; color: var(--text); }
+    .fu-rec-meta { font-size: 12px; color: var(--muted); font-weight: 700; margin-top: 4px; }
+    .fu-rec-amt { display: inline-block; margin-top: 10px; font-size: 14px; font-weight: 900; color: var(--accent-ink); background: var(--panel); border-radius: 10px; padding: 6px 14px; }
+    .fu-rank { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); font-size: 11px; font-weight: 900; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
 
     .domains-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     @media (min-width: 560px) { .domains-grid { grid-template-columns: repeat(4, 1fr); } .prog-projects { grid-template-columns: repeat(3, 1fr) !important; } }
@@ -455,14 +477,13 @@
       background: color-mix(in srgb, var(--panel) 96%, transparent); backdrop-filter: blur(14px);
       border-top: 1px solid var(--border); padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
     }
-    .bottomnav .nav-group { flex: 1; display: flex; }
-    .bottomnav .nav-group button {
+    .bottomnav .navbtn {
       flex: 1; border: none; background: none; cursor: pointer; font-family: inherit; color: var(--muted);
-      display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 0; border-radius: 10px; transition: color .15s;
+      display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 0; border-radius: 12px; transition: color .15s, background .15s;
     }
-    .bottomnav .nav-group button .bi { font-size: 20px; line-height: 1; }
-    .bottomnav .nav-group button .bl { font-size: 10.5px; font-weight: 700; }
-    .bottomnav .nav-group button.active { color: var(--accent); }
+    .bottomnav .navbtn .bi { font-size: 20px; line-height: 1; }
+    .bottomnav .navbtn .bl { font-size: 11px; font-weight: 700; }
+    .bottomnav .navbtn.active { color: var(--accent); background: var(--accent-soft); }
 
     /* زر الإضافة المركزي المرتفع (مدمج مع الشريط بتصميم لامع) */
     .nav-fab {
@@ -728,7 +749,7 @@
 
     <!-- شريط تبويبات فرعي لصفحة الإحصاءات -->
     <div class="tabs" id="statsTabs" hidden>
-      <button data-stab="plan" class="active">الخطة</button>
+      <button data-stab="plan" class="active">الأداء والخطة</button>
       <button data-stab="timer">المؤقتات</button>
       <button data-stab="habits">العادات</button>
     </div>
@@ -747,13 +768,13 @@
         <div class="pb-sub" id="sub2030">0 من 0 مشروع مكتمل</div>
       </div>
 
-      <div class="track-card" id="trackCard"></div>
-
       <div class="planbar-card secondary">
         <div class="pb-head"><span class="pb-title">📅 خطة 2026 · مرحلية</span><span class="pb-pct" id="pct2026">0٪</span></div>
         <div class="pb-track"><div class="pb-fill alt" id="fill2026"></div></div>
         <div class="pb-sub" id="sub2026">0 من 0 مشروع مكتمل</div>
       </div>
+
+      <div id="perfWrap"></div>
 
       <div id="favWrap" hidden>
         <div class="section-title">⭐ المفضلة</div>
@@ -766,6 +787,11 @@
 
     <!-- ═══ قسم الأهداف ═══ -->
     <!-- ═══ قسم البرامج ═══ -->
+    <!-- ═══ صفحة المتابعة (اتخاذ القرار: أيّ المشاريع أولى) ═══ -->
+    <section id="followupSection" hidden>
+      <div id="followupList"></div>
+    </section>
+
     <section id="projectsSection" hidden>
       <div class="stats-card" id="projStats" hidden></div>
       <button class="add-goal-btn" id="projectsAddBtn">➕ إضافة برنامج أو مشروع</button>
@@ -902,15 +928,11 @@
   <!-- زر التحدي العائم (الشعلة المتحركة) -->
   <button class="fab" id="fabChallenge" title="تحدي" aria-label="تحدي"><span class="flame">🔥</span></button>
 
-  <!-- الشريط السفلي للتنقل + زر الإضافة المركزي -->
+  <!-- الشريط السفلي للتنقل: ثلاث صفحات -->
   <nav class="bottomnav" id="bottomnav">
-    <div class="nav-group">
-      <button data-mode="stats" class="active"><span class="bi">📊</span><span class="bl">إحصاءات</span></button>
-    </div>
-    <button class="nav-fab" id="navAdd" title="إضافة" aria-label="إضافة برنامج أو مشروع أو عادة"><span class="plus">＋</span></button>
-    <div class="nav-group">
-      <button data-mode="projects"><span class="bi">📁</span><span class="bl">المشاريع</span></button>
-    </div>
+    <button class="navbtn active" data-mode="stats"><span class="bi">📊</span><span class="bl">الإحصاءات</span></button>
+    <button class="navbtn" data-mode="followup"><span class="bi">🎯</span><span class="bl">المتابعة</span></button>
+    <button class="navbtn" data-mode="projects"><span class="bi">📁</span><span class="bl">المشاريع</span></button>
   </nav>
 
   <!-- ورقة إجراء الإضافة -->
@@ -1189,7 +1211,7 @@
     function readUI(key, allowed, def) { try { const v = localStorage.getItem(key); return allowed.indexOf(v) >= 0 ? v : def; } catch (e) { return def; } }
     function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
     let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
-    let appMode = readUI(UI_MODE_KEY, ["stats", "projects", "settings", "reminders"], "stats");
+    let appMode = readUI(UI_MODE_KEY, ["stats", "projects", "settings", "reminders", "followup"], "stats");
     const STATS_TAB_KEY = "ptt.ui.statstab";
     let statsTab = readUI(STATS_TAB_KEY, ["plan", "timer", "habits"], "plan");
     const PROJ_VIEW_KEY = "ptt.ui.projview";
@@ -1436,6 +1458,8 @@
       habitsSection: document.getElementById("habitsSection"),
       habitsList: document.getElementById("habitsList"),
       habitStats: document.getElementById("habitStats"),
+      followupSection: document.getElementById("followupSection"),
+      followupList: document.getElementById("followupList"),
       settingsSection: document.getElementById("settingsSection"),
       domainSection: document.getElementById("domainSection"),
       statsTabs: document.getElementById("statsTabs"),
@@ -1475,6 +1499,7 @@
       els.planSection.hidden = !(isStats && statsTab === "plan");
       els.timerSection.hidden = !(isStats && statsTab === "timer");
       els.habitsSection.hidden = !(isStats && statsTab === "habits");
+      els.followupSection.hidden = appMode !== "followup";
       els.projectsSection.hidden = appMode !== "projects";
       els.remindersSection.hidden = appMode !== "reminders";
       els.settingsSection.hidden = appMode !== "settings";
@@ -1486,6 +1511,8 @@
         if (statsTab === "plan") renderPlan();
         else if (statsTab === "timer") renderTimer();
         else { els.dayLabel.textContent = "العادات — تابِع استمراريتك اليومية 🔥"; renderHabits(); }
+      } else if (appMode === "followup") {
+        renderFollowup();
       } else if (appMode === "projects") {
         els.dayLabel.textContent = "المشاريع — برامجك ومشاريعك مصنّفة";
         renderProjects();
@@ -1507,7 +1534,8 @@
         if (statsTab === "plan") renderPlan();
         else if (statsTab === "timer") renderTimer();
         else renderHabits();
-      } else if (appMode === "projects") renderProjects();
+      } else if (appMode === "followup") renderFollowup();
+      else if (appMode === "projects") renderProjects();
       else if (appMode === "reminders") renderReminders();
       else if (appMode === "settings") renderSettings();
       else if (appMode === "domain") renderDomainPage();
@@ -1694,79 +1722,133 @@
       out.sort((a, b) => b.deficit - a.deficit);
       return out;
     }
-    function renderTrack() {
-      const card = document.getElementById("trackCard"); if (!card) return;
+    // ═══ صفحة الإحصاءات: رسومات قراءة الأداء (يومي/أسبوعي/شهري + الفارق) ═══
+    function perfRow(label, sub, curMs, prevMs) {
+      const row = document.createElement("div"); row.className = "perf-row";
+      const left = document.createElement("div"); left.className = "perf-l";
+      left.innerHTML = '<div class="pr-lbl">' + label + '</div><div class="pr-sub">' + sub + '</div>';
+      const val = document.createElement("div"); val.className = "perf-val"; val.textContent = fmtHM(curMs);
+      const dl = document.createElement("div"); dl.className = "perf-delta";
+      if (prevMs <= 0 && curMs <= 0) { dl.textContent = "—"; dl.classList.add("flat"); }
+      else if (prevMs <= 0) { dl.textContent = "▲ جديد"; dl.classList.add("up"); }
+      else { const d = Math.round((curMs - prevMs) / prevMs * 100); dl.classList.add(d > 0 ? "up" : d < 0 ? "down" : "flat"); dl.textContent = (d > 0 ? "▲ +" : d < 0 ? "▼ −" : "= ") + toArDigits(Math.abs(d)) + "٪"; }
+      row.append(left, val, dl); return row;
+    }
+    function renderPerformance() {
+      const wrap = document.getElementById("perfWrap"); if (!wrap) return;
+      wrap.replaceChildren();
       const now = Date.now();
-      const tk = planTrack(now);
-      if (tk.den <= 0) {
-        card.innerHTML = '<div class="tk-head"><span class="tk-title">🧭 مسارك في خطة 2030</span></div>'
-          + '<div class="tk-empty">أضِف مشاريع بأهداف ومواعيد لتتابع مسارك نحو 2030.</div>';
-        return;
+      const items = [...timerItems(), state.freeTimer];
+      const days = 60, arr = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const ds = dayStartAgo(i);
+        let t = 0; for (const it of items) t += Math.max(0, projectMsInDay(it, ds, now));
+        arr.push({ ds, ms: t });
       }
+      const sumLast = (n, off) => { let s = 0; for (let k = 0; k < n; k++) { const idx = arr.length - 1 - (off || 0) - k; if (idx >= 0) s += arr[idx].ms; } return s; };
+      const today = arr[arr.length - 1].ms, yest = arr.length > 1 ? arr[arr.length - 2].ms : 0;
+      const wk = sumLast(7, 0), wkPrev = sumLast(7, 7);
+      const mo = sumLast(30, 0), moPrev = sumLast(30, 30);
+      const anyData = arr.some(x => x.ms > 0);
+
+      const st = document.createElement("div"); st.className = "section-title"; st.textContent = "📈 قراءة الأداء"; wrap.append(st);
+
+      const cmp = document.createElement("div"); cmp.className = "perf-card";
+      cmp.append(perfRow("اليوم", "مقابل أمس", today, yest));
+      cmp.append(perfRow("هذا الأسبوع", "مقابل الأسبوع السابق", wk, wkPrev));
+      cmp.append(perfRow("هذا الشهر", "مقابل الشهر السابق", mo, moPrev));
+      wrap.append(cmp);
+
+      if (!anyData) {
+        const e = document.createElement("div"); e.className = "perf-empty"; e.textContent = "ابدأ تسجيل الساعات من المؤقتات لتظهر رسومات الأداء هنا.";
+        wrap.append(e); return;
+      }
+      const g = goalMs();
+      const last7 = arr.slice(-7);
+      wrap.append(columnChartCard("ساعات آخر 7 أيام", buildBuckets(last7.map(x => x.ds), last7.map(x => x.ms), "day"), g, g > 0 ? (b => b.ms >= g) : null));
+      const last56 = arr.slice(-56);
+      wrap.append(columnChartCard("الاتجاه الأسبوعي (8 أسابيع)", buildBuckets(last56.map(x => x.ds), last56.map(x => x.ms), "week"), 0, null));
+    }
+
+    // ═══ صفحة المتابعة: أيّ المشاريع أولى بالبدء (بناءً على المتأخرات) ═══
+    function goFollowupHabits() {
+      statsTab = "habits"; appMode = "stats";
+      try { localStorage.setItem(STATS_TAB_KEY, "habits"); } catch (_) {}
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === "stats"));
+      saveUI(); render();
+    }
+    function fuStatusCard(tk, now) {
+      const status = document.createElement("div"); status.className = "track-card";
       const actPct = Math.round(tk.act * 100), expPct = Math.round(tk.exp * 100);
       const onTrack = tk.act + 0.005 >= tk.exp;
       const gapPct = Math.max(0, Math.round((tk.exp - tk.act) * 100));
-      const remainDays = Math.max(1, (PLAN_END_2030 - now) / DAY_MS);
-      const remainFrac = Math.max(0, 1 - tk.act);
-      const perDay = remainFrac / remainDays * 100;
-      const rate = (mult) => { const v = perDay * mult; return toArDigits(v >= 10 ? Math.round(v) : Math.round(v * 10) / 10); };
-
-      card.innerHTML =
+      const perDay = Math.max(0, 1 - tk.act) / Math.max(1, (PLAN_END_2030 - now) / DAY_MS) * 100;
+      const rate = (m) => { const v = perDay * m; return toArDigits(v >= 10 ? Math.round(v) : Math.round(v * 10) / 10); };
+      status.innerHTML =
         '<div class="tk-head"><span class="tk-title">🧭 مسارك في خطة 2030</span>'
         + '<span class="tk-pill ' + (onTrack ? 'ok">✅ على المسار' : 'behind">⚠️ متأخّر ' + toArDigits(gapPct) + '٪') + '</span></div>'
         + '<div class="tk-bar"><div class="tk-fill" style="width:' + actPct + '%"></div>'
-        + '<div class="tk-marker" style="right:' + expPct + '%" title="المطلوب الآن ' + toArDigits(expPct) + '٪"></div></div>'
+        + '<div class="tk-marker" style="right:' + expPct + '%"></div></div>'
         + '<div class="tk-nums">أنجزت <b>' + toArDigits(actPct) + '٪</b> · المطلوب الآن <b>' + toArDigits(expPct) + '٪</b>'
-        + (onTrack ? ' · أنت متقدّم على الخطة 👏' : ' · ينقصك <b>' + toArDigits(gapPct) + '٪</b> للّحاق بالخطة') + '</div>'
-        + '<div class="tk-rates">'
-        + '<div class="tk-rate"><div class="tr-lbl">المطلوب يومياً</div><div class="tr-val">' + rate(1) + '٪</div></div>'
-        + '<div class="tk-rate"><div class="tr-lbl">المطلوب أسبوعياً</div><div class="tr-val">' + rate(7) + '٪</div></div>'
-        + '<div class="tk-rate"><div class="tr-lbl">المطلوب شهرياً</div><div class="tr-val">' + rate(30) + '٪</div></div>'
-        + '</div>';
+        + (onTrack ? ' · أنت متقدّم على الخطة 👏' : ' · ينقصك <b>' + toArDigits(gapPct) + '٪</b>') + '</div>'
+        + '<div class="tk-rates"><div class="tk-rate"><div class="tr-lbl">مطلوب يومياً</div><div class="tr-val">' + rate(1) + '٪</div></div>'
+        + '<div class="tk-rate"><div class="tr-lbl">مطلوب أسبوعياً</div><div class="tr-val">' + rate(7) + '٪</div></div>'
+        + '<div class="tk-rate"><div class="tr-lbl">مطلوب شهرياً</div><div class="tr-val">' + rate(30) + '٪</div></div></div>';
+      return status;
+    }
+    function fuAmount(b) {
+      return b.kind === "plan"
+        ? (b.need > 0 ? "+" + fmtNum(b.need) + (b.type === "hours" ? " ساعة" : " نقطة") : "أنجِزها")
+        : "واظب " + toArDigits(b.needDays) + " يوم";
+    }
+    function fuOpen(b) { if (b.kind === "plan") openItem(b.ref); else goFollowupHabits(); }
+    function renderFollowup() {
+      els.dayLabel.textContent = "المتابعة — أيّ المشاريع أولى بالبدء؟";
+      const wrap = els.followupList; wrap.replaceChildren();
+      const now = Date.now();
+      const tk = planTrack(now);
+      if (tk.den <= 0) {
+        const empty = document.createElement("div"); empty.className = "track-card";
+        empty.innerHTML = '<div class="tk-head"><span class="tk-title">🎯 المتابعة</span></div>'
+          + '<div class="tk-empty">أضِف برامج ومشاريع بأهداف ومواعيد، وستساعدك هذه الصفحة على معرفة أيّها أولى بالبدء.</div>';
+        wrap.append(empty); return;
+      }
+      wrap.append(fuStatusCard(tk, now));
 
       const behind = behindItems(now);
-      const needWrap = document.createElement("div");
-      needWrap.className = "tk-need";
       if (!behind.length) {
-        needWrap.innerHTML = '<div class="tk-allgood">🎉 كل مشاريعك ضمن الجدول الزمني لخطة 2030</div>';
-      } else {
-        const LIMIT = 6;
-        const hasMore = behind.length > LIMIT;
-        const title = document.createElement("div"); title.className = "tk-need-title";
-        title.textContent = "🔧 ماذا تحتاج الآن لتعود إلى الخطة (" + toArDigits(behind.length) + ")";
-        needWrap.append(title);
-        const listBox = document.createElement("div");
-        listBox.className = "tk-need-list" + (trackShowAll && hasMore ? " scroll" : "");
-        const shown = trackShowAll ? behind : behind.slice(0, LIMIT);
-        for (const b of shown) {
-          const item = document.createElement("div");
-          item.className = "tk-need-item";
-          let amtTxt, ic;
-          if (b.kind === "plan") {
-            ic = "📌";
-            amtTxt = b.need > 0 ? ("+" + fmtNum(b.need) + (b.type === "hours" ? " ساعة" : " نقطة")) : "أنجِزها";
-            item.onclick = () => openItem(b.ref);
-          } else {
-            ic = "🔥";
-            amtTxt = "واظب " + toArDigits(b.needDays) + " يوم";
-            item.onclick = () => { statsTab = "habits"; try { localStorage.setItem(STATS_TAB_KEY, "habits"); } catch (_) {} render(); };
-          }
-          item.innerHTML = '<span class="tn-ic">' + ic + '</span>'
-            + '<div class="tn-body"><div class="tn-name">' + escapeHtml(b.ref.name || "") + '</div>'
-            + '<div class="tn-dom">' + (b.domain ? domainIcon(b.domain) + " " + escapeHtml(domainName(b.domain)) : "بلا مجال") + '</div></div>'
-            + '<span class="tn-amt">' + amtTxt + '</span>';
-          listBox.append(item);
-        }
-        needWrap.append(listBox);
-        if (hasMore) {
-          const toggle = document.createElement("button");
-          toggle.className = "tk-toggle";
-          toggle.textContent = trackShowAll ? "⌃ عرض أقل" : ("⌄ عرض كل المتأخرات (" + toArDigits(behind.length) + ")");
-          toggle.onclick = () => { trackShowAll = !trackShowAll; renderTrack(); };
-          needWrap.append(toggle);
-        }
+        const good = document.createElement("div"); good.className = "track-card";
+        good.innerHTML = '<div class="tk-allgood">🎉 كل مشاريعك ضمن الجدول الزمني — لا متأخرات الآن</div>';
+        wrap.append(good); return;
       }
-      card.append(needWrap);
+
+      // التوصية: ابدأ بهذا أولاً
+      const top = behind[0];
+      const rec = document.createElement("button"); rec.className = "fu-rec"; rec.onclick = () => fuOpen(top);
+      rec.innerHTML = '<div class="fu-rec-tag">🚀 ابدأ بهذا أولاً</div>'
+        + '<div class="fu-rec-name">' + escapeHtml(top.ref.name || "") + '</div>'
+        + '<div class="fu-rec-meta">' + (top.domain ? domainIcon(top.domain) + " " + escapeHtml(domainName(top.domain)) : "بلا مجال") + ' · متأخّر ' + toArDigits(Math.round(top.deficit * 100)) + '٪</div>'
+        + '<div class="fu-rec-amt">' + fuAmount(top) + '</div>';
+      wrap.append(rec);
+
+      // كل المتأخرات حسب الأولوية
+      const listCard = document.createElement("div"); listCard.className = "track-card";
+      const title = document.createElement("div"); title.className = "tk-need-title";
+      title.textContent = "🗂️ كل المتأخرات حسب الأولوية (" + toArDigits(behind.length) + ")";
+      listCard.append(title);
+      const listBox = document.createElement("div"); listBox.className = "tk-need-list";
+      behind.forEach((b, idx) => {
+        const item = document.createElement("div"); item.className = "tk-need-item";
+        item.onclick = () => fuOpen(b);
+        item.innerHTML = '<span class="fu-rank">' + toArDigits(idx + 1) + '</span>'
+          + '<span class="tn-ic">' + (b.kind === "plan" ? "📌" : "🔥") + '</span>'
+          + '<div class="tn-body"><div class="tn-name">' + escapeHtml(b.ref.name || "") + '</div>'
+          + '<div class="tn-dom">' + (b.domain ? domainIcon(b.domain) + " " + escapeHtml(domainName(b.domain)) : "بلا مجال") + ' · متأخّر ' + toArDigits(Math.round(b.deficit * 100)) + '٪</div></div>'
+          + '<span class="tn-amt">' + fuAmount(b) + '</span>';
+        listBox.append(item);
+      });
+      listCard.append(listBox);
+      wrap.append(listCard);
     }
 
     function renderPlan() {
@@ -1782,7 +1864,7 @@
       els.fill2026.style.width = pct26 + "%"; els.pct2026.textContent = toArDigits(pct26) + "٪";
       els.sub2026.textContent = d26.total ? (toArDigits(d26.done) + " من " + toArDigits(d26.total) + " مشروع مكتمل · متوسط مرجّح") : "لا توجد مشاريع لسنة 2026";
 
-      renderTrack();
+      renderPerformance();
 
       // المربعات الثمانية
       const frag = document.createDocumentFragment();
@@ -2752,8 +2834,6 @@
         saveUI(); render();
       };
     });
-    // زر الإضافة المركزي
-    document.getElementById("navAdd").onclick = () => addSheet.showModal();
     // إغلاق قوائم الثلاث نقاط عند النقر خارجها
     document.addEventListener("click", () => { document.querySelectorAll(".gmenu-pop:not([hidden])").forEach(p => p.hidden = true); });
 
