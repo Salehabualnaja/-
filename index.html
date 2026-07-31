@@ -663,6 +663,9 @@
     .stat-tile { flex: 1; background: var(--panel-2); border-radius: 10px; padding: 9px 4px; text-align: center; }
     .stat-tile .st-num { font-size: 21px; font-weight: 900; color: var(--accent-ink); line-height: 1; font-variant-numeric: tabular-nums; }
     .stat-tile .st-lbl { font-size: 10.5px; color: var(--muted); font-weight: 700; margin-top: 4px; }
+    .reorder-hint { font-size: 11.5px; color: var(--muted); background: var(--panel-2); border: 1px dashed var(--border-strong); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; text-align: center; }
+    .prog-block.dragging, .goalrow.dragging { opacity: .97; box-shadow: 0 10px 26px rgba(0,0,0,.22); transform: scale(1.015); position: relative; z-index: 6; background: var(--panel); border-radius: 12px; }
+    .goalrow.dragging { outline: 2px solid var(--accent); outline-offset: -2px; }
     .stats-doms { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
     .stat-dom { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; padding: 6px 9px; overflow: hidden; }
     .stat-dom .sd-ic { flex: none; font-size: 13px; }
@@ -1854,6 +1857,7 @@
       const hasTarget = g.target && g.target > 0;
       const row = document.createElement("div");
       row.className = "goalrow" + (complete ? " done" : "");
+      row.dataset.planId = g.id;
 
       const check = document.createElement("button");
       check.className = "gcheck" + (complete ? " done" : "");
@@ -1994,8 +1998,8 @@
       head.innerHTML = '<span class="ph-name"><span class="dc-icon">🗂️</span> مشاريع بلا برنامج</span>';
       block.append(head);
       const box = document.createElement("div"); box.className = "goals-group";
-      const sorted = plans.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
-      for (const pl of sorted) box.append(buildGoalRow(pl));
+      box.dataset.progId = "";
+      for (const pl of plans) box.append(buildGoalRow(pl));
       block.append(box);
       return block;
     }
@@ -2039,16 +2043,21 @@
         }
         if (ungroupedPlans.length) frag.append(ungroupedBlock(ungroupedPlans));
       } else {
-        // حسب البرامج (الترتيب الافتراضي)
-        for (const prog of state.programs) frag.append(buildProgramBlock(prog));
+        // حسب البرامج (ترتيب يدوي قابل للسحب)
+        const hint = document.createElement("div"); hint.className = "reorder-hint";
+        hint.textContent = "↕️ اضغط مطوّلاً على أي برنامج أو مشروع ثم اسحبه لإعادة ترتيبه";
+        frag.append(hint);
+        for (const prog of state.programs) frag.append(buildProgramBlock(prog, false, true));
         if (ungroupedPlans.length) frag.append(ungroupedBlock(ungroupedPlans));
       }
       els.projectsList.replaceChildren(frag);
+      if (projectsView === "program") wireProjectReordering();
     }
 
     const expandedPrograms = new Set();
-    function buildProgramBlock(prog, hideDomainBadge) {
+    function buildProgramBlock(prog, hideDomainBadge, manual) {
       const block = document.createElement("div"); block.className = "prog-block";
+      block.dataset.progId = prog.id;
       const pct = programPct(prog.id);
       const list = programProjects(prog.id);
       const expanded = expandedPrograms.has(prog.id);
@@ -2083,14 +2092,107 @@
       block.append(head);
 
       const box = document.createElement("div"); box.className = "goals-group"; box.hidden = !expanded;
+      box.dataset.progId = prog.id;
       if (!list.length) {
         const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا مشاريع بعد في هذا البرنامج."; box.append(e);
       } else {
-        const sorted = list.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
+        // في العرض «حسب البرامج» نحترم ترتيب المستخدم اليدوي؛ وإلا نرتّب المكتمل أسفل
+        const sorted = manual ? list : list.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
         for (const pl of sorted) box.append(buildGoalRow(pl));
       }
       block.append(box);
       return block;
+    }
+
+    // ═══ إعادة الترتيب بالسحب بعد الضغط المطوّل ═══
+    let _reorderBlocker = null;
+    function _blockScroll(on) {
+      if (on) {
+        _reorderBlocker = (e) => e.preventDefault();
+        document.addEventListener("touchmove", _reorderBlocker, { passive: false });
+        document.body.style.userSelect = "none";
+      } else {
+        if (_reorderBlocker) document.removeEventListener("touchmove", _reorderBlocker, { passive: false });
+        _reorderBlocker = null; document.body.style.userSelect = "";
+      }
+    }
+    // container: الحاوي، itemSel: الأبناء القابلون للسحب، handleSel: مقبض السحب (أو null)،
+    // idAttr: اسم خاصية البيانات للمعرّف، commit(orderedIds)
+    function makeReorderable(container, itemSel, handleSel, idAttr, commit) {
+      const items = () => Array.from(container.querySelectorAll(":scope > " + itemSel));
+      for (const item of items()) {
+        const handle = handleSel ? (item.querySelector(handleSel) || item) : item;
+        let timer = null, active = false, sx = 0, sy = 0;
+        const clearTimer = () => { if (timer) { clearTimeout(timer); timer = null; } };
+        const onMove = (e) => {
+          if (!active) return;
+          e.preventDefault();
+          const y = e.clientY;
+          for (const s of items()) {
+            if (s === item) continue;
+            const r = s.getBoundingClientRect();
+            if (y >= r.top && y <= r.bottom) {
+              container.insertBefore(item, (y < r.top + r.height / 2) ? s : s.nextSibling);
+              break;
+            }
+          }
+        };
+        const end = () => {
+          clearTimer();
+          document.removeEventListener("pointermove", onMove);
+          if (active) {
+            active = false;
+            item.classList.remove("dragging");
+            _blockScroll(false);
+            handle.addEventListener("click", (ev) => { ev.stopPropagation(); ev.preventDefault(); }, { capture: true, once: true });
+            commit(items().map(el => el.dataset[idAttr]));
+          }
+        };
+        const begin = () => {
+          active = true;
+          item.classList.add("dragging");
+          try { navigator.vibrate && navigator.vibrate(15); } catch (_) {}
+          _blockScroll(true);
+          document.addEventListener("pointermove", onMove, { passive: false });
+          document.addEventListener("pointerup", end, { once: true });
+          document.addEventListener("pointercancel", end, { once: true });
+        };
+        handle.addEventListener("pointerdown", (e) => {
+          if (e.button != null && e.button !== 0) return;
+          if (e.target.closest("button, input, select, .gmenu")) return;
+          sx = e.clientX; sy = e.clientY; clearTimer();
+          timer = setTimeout(begin, 400);
+        });
+        handle.addEventListener("pointermove", (e) => {
+          if (!active && timer && (Math.abs(e.clientX - sx) > 9 || Math.abs(e.clientY - sy) > 9)) clearTimer();
+        });
+        handle.addEventListener("pointerup", clearTimer);
+        handle.addEventListener("pointercancel", clearTimer);
+      }
+    }
+    function reorderPlansInProgram(progId, orderedIds) {
+      const inProg = state.plans.filter(p => (p.programId || "") === progId);
+      const others = state.plans.filter(p => (p.programId || "") !== progId);
+      const map = new Map(inProg.map(p => [p.id, p]));
+      const reordered = orderedIds.map(id => map.get(id)).filter(Boolean);
+      for (const p of inProg) if (!orderedIds.includes(p.id)) reordered.push(p);
+      state.plans = others.concat(reordered); save();
+    }
+    function wireProjectReordering() {
+      const listEl = els.projectsList;
+      // ترتيب البرامج
+      makeReorderable(listEl, ".prog-block[data-prog-id]", ".prog-head", "progId", (ids) => {
+        ids = ids.filter(Boolean);
+        const map = new Map(state.programs.map(p => [p.id, p]));
+        const reordered = ids.map(id => map.get(id)).filter(Boolean);
+        for (const p of state.programs) if (!ids.includes(p.id)) reordered.push(p);
+        state.programs = reordered; save();
+      });
+      // ترتيب المشاريع داخل كل برنامج
+      listEl.querySelectorAll(".goals-group[data-prog-id]").forEach(box => {
+        const progId = box.dataset.progId;
+        makeReorderable(box, ".goalrow[data-plan-id]", null, "planId", (ids) => reorderPlansInProgram(progId, ids.filter(Boolean)));
+      });
     }
 
     function deleteProgram(prog) {
