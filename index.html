@@ -533,9 +533,8 @@
     .ch-add { display: flex; flex-direction: column; gap: 8px; }
     .ch-add-row { display: flex; gap: 8px; }
     .ch-add-row select { flex: 1; }
-    .ch-proj { width: 100%; }
-    .ch-proj:disabled { opacity: .55; }
-    .ch-add-row select:disabled { opacity: .55; }
+    .ch-add-row .ch-addbtn { flex: 1; }
+    .ch-dom, .ch-proj { width: 100%; }
     .ct-proj { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
     .ch-add-row .ch-addbtn { flex: 0 0 auto; padding: 0 24px; border: none; border-radius: 10px; background: var(--fab); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; font-family: inherit; }
     .ch-add-row .ch-addbtn:active { transform: scale(.96); }
@@ -983,9 +982,9 @@
         </div>
         <div class="ch-add" id="chAddWrap">
           <input id="chInput" type="text" placeholder="اكتب مهمة جديدة…" autocomplete="off" />
-          <select id="chProject" class="ch-proj" title="المشروع الذي يضمّ التحدي (اختياري)"></select>
+          <select id="chDomain" class="ch-dom" title="المجال"></select>
+          <select id="chProject" class="ch-proj" title="المشروع ضمن المجال المختار (اختياري)"></select>
           <div class="ch-add-row">
-            <select id="chDomain"></select>
             <button class="ch-addbtn" id="chAdd">➕ إضافة</button>
             <button class="ch-canceledit" id="chCancelEdit" hidden title="إلغاء التعديل" aria-label="إلغاء التعديل">✕</button>
           </div>
@@ -2962,27 +2961,25 @@
       if (c.projectId) { const p = state.plans.find(x => x.id === c.projectId); if (p) return planDomain(p); }
       return c.domainId || "";
     }
-    // قائمة مشاريع التحدي (اختياري) — كل المشاريع مع برنامجها ومجالها
+    // قائمة مشاريع التحدي (اختياري) — تعرض فقط مشاريع المجال المختار لتسهيل الاختيار
     function fillChProjects(selected) {
       chProject.replaceChildren();
-      const none = document.createElement("option"); none.value = ""; none.textContent = "📌 بدون مشروع محدّد"; chProject.append(none);
-      const plans = state.plans.slice().sort((a, b) => (planDomain(a) || "").localeCompare(planDomain(b) || ""));
+      const dom = chDomain.value || "";
+      const plans = state.plans.filter(pl => planDomain(pl) === dom);
+      const none = document.createElement("option"); none.value = "";
+      none.textContent = plans.length ? "📌 بدون مشروع محدّد" : "— لا مشاريع في هذا المجال —";
+      chProject.append(none);
       for (const pl of plans) {
-        const pr = programOf(pl); const dId = planDomain(pl);
+        const pr = programOf(pl);
         const o = document.createElement("option"); o.value = pl.id;
-        o.textContent = pl.name + (pr ? " · " + pr.name : "") + (dId ? " · " + domainName(dId) : "");
+        o.textContent = pl.name + (pr ? " · " + pr.name : "");
         chProject.append(o);
       }
-      chProject.value = (selected && state.plans.some(pl => pl.id === selected)) ? selected : "";
-      syncChDomainLock();
+      chProject.value = (selected && plans.some(pl => pl.id === selected)) ? selected : "";
+      chProject.disabled = !plans.length;
     }
-    // عند اختيار مشروع: اشتقّ المجال واقفله؛ وإلا افتحه للاختيار اليدوي
-    function syncChDomainLock() {
-      const pl = chProject.value ? state.plans.find(x => x.id === chProject.value) : null;
-      if (pl) { const d = planDomain(pl); if (d) chDomain.value = d; chDomain.disabled = true; }
-      else { chDomain.disabled = false; }
-    }
-    chProject.addEventListener("change", syncChDomainLock);
+    // تغيير المجال يعيد بناء قائمة مشاريعه
+    chDomain.addEventListener("change", () => fillChProjects(""));
 
     let editingChId = null;
     function chTaskRow(c) {
@@ -3007,9 +3004,9 @@
     function enterChEdit(c) {
       editingChId = c.id;
       chInput.value = c.text;
+      const dom = challengeDomain(c);
+      chDomain.value = (dom && DOMAINS.some(d => d.id === dom)) ? dom : "career";
       fillChProjects(c.projectId || "");
-      chDomain.value = (c.domainId && DOMAINS.some(d => d.id === c.domainId)) ? c.domainId : "career";
-      syncChDomainLock();
       chAdd.textContent = "💾 حفظ";
       chCancelEdit.hidden = false;
       chAddWrap.classList.add("editing");
@@ -3018,7 +3015,7 @@
     function exitChEdit() {
       editingChId = null;
       chInput.value = "";
-      chProject.value = ""; syncChDomainLock();
+      fillChProjects("");
       chAdd.textContent = "➕ إضافة";
       chCancelEdit.hidden = true;
       chAddWrap.classList.remove("editing");
@@ -3065,7 +3062,7 @@
         save(); exitChEdit(); renderChallenges(); return;
       }
       state.challenges.push({ id: uid(), text: t, projectId: projectId, domainId: domainId, done: false, created: Date.now() });
-      save(); chInput.value = ""; chProject.value = ""; syncChDomainLock(); renderChallenges(); chInput.focus();
+      save(); chInput.value = ""; fillChProjects(""); renderChallenges(); chInput.focus();
     }
     chAdd.onclick = addChallenge;
     chCancelEdit.onclick = exitChEdit;
@@ -3083,7 +3080,7 @@
       fabChallenge.classList.remove("burst"); void fabChallenge.offsetWidth; fabChallenge.classList.add("burst");
     });
     fabChallenge.addEventListener("animationend", (e) => { if (e.animationName === "fab-pop") fabChallenge.classList.remove("burst"); });
-    fabChallenge.onclick = () => { exitChEdit(); fillChProjects(""); chDomain.value = "career"; syncChDomainLock(); renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
+    fabChallenge.onclick = () => { exitChEdit(); chDomain.value = "career"; fillChProjects(""); renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
     challengeDlg.addEventListener("close", exitChEdit);
 
     // ---------- العادات اليومية ----------
