@@ -664,8 +664,9 @@
     .stat-tile .st-num { font-size: 21px; font-weight: 900; color: var(--accent-ink); line-height: 1; font-variant-numeric: tabular-nums; }
     .stat-tile .st-lbl { font-size: 10.5px; color: var(--muted); font-weight: 700; margin-top: 4px; }
     .reorder-hint { font-size: 11.5px; color: var(--muted); background: var(--panel-2); border: 1px dashed var(--border-strong); border-radius: 10px; padding: 8px 10px; margin-bottom: 10px; text-align: center; }
-    .prog-block.dragging, .goalrow.dragging { opacity: .97; box-shadow: 0 10px 26px rgba(0,0,0,.22); transform: scale(1.015); position: relative; z-index: 6; background: var(--panel); border-radius: 12px; }
+    .prog-block.dragging, .goalrow.dragging { opacity: .98; box-shadow: 0 14px 32px rgba(0,0,0,.28); background: var(--panel); border-radius: 12px; box-sizing: border-box; cursor: grabbing; }
     .goalrow.dragging { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .reorder-ph { border: 2px dashed var(--accent); background: var(--accent-soft); border-radius: 12px; margin: 4px 0; box-sizing: border-box; opacity: .6; transition: height .15s ease; }
     .stats-doms { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
     .stat-dom { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; padding: 6px 9px; overflow: hidden; }
     .stat-dom .sd-ic { flex: none; font-size: 13px; }
@@ -2116,54 +2117,99 @@
         _reorderBlocker = null; document.body.style.userSelect = "";
       }
     }
+    // حركة سلسة: العنصر المسحوب يرتفع ويتبع الإصبع، والبقية تنزلق (FLIP) مع فراغ نائب
     // container: الحاوي، itemSel: الأبناء القابلون للسحب، handleSel: مقبض السحب (أو null)،
     // idAttr: اسم خاصية البيانات للمعرّف، commit(orderedIds)
     function makeReorderable(container, itemSel, handleSel, idAttr, commit) {
       const items = () => Array.from(container.querySelectorAll(":scope > " + itemSel));
       for (const item of items()) {
         const handle = handleSel ? (item.querySelector(handleSel) || item) : item;
-        let timer = null, active = false, sx = 0, sy = 0;
+        let timer = null, active = false, sx = 0, sy = 0, offsetY = 0, lastY = 0, ph = null, vel = 0, raf = null;
         const clearTimer = () => { if (timer) { clearTimeout(timer); timer = null; } };
-        const onMove = (e) => {
-          if (!active) return;
-          e.preventDefault();
-          const y = e.clientY;
+
+        // تحريك البقية بسلاسة عند نقل الفراغ النائب (تقنية FLIP)
+        const flipMove = (mutate) => {
+          const sibs = items().filter(s => s !== item);
+          const first = new Map(); sibs.forEach(el => first.set(el, el.getBoundingClientRect().top));
+          mutate();
+          sibs.forEach(el => {
+            const dy = first.get(el) - el.getBoundingClientRect().top;
+            if (dy) {
+              el.style.transition = "none"; el.style.transform = "translateY(" + dy + "px)";
+              requestAnimationFrame(() => { el.style.transition = "transform .18s ease"; el.style.transform = ""; });
+            }
+          });
+        };
+
+        const place = () => {
+          const y = lastY;
           for (const s of items()) {
             if (s === item) continue;
             const r = s.getBoundingClientRect();
             if (y >= r.top && y <= r.bottom) {
-              container.insertBefore(item, (y < r.top + r.height / 2) ? s : s.nextSibling);
+              const ref = (y < r.top + r.height / 2) ? s : s.nextSibling;
+              if (ref !== ph && s !== ph && ref !== item) flipMove(() => container.insertBefore(ph, ref === item ? item.nextSibling : ref));
               break;
             }
           }
         };
+
+        const follow = () => { item.style.top = (lastY - offsetY) + "px"; };
+
+        const onMove = (e) => {
+          if (!active) return;
+          e.preventDefault();
+          lastY = e.clientY; follow(); place();
+          const vh = window.innerHeight;
+          vel = lastY < 90 ? -Math.ceil((90 - lastY) / 5) : lastY > vh - 90 ? Math.ceil((lastY - (vh - 90)) / 5) : 0;
+          if (vel && !raf) raf = requestAnimationFrame(loop);
+        };
+        const loop = () => {
+          if (!active || !vel) { raf = null; return; }
+          window.scrollBy(0, vel); follow(); place();
+          raf = requestAnimationFrame(loop);
+        };
+
         const end = () => {
           clearTimer();
           document.removeEventListener("pointermove", onMove);
+          if (raf) { cancelAnimationFrame(raf); raf = null; }
           if (active) {
-            active = false;
+            active = false; vel = 0;
             item.classList.remove("dragging");
+            item.style.position = ""; item.style.left = ""; item.style.top = ""; item.style.width = ""; item.style.height = ""; item.style.zIndex = ""; item.style.pointerEvents = "";
+            if (ph) { container.insertBefore(item, ph); ph.remove(); ph = null; }
+            items().forEach(el => { el.style.transition = ""; el.style.transform = ""; });
             _blockScroll(false);
             handle.addEventListener("click", (ev) => { ev.stopPropagation(); ev.preventDefault(); }, { capture: true, once: true });
             commit(items().map(el => el.dataset[idAttr]));
           }
         };
+
         const begin = () => {
           active = true;
+          const r = item.getBoundingClientRect();
+          offsetY = lastY - r.top;
+          ph = document.createElement("div"); ph.className = "reorder-ph"; ph.style.height = r.height + "px";
+          item.parentNode.insertBefore(ph, item.nextSibling);
           item.classList.add("dragging");
+          item.style.position = "fixed"; item.style.left = r.left + "px"; item.style.top = r.top + "px";
+          item.style.width = r.width + "px"; item.style.height = r.height + "px"; item.style.zIndex = "999"; item.style.pointerEvents = "none";
           try { navigator.vibrate && navigator.vibrate(15); } catch (_) {}
           _blockScroll(true);
           document.addEventListener("pointermove", onMove, { passive: false });
           document.addEventListener("pointerup", end, { once: true });
           document.addEventListener("pointercancel", end, { once: true });
         };
+
         handle.addEventListener("pointerdown", (e) => {
           if (e.button != null && e.button !== 0) return;
           if (e.target.closest("button, input, select, .gmenu")) return;
-          sx = e.clientX; sy = e.clientY; clearTimer();
-          timer = setTimeout(begin, 400);
+          sx = e.clientX; sy = e.clientY; lastY = e.clientY; clearTimer();
+          timer = setTimeout(begin, 320);
         });
         handle.addEventListener("pointermove", (e) => {
+          lastY = e.clientY;
           if (!active && timer && (Math.abs(e.clientX - sx) > 9 || Math.abs(e.clientY - sy) > 9)) clearTimer();
         });
         handle.addEventListener("pointerup", clearTimer);
