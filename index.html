@@ -533,6 +533,10 @@
     .ch-add { display: flex; flex-direction: column; gap: 8px; }
     .ch-add-row { display: flex; gap: 8px; }
     .ch-add-row select { flex: 1; }
+    .ch-proj { width: 100%; }
+    .ch-proj:disabled { opacity: .55; }
+    .ch-add-row select:disabled { opacity: .55; }
+    .ct-proj { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
     .ch-add-row .ch-addbtn { flex: 0 0 auto; padding: 0 24px; border: none; border-radius: 10px; background: var(--fab); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; font-family: inherit; }
     .ch-add-row .ch-addbtn:active { transform: scale(.96); }
     .ch-add-row .ch-canceledit { flex: 0 0 auto; width: 44px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--panel-2); color: var(--muted); font-size: 15px; cursor: pointer; font-family: inherit; }
@@ -979,6 +983,7 @@
         </div>
         <div class="ch-add" id="chAddWrap">
           <input id="chInput" type="text" placeholder="اكتب مهمة جديدة…" autocomplete="off" />
+          <select id="chProject" class="ch-proj" title="المشروع الذي يضمّ التحدي (اختياري)"></select>
           <div class="ch-add-row">
             <select id="chDomain"></select>
             <button class="ch-addbtn" id="chAdd">➕ إضافة</button>
@@ -1256,6 +1261,10 @@
       }
       // مهام التحدي السريعة
       if (!Array.isArray(p.challenges)) p.challenges = [];
+      for (const c of p.challenges) {
+        if (typeof c.domainId !== "string") c.domainId = "";
+        if (typeof c.projectId !== "string") c.projectId = "";
+      }
       // إحصاء التحديات المنجزة = المنجَز الحالي + المنجَز الذي حُذف (لا يعتمد على ضغطات الزر)
       if (!p.challengeStats || typeof p.challengeStats !== "object") p.challengeStats = {};
       if (typeof p.challengeStats.deletedDone !== "number") p.challengeStats.deletedDone = 0;
@@ -2650,7 +2659,7 @@
       const projN = plans.length;
       const doneN = plans.filter(isComplete).length;
       const favN = plans.filter(p => p.favorite).length;
-      const chN = state.challenges.filter(c => c.domainId === id).length;
+      const chN = state.challenges.filter(c => challengeDomain(c) === id).length;
       const habN = domainHabits(id).length;
       const pct30 = Math.round(domainProgress(id, false) * 100);
       const pct26 = Math.round(domainProgress(id, true) * 100);
@@ -2930,6 +2939,7 @@
     const challengeDlg = document.getElementById("challengeDlg");
     const chInput = document.getElementById("chInput");
     const chDomain = document.getElementById("chDomain");
+    const chProject = document.getElementById("chProject");
     const chAdd = document.getElementById("chAdd");
     const chCancelEdit = document.getElementById("chCancelEdit");
     const chAddWrap = document.getElementById("chAddWrap");
@@ -2947,6 +2957,32 @@
       for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; chDomain.append(o); }
       chDomain.value = "career"; // المهنة هي الافتراضي
     })();
+    // مجال التحدي: من المشروع إن وُجد، وإلا المجال المختار يدوياً
+    function challengeDomain(c) {
+      if (c.projectId) { const p = state.plans.find(x => x.id === c.projectId); if (p) return planDomain(p); }
+      return c.domainId || "";
+    }
+    // قائمة مشاريع التحدي (اختياري) — كل المشاريع مع برنامجها ومجالها
+    function fillChProjects(selected) {
+      chProject.replaceChildren();
+      const none = document.createElement("option"); none.value = ""; none.textContent = "📌 بدون مشروع محدّد"; chProject.append(none);
+      const plans = state.plans.slice().sort((a, b) => (planDomain(a) || "").localeCompare(planDomain(b) || ""));
+      for (const pl of plans) {
+        const pr = programOf(pl); const dId = planDomain(pl);
+        const o = document.createElement("option"); o.value = pl.id;
+        o.textContent = pl.name + (pr ? " · " + pr.name : "") + (dId ? " · " + domainName(dId) : "");
+        chProject.append(o);
+      }
+      chProject.value = (selected && state.plans.some(pl => pl.id === selected)) ? selected : "";
+      syncChDomainLock();
+    }
+    // عند اختيار مشروع: اشتقّ المجال واقفله؛ وإلا افتحه للاختيار اليدوي
+    function syncChDomainLock() {
+      const pl = chProject.value ? state.plans.find(x => x.id === chProject.value) : null;
+      if (pl) { const d = planDomain(pl); if (d) chDomain.value = d; chDomain.disabled = true; }
+      else { chDomain.disabled = false; }
+    }
+    chProject.addEventListener("change", syncChDomainLock);
 
     let editingChId = null;
     function chTaskRow(c) {
@@ -2954,7 +2990,9 @@
       const check = document.createElement("button"); check.className = "ch-check" + (c.done ? " on" : "");
       check.textContent = c.done ? "✓" : ""; check.title = "تبديل الإنجاز";
       check.onclick = () => { c.done = !c.done; save(); renderChallenges(); };
-      const txt = document.createElement("div"); txt.className = "ct-text"; txt.textContent = c.text;
+      const txt = document.createElement("div"); txt.className = "ct-text";
+      const tline = document.createElement("div"); tline.textContent = c.text; txt.append(tline);
+      if (c.projectId) { const p = state.plans.find(x => x.id === c.projectId); if (p) { const sub = document.createElement("div"); sub.className = "ct-proj"; sub.textContent = "📄 " + p.name; txt.append(sub); } }
       const edit = document.createElement("button"); edit.className = "ch-edit"; edit.textContent = "✏️"; edit.title = "تعديل المهمة وتصنيفها";
       edit.onclick = () => enterChEdit(c);
       const del = document.createElement("button"); del.className = "ch-del"; del.textContent = "🗑️"; del.title = "حذف";
@@ -2969,7 +3007,9 @@
     function enterChEdit(c) {
       editingChId = c.id;
       chInput.value = c.text;
+      fillChProjects(c.projectId || "");
       chDomain.value = (c.domainId && DOMAINS.some(d => d.id === c.domainId)) ? c.domainId : "career";
+      syncChDomainLock();
       chAdd.textContent = "💾 حفظ";
       chCancelEdit.hidden = false;
       chAddWrap.classList.add("editing");
@@ -2978,6 +3018,7 @@
     function exitChEdit() {
       editingChId = null;
       chInput.value = "";
+      chProject.value = ""; syncChDomainLock();
       chAdd.textContent = "➕ إضافة";
       chCancelEdit.hidden = true;
       chAddWrap.classList.remove("editing");
@@ -2996,10 +3037,10 @@
       // تجميع حسب المجال (بترتيب المجالات الثمانية) ثم «بلا مجال»
       const groups = [];
       for (const d of DOMAINS) {
-        const items = list.filter(c => c.domainId === d.id);
+        const items = list.filter(c => challengeDomain(c) === d.id);
         if (items.length) groups.push({ icon: d.icon, name: d.name, items });
       }
-      const noDom = list.filter(c => !c.domainId || !DOMAINS.some(d => d.id === c.domainId));
+      const noDom = list.filter(c => { const dd = challengeDomain(c); return !dd || !DOMAINS.some(d => d.id === dd); });
       if (noDom.length) groups.push({ icon: "📌", name: "بلا مجال", items: noDom });
 
       for (const g of groups) {
@@ -3015,13 +3056,16 @@
     }
     function addChallenge() {
       const t = chInput.value.trim(); if (!t) return;
+      const projectId = chProject.value || "";
+      const proj = projectId ? state.plans.find(x => x.id === projectId) : null;
+      const domainId = proj ? planDomain(proj) : (chDomain.value || ""); // المشروع يشتقّ المجال
       if (editingChId) {
         const c = state.challenges.find(x => x.id === editingChId);
-        if (c) { c.text = t; c.domainId = chDomain.value || ""; }
+        if (c) { c.text = t; c.projectId = projectId; c.domainId = domainId; }
         save(); exitChEdit(); renderChallenges(); return;
       }
-      state.challenges.push({ id: uid(), text: t, domainId: chDomain.value || "", done: false, created: Date.now() });
-      save(); chInput.value = ""; renderChallenges(); chInput.focus();
+      state.challenges.push({ id: uid(), text: t, projectId: projectId, domainId: domainId, done: false, created: Date.now() });
+      save(); chInput.value = ""; chProject.value = ""; syncChDomainLock(); renderChallenges(); chInput.focus();
     }
     chAdd.onclick = addChallenge;
     chCancelEdit.onclick = exitChEdit;
@@ -3039,7 +3083,7 @@
       fabChallenge.classList.remove("burst"); void fabChallenge.offsetWidth; fabChallenge.classList.add("burst");
     });
     fabChallenge.addEventListener("animationend", (e) => { if (e.animationName === "fab-pop") fabChallenge.classList.remove("burst"); });
-    fabChallenge.onclick = () => { exitChEdit(); chDomain.value = "career"; renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
+    fabChallenge.onclick = () => { exitChEdit(); fillChProjects(""); chDomain.value = "career"; syncChDomainLock(); renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
     challengeDlg.addEventListener("close", exitChEdit);
 
     // ---------- العادات اليومية ----------
