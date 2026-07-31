@@ -663,9 +663,12 @@
     .stat-tile { flex: 1; background: var(--panel-2); border-radius: 10px; padding: 9px 4px; text-align: center; }
     .stat-tile .st-num { font-size: 21px; font-weight: 900; color: var(--accent-ink); line-height: 1; font-variant-numeric: tabular-nums; }
     .stat-tile .st-lbl { font-size: 10.5px; color: var(--muted); font-weight: 700; margin-top: 4px; }
-    .stats-doms { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
-    .stat-dom { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); border-radius: 8px; padding: 3px 9px; }
-    .stat-dom b { color: var(--accent-ink); font-weight: 900; margin-inline-start: 3px; }
+    .stats-doms { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 10px; }
+    .stat-dom { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; padding: 6px 9px; overflow: hidden; }
+    .stat-dom .sd-ic { flex: none; font-size: 13px; }
+    .stat-dom .sd-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--muted); }
+    .stat-dom .sd-cnt { flex: none; font-size: 10px; color: var(--muted); font-weight: 800; background: var(--panel); border-radius: 6px; padding: 1px 6px; }
+    .stat-dom .sd-pct { flex: none; font-weight: 900; color: var(--accent-ink); font-variant-numeric: tabular-nums; min-width: 34px; text-align: end; }
     /* ═══ صفحة الإعدادات ═══ */
     .set-group { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
     .set-title { font-weight: 800; font-size: 15px; }
@@ -1972,12 +1975,21 @@
       row.append(statTile(progN, "برنامج"), statTile(projN, "مشروع"), statTile(doneN, "مكتمل"), statTile(favN, "مفضّل"));
       els.projStats.append(row);
       const doms = document.createElement("div"); doms.className = "stats-doms"; let any = false;
+      // نسبة كل مجال (وزن مرجّح) وأيقونة وعدد ونسبة الاكتمال من خطة 2030
+      const mkChip = (icon, name, count, pct) => {
+        const chip = document.createElement("span"); chip.className = "stat-dom";
+        chip.innerHTML = '<span class="sd-ic">' + icon + '</span><span class="sd-name">' + escapeHtml(name) + '</span>'
+          + '<span class="sd-cnt">' + toArDigits(count) + '</span>'
+          + (pct === null ? '' : '<span class="sd-pct">' + toArDigits(pct) + '٪</span>');
+        if (pct !== null) chip.style.background = "linear-gradient(to left, var(--accent-soft) " + pct + "%, var(--panel-2) " + pct + "%)";
+        return chip;
+      };
       for (const d of DOMAINS) {
         const c = domCounts[d.id]; if (!c) continue; any = true;
-        const chip = document.createElement("span"); chip.className = "stat-dom";
-        chip.innerHTML = d.icon + " " + d.name + " <b>" + c + "</b>"; doms.append(chip);
+        const pct = Math.round(domainProgress(d.id, false) * 100);
+        doms.append(mkChip(d.icon, d.name, c, pct));
       }
-      if (domCounts[""]) { const chip = document.createElement("span"); chip.className = "stat-dom"; chip.innerHTML = "📌 بلا مجال <b>" + domCounts[""] + "</b>"; doms.append(chip); any = true; }
+      if (domCounts[""]) { doms.append(mkChip("📌", "بلا مجال", domCounts[""], null)); any = true; }
       if (any) els.projStats.append(doms);
     }
 
