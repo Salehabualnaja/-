@@ -1119,10 +1119,6 @@
           <label>البرنامج (ضمن مجال)</label>
           <select id="itemProgram"></select>
         </div>
-        <div id="itemProjectRow" hidden>
-          <label>المشروع الذي تنضمّ إليه العادة (اختياري)</label>
-          <select id="itemProject"></select>
-        </div>
         <div id="itemTargetRow">
           <label id="itemTargetLabel">الساعات المستهدفة</label>
           <input id="itemTarget" type="text" inputmode="decimal" class="numfield numfield-lg" min="0" step="1" placeholder="0" />
@@ -1275,7 +1271,6 @@
       for (const h of p.habits) {
         if (typeof h.name !== "string") h.name = "عادة";
         if (typeof h.programId !== "string") h.programId = "";
-        if (typeof h.projectId !== "string") h.projectId = "";
         if (typeof h.domainId !== "string") h.domainId = "";
         if (typeof h.created !== "number") h.created = Date.now();
         if (typeof h.targetDays !== "number") h.targetDays = 0;
@@ -2802,8 +2797,6 @@
     const itemSave = document.getElementById("itemSave");
     const itemCancel = document.getElementById("itemCancel");
     const itemProgramRow = document.getElementById("itemProgramRow");
-    const itemProjectRow = document.getElementById("itemProjectRow");
-    const itemProject = document.getElementById("itemProject");
     const itemTargetRow = document.getElementById("itemTargetRow");
     const itemCurrentRow = document.getElementById("itemCurrentRow");
     const itemHabitDaysRow = document.getElementById("itemHabitDaysRow");
@@ -2823,17 +2816,6 @@
       }
       itemProgram.value = (selected && state.programs.some(pr => pr.id === selected)) ? selected : state.programs[0].id;
     }
-    // مشاريع البرنامج المختار (لانضمام العادة إليها) — اختياري
-    function fillProjectSelect(programId, selected) {
-      itemProject.replaceChildren();
-      const none = document.createElement("option"); none.value = ""; none.textContent = "— بدون مشروع محدّد —"; itemProject.append(none);
-      const list = state.plans.filter(pl => (pl.programId || "") === programId);
-      for (const pl of list) {
-        const o = document.createElement("option"); o.value = pl.id; o.textContent = pl.name + " · " + (pl.type === "hours" ? "ساعات" : "نقاط");
-        itemProject.append(o);
-      }
-      itemProject.value = (selected && list.some(pl => pl.id === selected)) ? selected : "";
-    }
     function setNiType(t) {
       niType = t;
       const habit = t === "habit";
@@ -2841,8 +2823,6 @@
       itemTPoints.classList.toggle("active", t === "points");
       itemTHabit.classList.toggle("active", habit);
       itemProgramRow.hidden = false; // البرنامج مطلوب لكل الأنواع (بما فيها العادة)
-      itemProjectRow.hidden = !habit; // المشروع يظهر للعادة فقط
-      if (habit) fillProjectSelect(itemProgram.value, itemProject.value);
       itemTargetRow.hidden = habit;
       itemCurrentRow.hidden = habit;
       itemDatesRow.hidden = habit;
@@ -2856,8 +2836,6 @@
     itemTHours.onclick = () => setNiType("hours");
     itemTPoints.onclick = () => setNiType("points");
     itemTHabit.onclick = () => setNiType("habit");
-    // عند تغيير البرنامج: حدّث قائمة مشاريع العادة
-    itemProgram.addEventListener("change", () => { if (niType === "habit") fillProjectSelect(itemProgram.value, ""); });
     itemFav.onclick = () => setNiFav(!niFav);
 
     // openItem(item|null, presetProgramId, presetType) — عنصر جديد أو تعديل مشروع/عادة
@@ -2869,7 +2847,6 @@
         itemDlgTitleEl.textContent = "✏️ تعديل العادة"; itemSave.textContent = "حفظ";
         itemName.value = item.name || "";
         fillProgramSelect(item.programId || "");
-        fillProjectSelect(itemProgram.value, item.projectId || "");
         itemHabitDays.value = item.targetDays ? item.targetDays : "";
         itemTHours.hidden = true; itemTPoints.hidden = true; itemTHabit.hidden = false;
       } else if (item) {
@@ -2887,7 +2864,6 @@
         itemDlgTitleEl.textContent = "📄 مشروع جديد"; itemSave.textContent = "إضافة";
         itemName.value = ""; itemStart.value = ""; itemEnd.value = "";
         fillProgramSelect(presetProgramId || "");
-        fillProjectSelect(itemProgram.value, "");
         itemHabitDays.value = ""; itemTarget.value = ""; itemCurrent.value = ""; setNiFav(false);
         itemTHours.hidden = false; itemTPoints.hidden = false; itemTHabit.hidden = false;
       }
@@ -2902,14 +2878,11 @@
         const programId = itemProgram.value || "";
         if (!programId) { alert("اختر برنامجاً للعادة، أو أنشئ برنامجاً أولاً من زر ➕."); return; }
         let days = parseInt(itemHabitDays.value, 10); if (!isFinite(days) || days < 0) days = 0;
-        // المشروع اختياري، ويجب أن يكون ضمن البرنامج المختار
-        let projectId = itemProject.value || "";
-        if (projectId && !state.plans.some(pl => pl.id === projectId && (pl.programId || "") === programId)) projectId = "";
         if (editingHabitId) {
           const h = state.habits.find(x => x.id === editingHabitId);
-          if (h) { const old = habitDomain(h); h.name = t; h.programId = programId; h.projectId = projectId; h.targetDays = days; touchDomain(old); touchDomain(habitDomain(h)); }
+          if (h) { const old = habitDomain(h); h.name = t; h.programId = programId; h.targetDays = days; touchDomain(old); touchDomain(habitDomain(h)); }
         } else {
-          const nh = { id: uid(), name: t, programId: programId, projectId: projectId, domainId: "", targetDays: days, favorite: false, created: Date.now(), log: {} };
+          const nh = { id: uid(), name: t, programId: programId, domainId: "", targetDays: days, favorite: false, created: Date.now(), log: {} };
           state.habits.push(nh); touchDomain(habitDomain(nh));
         }
         save(); itemDlg.close(); refreshViews(); return;
@@ -3108,8 +3081,7 @@
       const tnm = document.createElement("span"); tnm.textContent = h.name; title.append(tnm);
       const dom = document.createElement("div"); dom.className = "hb-dom";
       const prog = habitProgramOf(h); const dId = habitDomain(h);
-      const proj = h.projectId ? state.plans.find(p => p.id === h.projectId) : null;
-      dom.textContent = (prog ? "📁 " + prog.name : "🗂️ بلا برنامج") + (proj ? " › 📄 " + proj.name : "") + (dId ? " · " + domainIcon(dId) + " " + domainName(dId) : "");
+      dom.textContent = (prog ? "📁 " + prog.name : "🗂️ بلا برنامج") + (dId ? " · " + domainIcon(dId) + " " + domainName(dId) : "");
       nameWrap.append(title, dom);
       const streak = habitStreak(h);
       const st = document.createElement("div"); st.className = "habit-streak" + (streak ? "" : " zero");
