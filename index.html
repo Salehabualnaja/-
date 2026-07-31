@@ -2019,6 +2019,7 @@
         return;
       }
 
+      frag.append(makeReorderHint());
       if (projectsView === "domain") {
         // مصنّفة حسب المجالات الثمانية
         for (const d of DOMAINS) {
@@ -2029,7 +2030,7 @@
           const pct = Math.round(domainProgress(d.id, false) * 100);
           head.innerHTML = "<span>" + d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪</span>";
           sec.append(head);
-          for (const prog of progs) sec.append(buildProgramBlock(prog, true));
+          for (const prog of progs) sec.append(buildProgramBlock(prog, true, true));
           frag.append(sec);
         }
         // برامج بلا مجال
@@ -2039,20 +2040,17 @@
           const head = document.createElement("div"); head.className = "dom-section-head";
           head.innerHTML = "<span>📌 برامج بلا مجال</span>";
           sec.append(head);
-          for (const prog of noDomProgs) sec.append(buildProgramBlock(prog));
+          for (const prog of noDomProgs) sec.append(buildProgramBlock(prog, false, true));
           frag.append(sec);
         }
         if (ungroupedPlans.length) frag.append(ungroupedBlock(ungroupedPlans));
       } else {
         // حسب البرامج (ترتيب يدوي قابل للسحب)
-        const hint = document.createElement("div"); hint.className = "reorder-hint";
-        hint.textContent = "↕️ اضغط مطوّلاً على أي برنامج أو مشروع ثم اسحبه لإعادة ترتيبه";
-        frag.append(hint);
         for (const prog of state.programs) frag.append(buildProgramBlock(prog, false, true));
         if (ungroupedPlans.length) frag.append(ungroupedBlock(ungroupedPlans));
       }
       els.projectsList.replaceChildren(frag);
-      if (projectsView === "program") wireProjectReordering();
+      wireProjectReordering();
     }
 
     const expandedPrograms = new Set();
@@ -2224,21 +2222,35 @@
       for (const p of inProg) if (!orderedIds.includes(p.id)) reordered.push(p);
       state.plans = others.concat(reordered); save();
     }
+    // إعادة ترتيب مجموعة جزئية من البرامج مع الحفاظ على مواضع البقية
+    function reorderProgramsSubset(orderedIds) {
+      orderedIds = orderedIds.filter(Boolean);
+      const map = new Map(state.programs.map(p => [p.id, p]));
+      const reordered = orderedIds.map(id => map.get(id)).filter(Boolean);
+      const positions = [];
+      state.programs.forEach((p, i) => { if (orderedIds.includes(p.id)) positions.push(i); });
+      const result = state.programs.slice();
+      positions.forEach((pos, k) => { if (reordered[k]) result[pos] = reordered[k]; });
+      state.programs = result; save();
+    }
+    function wirePrograms(container) {
+      makeReorderable(container, ".prog-block[data-prog-id]", ".prog-head", "progId", ids => reorderProgramsSubset(ids));
+    }
+    function wirePlanBoxes(root) {
+      root.querySelectorAll(".goals-group[data-prog-id]").forEach(box => {
+        makeReorderable(box, ".goalrow[data-plan-id]", null, "planId", ids => reorderPlansInProgram(box.dataset.progId, ids.filter(Boolean)));
+      });
+    }
+    function makeReorderHint() {
+      const h = document.createElement("div"); h.className = "reorder-hint";
+      h.textContent = "↕️ اضغط مطوّلاً على أي عنصر ثم اسحبه لإعادة ترتيبه";
+      return h;
+    }
     function wireProjectReordering() {
       const listEl = els.projectsList;
-      // ترتيب البرامج
-      makeReorderable(listEl, ".prog-block[data-prog-id]", ".prog-head", "progId", (ids) => {
-        ids = ids.filter(Boolean);
-        const map = new Map(state.programs.map(p => [p.id, p]));
-        const reordered = ids.map(id => map.get(id)).filter(Boolean);
-        for (const p of state.programs) if (!ids.includes(p.id)) reordered.push(p);
-        state.programs = reordered; save();
-      });
-      // ترتيب المشاريع داخل كل برنامج
-      listEl.querySelectorAll(".goals-group[data-prog-id]").forEach(box => {
-        const progId = box.dataset.progId;
-        makeReorderable(box, ".goalrow[data-plan-id]", null, "planId", (ids) => reorderPlansInProgram(progId, ids.filter(Boolean)));
-      });
+      if (projectsView === "domain") listEl.querySelectorAll(".dom-section").forEach(sec => wirePrograms(sec));
+      else wirePrograms(listEl);
+      wirePlanBoxes(listEl);
     }
 
     function deleteProgram(prog) {
@@ -2874,16 +2886,19 @@
       if (!progs.length && !ungrouped.length) {
         const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا توجد برامج أو مشاريع في هذا المجال. أضِفها من زر ➕."; goalsBox.append(e); return;
       }
-      for (const prog of progs) goalsBox.append(buildProgramBlock(prog, true));
+      goalsBox.append(makeReorderHint());
+      for (const prog of progs) goalsBox.append(buildProgramBlock(prog, true, true));
       if (ungrouped.length) {
         const block = document.createElement("div"); block.className = "prog-block";
         const head = document.createElement("div"); head.className = "prog-head";
         head.innerHTML = '<span class="ph-name"><span class="dc-icon">🗂️</span> مشاريع بلا برنامج</span>';
         block.append(head);
-        const box = document.createElement("div"); box.className = "goals-group";
-        for (const pl of ungrouped.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created))) box.append(buildGoalRow(pl));
+        const box = document.createElement("div"); box.className = "goals-group"; box.dataset.progId = "";
+        for (const pl of ungrouped) box.append(buildGoalRow(pl));
         block.append(box); goalsBox.append(block);
       }
+      wirePrograms(goalsBox);
+      wirePlanBoxes(goalsBox);
     }
 
     document.getElementById("domainBack").onclick = () => {
@@ -3222,6 +3237,7 @@
     const AR_WD_MINI = ["أحد", "إثن", "ثلا", "أرب", "خمي", "جمع", "سبت"]; // getDay(): الأحد..السبت
     function habitCard(h) {
       const card = document.createElement("div"); card.className = "habit-card";
+      card.dataset.habitId = h.id;
       const top = document.createElement("div"); top.className = "habit-top";
       const nameWrap = document.createElement("div"); nameWrap.className = "hb-name";
       const title = document.createElement("div"); title.className = "hb-title";
@@ -3290,8 +3306,15 @@
         e.textContent = "لا عادات بعد. اضغط «➕ عادة يومية جديدة» وابدأ استرايك يومك 🔥";
         els.habitsList.append(e); return;
       }
-      const sorted = list.slice().sort((a, b) => habitStreak(b) - habitStreak(a) || (b.created - a.created));
-      for (const h of sorted) els.habitsList.append(habitCard(h));
+      els.habitsList.append(makeReorderHint());
+      for (const h of list) els.habitsList.append(habitCard(h)); // ترتيب يدوي قابل للسحب
+      makeReorderable(els.habitsList, ".habit-card[data-habit-id]", null, "habitId", (ids) => {
+        ids = ids.filter(Boolean);
+        const map = new Map(state.habits.map(h => [h.id, h]));
+        const reordered = ids.map(id => map.get(id)).filter(Boolean);
+        for (const h of state.habits) if (!ids.includes(h.id)) reordered.push(h);
+        state.habits = reordered; save();
+      });
     }
 
     // فتح التذكيرات من زر الجرس في الرأس
