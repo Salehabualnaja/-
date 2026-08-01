@@ -106,7 +106,7 @@
       -webkit-font-smoothing: antialiased;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
-    .wrap { max-width: 620px; margin: 0 auto; padding: 20px 16px calc(96px + env(safe-area-inset-bottom)); }
+    .wrap { max-width: 620px; margin: 0 auto; padding: 20px 16px calc(150px + env(safe-area-inset-bottom)); }
 
     /* الرأس */
     header.app { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0 2px; }
@@ -508,6 +508,14 @@
       transition: transform .1s; animation: fab-breathe 3.4s ease-in-out infinite;
     }
     .fab:active { transform: scale(.9); }
+    /* إخفاء الشعلة أثناء التمرير حتى لا تُغطّي الأرقام والنصوص */
+    .fab.tuck { opacity: 0; transform: translateY(26px) scale(.8); pointer-events: none; }
+    /* أوزان المجالات في الإعدادات */
+    .wt-row { display: flex; align-items: center; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+    .wt-row:last-child { border-bottom: none; }
+    .wt-name { flex: 1; min-width: 0; font-weight: 700; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .wt-field { flex: none; display: flex; align-items: center; gap: 5px; font-size: 10.5px; color: var(--muted); font-weight: 800; }
+    .wt-field input { width: 54px; text-align: center; padding: 7px 4px; font-size: 13px; }
     .fab .flame { display: block; will-change: transform; transform-origin: 50% 85%; animation: flame-flicker 1.7s ease-in-out infinite; }
     .fab.burst { animation: fab-pop .55s ease; }
     .fab.burst .flame { animation: flame-burst .55s ease; }
@@ -776,11 +784,6 @@
 
       <div id="perfWrap"></div>
 
-      <div id="favWrap" hidden>
-        <div class="section-title">⭐ المفضلة</div>
-        <div id="favList"></div>
-      </div>
-
       <div class="section-title">المجالات الثمانية</div>
       <div class="domains-grid" id="domainsGrid"></div>
     </section>
@@ -796,7 +799,7 @@
       <div class="stats-card" id="projStats" hidden></div>
       <button class="add-goal-btn" id="projectsAddBtn">➕ إضافة برنامج أو مشروع</button>
       <div class="tabs" id="projViewTabs">
-        <button data-pview="program" class="active">حسب البرامج</button>
+        <button data-pview="favorites" class="active">⭐ المفضلة</button>
         <button data-pview="domain">حسب المجالات</button>
       </div>
       <div id="projectsList"></div>
@@ -869,6 +872,12 @@
           <input id="setDailyGoal" type="text" inputmode="decimal" class="numfield set-input" placeholder="8" />
           <button class="ok set-btn" id="setDailyGoalSave">حفظ</button>
         </div>
+      </div>
+
+      <div class="set-group">
+        <div class="set-title">⚖️ أوزان المجالات في الخطة</div>
+        <p class="set-desc">النسبة المخصّصة لكل مجال في حساب إنجاز خطة 2030 و2026. كلما زاد وزن المجال زاد تأثيره في النسبة الكلية.</p>
+        <div id="setWeights"></div>
       </div>
 
       <div class="set-group">
@@ -1215,7 +1224,7 @@
     const STATS_TAB_KEY = "ptt.ui.statstab";
     let statsTab = readUI(STATS_TAB_KEY, ["plan", "timer", "habits"], "plan");
     const PROJ_VIEW_KEY = "ptt.ui.projview";
-    let projectsView = readUI(PROJ_VIEW_KEY, ["program", "domain"], "program");
+    let projectsView = readUI(PROJ_VIEW_KEY, ["favorites", "domain"], "favorites");
     const REM_VIEW_KEY = "ptt.ui.remview";
     let reminderView = readUI(REM_VIEW_KEY, ["daily", "weekly", "monthly", "yearly"], "daily");
     let remMonthOffset = 0, remYearOffset = 0, remSelDay = null, remSelMonth = null;
@@ -1901,8 +1910,6 @@
         frag.append(card);
       }
       els.domainsGrid.replaceChildren(frag);
-
-      renderFavorites();
     }
 
     function allDone(only2026) {
@@ -1915,21 +1922,21 @@
     function domainIcon(id) { const d = DOMAINS.find(x => x.id === id); return d ? d.icon : "🎯"; }
     function typeLabel(t) { return t === "points" ? "⭐ نقاط" : "⏱️ ساعات"; }
 
-    function renderFavorites() {
+    // بطاقات المفضلة (تُعرض في صفحة المشاريع) — مشاريع وعادات قابلة للتعديل وإدخال التقدّم
+    function buildFavoritesFrag() {
       const favPlans = state.plans.filter(g => g.favorite);
       const favHabits = state.habits.filter(h => h.favorite);
-      const favWrap = document.getElementById("favWrap");
-      const favList = document.getElementById("favList");
-      if (!favPlans.length && !favHabits.length) { favWrap.hidden = true; favList.replaceChildren(); return; }
-      favWrap.hidden = false;
       const frag = document.createDocumentFragment();
-      // المشاريع (نقاط/ساعات): بطاقة كاملة قابلة للتعديل وإدخال التقدّم
+      if (!favPlans.length && !favHabits.length) {
+        const e = document.createElement("div"); e.className = "empty";
+        e.textContent = "لا مفضّلة بعد. أضِف أي مشروع أو عادة إلى المفضلة عبر النجمة ★ من قائمة الخيارات.";
+        frag.append(e); return frag;
+      }
       favPlans.sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
       for (const g of favPlans) frag.append(buildGoalRow(g));
-      // العادات: بطاقة العادة الكاملة (وسم اليوم + الاسترايك + تعديل)
       favHabits.sort((a, b) => habitStreak(b) - habitStreak(a) || (b.created - a.created));
       for (const h of favHabits) frag.append(habitCard(h));
-      favList.replaceChildren(frag);
+      return frag;
     }
 
     function fmtNum(n) { return toArDigits(Number.isInteger(n) ? n : Math.round(n * 10) / 10); }
@@ -2090,9 +2097,15 @@
     function renderProjects() {
       renderProjStats();
       document.querySelectorAll("#projViewTabs button").forEach(b => b.classList.toggle("active", b.dataset.pview === projectsView));
+
+      // تبويب المفضلة
+      if (projectsView === "favorites") {
+        els.projectsList.replaceChildren(buildFavoritesFrag());
+        return;
+      }
+
       const frag = document.createDocumentFragment();
       const ungroupedPlans = programProjects("");
-
       if (!state.programs.length && !ungroupedPlans.length) {
         const e = document.createElement("div");
         e.className = "empty";
@@ -2101,36 +2114,29 @@
         return;
       }
 
+      // حسب المجالات الثمانية (ترتيب يدوي قابل للسحب)
       frag.append(makeReorderHint());
-      if (projectsView === "domain") {
-        // مصنّفة حسب المجالات الثمانية
-        for (const d of DOMAINS) {
-          const progs = state.programs.filter(pr => (pr.domainId || "") === d.id);
-          if (!progs.length) continue;
-          const sec = document.createElement("div"); sec.className = "dom-section";
-          const head = document.createElement("div"); head.className = "dom-section-head";
-          const pct = Math.round(domainProgress(d.id, false) * 100);
-          head.innerHTML = "<span>" + d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪</span>";
-          sec.append(head);
-          for (const prog of progs) sec.append(buildProgramBlock(prog, true, true));
-          frag.append(sec);
-        }
-        // برامج بلا مجال
-        const noDomProgs = state.programs.filter(pr => !pr.domainId || !DOMAINS.some(d => d.id === pr.domainId));
-        if (noDomProgs.length) {
-          const sec = document.createElement("div"); sec.className = "dom-section";
-          const head = document.createElement("div"); head.className = "dom-section-head";
-          head.innerHTML = "<span>📌 برامج بلا مجال</span>";
-          sec.append(head);
-          for (const prog of noDomProgs) sec.append(buildProgramBlock(prog, false, true));
-          frag.append(sec);
-        }
-        if (ungroupedPlans.length) frag.append(ungroupedBlock(ungroupedPlans));
-      } else {
-        // حسب البرامج (ترتيب يدوي قابل للسحب)
-        for (const prog of state.programs) frag.append(buildProgramBlock(prog, false, true));
-        if (ungroupedPlans.length) frag.append(ungroupedBlock(ungroupedPlans));
+      for (const d of DOMAINS) {
+        const progs = state.programs.filter(pr => (pr.domainId || "") === d.id);
+        if (!progs.length) continue;
+        const sec = document.createElement("div"); sec.className = "dom-section";
+        const head = document.createElement("div"); head.className = "dom-section-head";
+        const pct = Math.round(domainProgress(d.id, false) * 100);
+        head.innerHTML = "<span>" + d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪</span>";
+        sec.append(head);
+        for (const prog of progs) sec.append(buildProgramBlock(prog, true, true));
+        frag.append(sec);
       }
+      const noDomProgs = state.programs.filter(pr => !pr.domainId || !DOMAINS.some(d => d.id === pr.domainId));
+      if (noDomProgs.length) {
+        const sec = document.createElement("div"); sec.className = "dom-section";
+        const head = document.createElement("div"); head.className = "dom-section-head";
+        head.innerHTML = "<span>📌 برامج بلا مجال</span>";
+        sec.append(head);
+        for (const prog of noDomProgs) sec.append(buildProgramBlock(prog, false, true));
+        frag.append(sec);
+      }
+      if (ungroupedPlans.length) frag.append(ungroupedBlock(ungroupedPlans));
       els.projectsList.replaceChildren(frag);
       wireProjectReordering();
     }
@@ -3310,6 +3316,13 @@
     fabChallenge.addEventListener("animationend", (e) => { if (e.animationName === "fab-pop") fabChallenge.classList.remove("burst"); });
     fabChallenge.onclick = () => { exitChEdit(); chDomain.value = "career"; fillChProjects(""); renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
     challengeDlg.addEventListener("close", exitChEdit);
+    // إخفاء الشعلة أثناء التمرير حتى لا تُغطّي الأرقام والنصوص، وإظهارها عند التوقّف
+    let _fabTuckTimer = null;
+    window.addEventListener("scroll", () => {
+      fabChallenge.classList.add("tuck");
+      if (_fabTuckTimer) clearTimeout(_fabTuckTimer);
+      _fabTuckTimer = setTimeout(() => fabChallenge.classList.remove("tuck"), 550);
+    }, { passive: true });
 
     // ---------- العادات اليومية ----------
     document.getElementById("habitsAddBtn").onclick = () => openItem(null, null, "habit");
@@ -3415,9 +3428,39 @@
     const setUmbrella = document.getElementById("setUmbrella");
     const setDailyGoal = document.getElementById("setDailyGoal");
     const setNotifyState = document.getElementById("setNotifyState");
+    const setWeights = document.getElementById("setWeights");
+    // ضبط أوزان المجالات (النِّسب المخصّصة) من صفحة الإعدادات
+    function renderDomainWeights() {
+      setWeights.replaceChildren();
+      for (const d of DOMAINS) {
+        const w = state.domainWeights[d.id] || {};
+        const row = document.createElement("div"); row.className = "wt-row";
+        const name = document.createElement("div"); name.className = "wt-name"; name.textContent = d.icon + " " + d.name;
+        const mk = (val, year) => {
+          const wrap = document.createElement("label"); wrap.className = "wt-field";
+          const cap = document.createElement("span"); cap.textContent = year; wrap.append(cap);
+          const inp = document.createElement("input"); inp.type = "text"; inp.inputMode = "decimal"; inp.className = "numfield";
+          inp.value = (typeof val === "number") ? val : 1;
+          inp.addEventListener("input", () => { const n = normNum(inp.value); if (n !== inp.value) inp.value = n; });
+          inp.addEventListener("change", () => {
+            let v = parseFloat(normNum(inp.value)); if (!isFinite(v) || v < 0) v = 0; if (v > 100) v = 100;
+            inp.value = v;
+            const ww = state.domainWeights[d.id] || {};
+            if (typeof ww.w2030 !== "number") ww.w2030 = 1;
+            if (typeof ww.w2026 !== "number") ww.w2026 = 1;
+            if (year === 2030) ww.w2030 = v; else ww.w2026 = v;
+            state.domainWeights[d.id] = ww; save();
+          });
+          wrap.append(inp); return wrap;
+        };
+        row.append(name, mk(w.w2030, 2030), mk(w.w2026, 2026));
+        setWeights.append(row);
+      }
+    }
     function renderSettings() {
       setUmbrella.value = state.settings.umbrella || "";
       setDailyGoal.value = state.settings.dailyGoalHours;
+      renderDomainWeights();
       const perm = ("Notification" in window) ? Notification.permission : "unsupported";
       setNotifyState.textContent = perm === "granted" ? "الإشعارات مُفعّلة ✅"
         : perm === "denied" ? "الإشعارات مرفوضة — فعّلها من إعدادات المتصفح."
