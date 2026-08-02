@@ -715,6 +715,20 @@
     .set-btn.soft { color: var(--accent-ink); background: var(--accent-soft); }
     .set-btn:active { transform: scale(.98); }
     textarea.set-input { margin-bottom: 0; }
+    .at-lbl { display: block; font-size: 12px; font-weight: 800; color: var(--muted); margin: 2px 0 5px; }
+    .at-help { margin-top: 10px; font-size: 12.5px; color: var(--muted); }
+    .at-help summary { cursor: pointer; font-weight: 700; color: var(--accent-ink); }
+    .at-help ol { margin: 8px 0 0; padding-inline-start: 20px; line-height: 1.9; }
+    .xls-card { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+    .xls-head { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .xls-name { font-weight: 800; font-size: 13.5px; flex: 1; min-width: 0; word-break: break-word; }
+    .xls-badge { font-size: 11px; font-weight: 700; color: var(--muted); background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 3px 8px; white-space: nowrap; }
+    .xls-tablename { width: 100%; margin: 9px 0; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); border-radius: 9px; padding: 9px 10px; font-size: 13.5px; font-family: inherit; }
+    .xls-scroll { overflow-x: auto; margin: 4px 0 2px; border: 1px solid var(--border); border-radius: 9px; }
+    table.xls-prev { border-collapse: collapse; font-size: 11.5px; width: 100%; }
+    table.xls-prev th, table.xls-prev td { border: 1px solid var(--border); padding: 5px 8px; text-align: start; white-space: nowrap; max-width: 220px; overflow: hidden; text-overflow: ellipsis; }
+    table.xls-prev th { background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; }
+    .xls-more { font-size: 11px; color: var(--muted); margin: 6px 2px 0; }
 
     /* أزرار ورقة الإضافة */
     .addsheet-btn { border: none; border-radius: 12px; padding: 14px; font-weight: 800; font-size: 15px; color: #fff; background: var(--accent); cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; }
@@ -888,6 +902,35 @@
           <button class="ok set-btn soft" id="importBtn">⬆️ استيراد</button>
         </div>
         <button class="ok set-btn soft" id="mergeBtn" style="width:100%;margin-top:8px">➕ استيراد ودمج (بدون حذف)</button>
+      </div>
+
+      <div class="set-group">
+        <div class="set-title">☁️ الربط مع Airtable</div>
+        <p class="set-desc">اربط التطبيق بقاعدة Airtable عبر مفتاح API (Personal Access Token) لرفع بياناتك ومَلفّات الإكسل كجداول مفصّلة. المفتاح يُحفظ محلياً في متصفّحك فقط ولا يُدرَج ضمن ملف التصدير.</p>
+        <label class="at-lbl" for="atToken">مفتاح API (Personal Access Token)</label>
+        <input id="atToken" type="password" class="set-input" placeholder="pat…" autocomplete="off" spellcheck="false" dir="ltr" style="margin-bottom:8px" />
+        <label class="at-lbl" for="atBase">معرّف القاعدة (Base ID)</label>
+        <input id="atBase" type="text" class="set-input" placeholder="app…" autocomplete="off" spellcheck="false" dir="ltr" style="margin-bottom:10px" />
+        <div class="set-row">
+          <button class="ok set-btn" id="atSaveBtn">💾 حفظ</button>
+          <button class="ok set-btn soft" id="atTestBtn">🔌 اختبار الاتصال</button>
+        </div>
+        <button class="ok set-btn soft" id="atPushBtn" style="width:100%;margin-top:8px">⬆️ رفع كل بيانات التطبيق كجداول</button>
+        <span id="atState" class="set-desc" style="margin:10px 0 0;display:block;white-space:pre-line"></span>
+        <details class="at-help"><summary>كيف أحصل على المفتاح ومعرّف القاعدة؟</summary>
+          <ol>
+            <li>افتح <span dir="ltr">airtable.com/create/tokens</span> وأنشئ Personal Access Token.</li>
+            <li>امنحه صلاحيات: <span dir="ltr">data.records:read/write</span> و<span dir="ltr">schema.bases:read/write</span>، وحدّد القاعدة المطلوبة.</li>
+            <li>معرّف القاعدة يبدأ بـ <span dir="ltr">app…</span> وتجده في رابط القاعدة أو من <span dir="ltr">airtable.com/api</span>.</li>
+          </ol>
+        </details>
+      </div>
+
+      <div class="set-group">
+        <div class="set-title">📊 استيراد ملفات إكسل</div>
+        <p class="set-desc">أضِف ملف إكسل واحداً أو أكثر (<span dir="ltr">.xlsx</span> أو <span dir="ltr">.csv</span>). يُقرأ كل ملف داخل المتصفح، وتُعرض جداوله للمعاينة، ويمكنك رفع كل ورقة كجدول مفصّل جديد في Airtable.</p>
+        <button class="ok set-btn" id="xlsPickBtn" style="width:100%">📁 اختيار ملفات إكسل / CSV</button>
+        <div id="xlsSheets" style="margin-top:10px"></div>
       </div>
 
       <div class="set-group">
@@ -1193,6 +1236,8 @@
     "use strict";
 
     const STORAGE_KEY = "project-time-tracker.v2";
+    // إعدادات Airtable تُحفظ منفصلة عن الحالة حتى لا تُدرَج في ملف التصدير (المفتاح حسّاس)
+    const AIRTABLE_KEY = "project-time-tracker.airtable";
     const OLD_KEY = "project-time-tracker.v1";
     const DAY_START_HOUR = 5;             // يبدأ اليوم الساعة 5 صباحاً
     const DAY_MS = 24 * 60 * 60 * 1000;   // وينتهي بعد 24 ساعة
@@ -2803,6 +2848,372 @@
       input.click();
     };
 
+    // ═══════════════ الربط مع Airtable + استيراد إكسل ═══════════════
+    const AIRTABLE_API = "https://api.airtable.com/v0";
+    const atTokenEl = document.getElementById("atToken");
+    const atBaseEl  = document.getElementById("atBase");
+    const atStateEl = document.getElementById("atState");
+
+    function atCfg() {
+      try { const c = JSON.parse(localStorage.getItem(AIRTABLE_KEY) || "{}"); return { token: c.token || "", baseId: c.baseId || "" }; }
+      catch (e) { return { token: "", baseId: "" }; }
+    }
+    function atSaveCfg(c) { try { localStorage.setItem(AIRTABLE_KEY, JSON.stringify(c)); } catch (e) {} }
+    function atStatus(msg, kind) {
+      if (!atStateEl) return;
+      atStateEl.textContent = msg;
+      atStateEl.style.color = kind === "err" ? "var(--danger)" : kind === "ok" ? "var(--run)" : "var(--muted)";
+    }
+    function renderAirtable() {
+      const c = atCfg();
+      if (atTokenEl) atTokenEl.value = c.token;
+      if (atBaseEl)  atBaseEl.value  = c.baseId;
+    }
+
+    // نداء واجهة Airtable مع رسائل خطأ عربية واضحة
+    async function atFetch(path, opts) {
+      const c = atCfg();
+      if (!c.token) throw new Error("لم تُدخِل مفتاح API بعد.");
+      if (!c.baseId) throw new Error("لم تُدخِل معرّف القاعدة (Base ID) بعد.");
+      const res = await fetch(AIRTABLE_API.replace("/v0", "") + path, Object.assign({
+        headers: Object.assign({ "Authorization": "Bearer " + c.token, "Content-Type": "application/json" }, (opts && opts.headers) || {})
+      }, opts));
+      let body = null; try { body = await res.json(); } catch (e) {}
+      if (!res.ok) {
+        const t = (body && body.error && (body.error.message || body.error.type)) || ("HTTP " + res.status);
+        if (res.status === 401 || res.status === 403) throw new Error("فشل التوثيق (تأكّد من المفتاح وصلاحياته والقاعدة): " + t);
+        if (res.status === 404) throw new Error("القاعدة أو الجدول غير موجود (تأكّد من Base ID): " + t);
+        if (res.status === 422) throw new Error("طلب غير صالح لـ Airtable: " + t);
+        throw new Error(t);
+      }
+      return body;
+    }
+
+    // جلب الجداول الموجودة في القاعدة (Metadata API)
+    async function atExistingTables() {
+      const c = atCfg();
+      const data = await atFetch("/v0/meta/bases/" + c.baseId + "/tables");
+      const map = {};
+      for (const t of (data.tables || [])) map[t.name] = t;
+      return map;
+    }
+    async function atCreateTable(def) {
+      const c = atCfg();
+      return atFetch("/v0/meta/bases/" + c.baseId + "/tables", {
+        method: "POST",
+        body: JSON.stringify({ name: def.name, fields: def.fields })
+      });
+    }
+    // ينشئ الجداول الناقصة فقط (لا يلمس الموجود)
+    async function atEnsureTables(defs) {
+      const existing = await atExistingTables();
+      let created = 0;
+      for (const def of defs) {
+        if (!existing[def.name]) { await atCreateTable(def); created++; }
+      }
+      return created;
+    }
+    // رفع السجلّات على دفعات (١٠ لكل طلب)
+    async function atUploadRecords(tableName, records) {
+      const c = atCfg();
+      const url = "/v0/" + c.baseId + "/" + encodeURIComponent(tableName);
+      let done = 0;
+      for (let i = 0; i < records.length; i += 10) {
+        const batch = records.slice(i, i + 10).map(f => ({ fields: f }));
+        await atFetch(url, { method: "POST", body: JSON.stringify({ records: batch, typecast: true }) });
+        done += batch.length;
+      }
+      return done;
+    }
+
+    // تعريفات الحقول المختصرة
+    const fT  = n => ({ name: n, type: "singleLineText" });
+    const fN  = (n, p) => ({ name: n, type: "number", options: { precision: p == null ? 0 : p } });
+    const fC  = n => ({ name: n, type: "checkbox", options: { icon: "check", color: "greenBright" } });
+
+    // مخطّط الجداول المفصّلة لبيانات التطبيق
+    function atAppTableDefs() {
+      return [
+        { name: "المشاريع", fields: [ fT("الاسم"), fT("المجال"), fT("البرنامج"), fT("النوع"), fN("الهدف", 2), fN("المنجَز", 2), fC("مكتمل"), fN("مجموع الساعات", 2), fC("مفضّل"), fT("تاريخ البداية"), fT("تاريخ النهاية") ] },
+        { name: "البرامج",  fields: [ fT("الاسم"), fT("المجال") ] },
+        { name: "العادات",  fields: [ fT("الاسم"), fT("المجال"), fT("البرنامج"), fN("الأيام المستهدفة", 0), fN("الأيام المنجَزة", 0), fC("مفضّل") ] },
+        { name: "التذكيرات", fields: [ fT("العنوان"), fT("النوع"), fT("مرتبط بـ"), fT("التكرار") ] },
+        { name: "المجالات", fields: [ fT("الاسم"), fT("الرمز"), fN("وزن 2026", 2), fN("وزن 2030", 2) ] }
+      ];
+    }
+    function progNameById(id) { const p = state.programs.find(x => x.id === id); return p ? p.name : ""; }
+    // تحويل بيانات التطبيق إلى سجلّات لكل جدول
+    function atAppRecords() {
+      const projects = (state.plans || []).map(pl => ({
+        "الاسم": pl.name || "مشروع",
+        "المجال": domainName(pl.domainId) || domainName((programOf(pl) || {}).domainId) || "",
+        "البرنامج": progNameById(pl.programId),
+        "النوع": pl.type === "hours" ? "ساعات" : "نقاط",
+        "الهدف": Number(pl.target) || 0,
+        "المنجَز": pl.type === "hours" ? Math.round(sessionHoursTotal(pl) * 100) / 100 : (Number(pl.current) || 0),
+        "مكتمل": !!pl.done,
+        "مجموع الساعات": Math.round(sessionHoursTotal(pl) * 100) / 100,
+        "مفضّل": !!pl.favorite,
+        "تاريخ البداية": pl.startDate || "",
+        "تاريخ النهاية": pl.endDate || ""
+      }));
+      const programs = (state.programs || []).map(pr => ({ "الاسم": pr.name || "برنامج", "المجال": domainName(pr.domainId) }));
+      const habits = (state.habits || []).map(h => ({
+        "الاسم": h.name || "عادة",
+        "المجال": domainName(h.domainId),
+        "البرنامج": progNameById(h.programId),
+        "الأيام المستهدفة": Number(h.targetDays) || 0,
+        "الأيام المنجَزة": Object.values(h.log || {}).filter(Boolean).length,
+        "مفضّل": !!h.favorite
+      }));
+      const reminders = (state.reminders || []).map(r => ({
+        "العنوان": (typeof reminderName === "function" ? (reminderName(r) || "") : "") || r.refId || "تذكير",
+        "النوع": r.refType === "program" ? "برنامج" : "مشروع",
+        "مرتبط بـ": r.refType === "program" ? progNameById(r.refId) : ((state.plans.find(x => x.id === r.refId) || {}).name || ""),
+        "التكرار": r.every || r.period || r.freq || ""
+      }));
+      const domains = DOMAINS.map(d => {
+        const w = (state.domainWeights || {})[d.id] || {};
+        return { "الاسم": d.name, "الرمز": d.icon, "وزن 2026": Number(w.w2026) || 1, "وزن 2030": Number(w.w2030) || 1 };
+      });
+      return { "المشاريع": projects, "البرامج": programs, "العادات": habits, "التذكيرات": reminders, "المجالات": domains };
+    }
+
+    // حفظ الإعدادات
+    document.getElementById("atSaveBtn").onclick = () => {
+      atSaveCfg({ token: (atTokenEl.value || "").trim(), baseId: (atBaseEl.value || "").trim() });
+      const b = document.getElementById("atSaveBtn"); const t = b.textContent;
+      b.textContent = "✓ حُفِظ"; setTimeout(() => { b.textContent = t; }, 1200);
+      atStatus("تُحفظ بيانات الاعتماد محلياً في هذا المتصفّح فقط.", "");
+    };
+    // اختبار الاتصال
+    document.getElementById("atTestBtn").onclick = async () => {
+      atSaveCfg({ token: (atTokenEl.value || "").trim(), baseId: (atBaseEl.value || "").trim() });
+      const btn = document.getElementById("atTestBtn"); btn.disabled = true;
+      atStatus("… جارٍ الاتصال بـ Airtable", "");
+      try {
+        const map = await atExistingTables();
+        atStatus("✅ الاتصال ناجح. عدد الجداول في القاعدة: " + Object.keys(map).length, "ok");
+      } catch (e) { atStatus("⚠️ " + e.message, "err"); }
+      finally { btn.disabled = false; }
+    };
+    // رفع كل بيانات التطبيق كجداول مفصّلة
+    document.getElementById("atPushBtn").onclick = async () => {
+      atSaveCfg({ token: (atTokenEl.value || "").trim(), baseId: (atBaseEl.value || "").trim() });
+      const btn = document.getElementById("atPushBtn"); btn.disabled = true;
+      try {
+        atStatus("… جارٍ تجهيز الجداول", "");
+        const defs = atAppTableDefs();
+        const created = await atEnsureTables(defs);
+        const data = atAppRecords();
+        let total = 0; const lines = [];
+        for (const def of defs) {
+          const recs = data[def.name] || [];
+          if (!recs.length) { lines.push("• " + def.name + ": لا سجلّات"); continue; }
+          atStatus("… جارٍ رفع جدول «" + def.name + "» (" + recs.length + " سجل)", "");
+          const n = await atUploadRecords(def.name, recs);
+          total += n; lines.push("• " + def.name + ": " + n + " سجل");
+        }
+        atStatus("✅ اكتمل الرفع" + (created ? " (أُنشئت " + created + " جداول جديدة)" : "") + "\n" + lines.join("\n"), "ok");
+      } catch (e) { atStatus("⚠️ " + e.message, "err"); }
+      finally { btn.disabled = false; }
+    };
+
+    // ───────── قراءة ملفات إكسل (.xlsx) و CSV داخل المتصفّح ─────────
+    let importedSheets = []; // { fileName, sheetName, tableName, headers, rows }
+
+    function u16(b, o) { return b[o] | (b[o + 1] << 8); }
+    function u32(b, o) { return (b[o] | (b[o + 1] << 8) | (b[o + 2] << 16) | (b[o + 3] << 24)) >>> 0; }
+    async function inflateRaw(bytes) {
+      const ds = new DecompressionStream("deflate-raw");
+      const ab = await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer();
+      return new Uint8Array(ab);
+    }
+    // فكّ ملف ZIP (xlsx) عبر سجلّ الفهرس المركزي
+    async function readZip(bytes) {
+      let eocd = -1;
+      for (let i = bytes.length - 22; i >= 0; i--) { if (u32(bytes, i) === 0x06054b50) { eocd = i; break; } }
+      if (eocd < 0) throw new Error("الملف ليس ملف إكسل صالحاً");
+      const count = u16(bytes, eocd + 10);
+      let off = u32(bytes, eocd + 16);
+      const out = {}; const dec = new TextDecoder();
+      for (let n = 0; n < count; n++) {
+        if (u32(bytes, off) !== 0x02014b50) break;
+        const method  = u16(bytes, off + 10);
+        const compSz  = u32(bytes, off + 20);
+        const nameLen = u16(bytes, off + 28);
+        const extraLen= u16(bytes, off + 30);
+        const commLen = u16(bytes, off + 32);
+        const localOff= u32(bytes, off + 42);
+        const name = dec.decode(bytes.subarray(off + 46, off + 46 + nameLen));
+        const lNameLen = u16(bytes, localOff + 26);
+        const lExtraLen= u16(bytes, localOff + 28);
+        const dataStart = localOff + 30 + lNameLen + lExtraLen;
+        const comp = bytes.subarray(dataStart, dataStart + compSz);
+        out[name] = method === 0 ? comp : await inflateRaw(comp);
+        off += 46 + nameLen + extraLen + commLen;
+      }
+      return out;
+    }
+    function colToIdx(ref) { const m = /^([A-Z]+)/.exec(ref || ""); if (!m) return 0; let x = 0; for (const ch of m[1]) x = x * 26 + (ch.charCodeAt(0) - 64); return x - 1; }
+    function parseXmlDoc(bytes) { return new DOMParser().parseFromString(new TextDecoder().decode(bytes), "application/xml"); }
+    function parseSharedStrings(bytes) {
+      if (!bytes) return [];
+      const doc = parseXmlDoc(bytes);
+      return Array.from(doc.getElementsByTagName("si")).map(si =>
+        Array.from(si.getElementsByTagName("t")).map(t => t.textContent).join(""));
+    }
+    function parseSheetRows(bytes, strings) {
+      const doc = parseXmlDoc(bytes);
+      const rows = [];
+      for (const r of Array.from(doc.getElementsByTagName("row"))) {
+        const arr = [];
+        for (const c of Array.from(r.getElementsByTagName("c"))) {
+          const idx = colToIdx(c.getAttribute("r"));
+          const t = c.getAttribute("t");
+          const vEl = c.getElementsByTagName("v")[0];
+          const isEl = c.getElementsByTagName("is")[0];
+          let v = "";
+          if (t === "s") v = strings[parseInt(vEl ? vEl.textContent : "0", 10)] || "";
+          else if ((t === "inlineStr" || isEl) && isEl) v = Array.from(isEl.getElementsByTagName("t")).map(x => x.textContent).join("");
+          else if (vEl) v = vEl.textContent;
+          arr[idx] = v;
+        }
+        rows.push(arr);
+      }
+      return rows;
+    }
+    async function parseXlsx(buf, fileName) {
+      if (typeof DecompressionStream === "undefined")
+        throw new Error("متصفّحك لا يدعم قراءة .xlsx مباشرةً — احفظ الملف بصيغة CSV ثم أضِفه.");
+      const files = await readZip(new Uint8Array(buf));
+      const strings = parseSharedStrings(files["xl/sharedStrings.xml"]);
+      // أسماء الأوراق بالترتيب من workbook.xml
+      let names = [];
+      if (files["xl/workbook.xml"]) {
+        const wb = parseXmlDoc(files["xl/workbook.xml"]);
+        names = Array.from(wb.getElementsByTagName("sheet")).map(s => s.getAttribute("name") || "");
+      }
+      const sheetFiles = Object.keys(files)
+        .filter(k => /^xl\/worksheets\/sheet\d+\.xml$/.test(k))
+        .sort((a, b) => (parseInt(a.match(/(\d+)/)[1], 10) - parseInt(b.match(/(\d+)/)[1], 10)));
+      const out = [];
+      sheetFiles.forEach((k, i) => {
+        const rows = parseSheetRows(files[k], strings);
+        if (!rows.length) return;
+        out.push({ fileName, sheetName: names[i] || ("ورقة " + (i + 1)), rows });
+      });
+      return out;
+    }
+    // CSV: يدعم علامات الاقتباس والفواصل داخل الحقول
+    function parseCsv(text, fileName) {
+      const rows = []; let row = [], field = "", q = false;
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        if (q) {
+          if (ch === '"') { if (text[i + 1] === '"') { field += '"'; i++; } else q = false; }
+          else field += ch;
+        } else if (ch === '"') q = true;
+        else if (ch === ",") { row.push(field); field = ""; }
+        else if (ch === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+        else if (ch === "\r") { /* تجاهل */ }
+        else field += ch;
+      }
+      if (field.length || row.length) { row.push(field); rows.push(row); }
+      const clean = rows.filter(r => r.some(c => (c || "").trim() !== ""));
+      return clean.length ? [{ fileName, sheetName: fileName.replace(/\.[^.]+$/, ""), rows: clean }] : [];
+    }
+    // تطبيع الصفوف إلى ترويسة + بيانات (يفترض أن الصف الأول ترويسة)
+    function normalizeSheet(sheet) {
+      const raw = sheet.rows;
+      const width = raw.reduce((m, r) => Math.max(m, r.length), 0);
+      let headers = (raw[0] || []).map((h, i) => (h && String(h).trim()) || ("عمود " + (i + 1)));
+      for (let i = headers.length; i < width; i++) headers[i] = "عمود " + (i + 1);
+      // منع تكرار أسماء الأعمدة (Airtable يرفض المكرّر)
+      const seen = {};
+      headers = headers.map(h => { let n = h; while (seen[n]) n = h + " " + (seen[h] = (seen[h] || 1) + 1); seen[n] = 1; return n; });
+      const body = raw.slice(1).map(r => { const o = {}; headers.forEach((h, i) => { o[h] = r[i] == null ? "" : String(r[i]); }); return o; });
+      return { fileName: sheet.fileName, sheetName: sheet.sheetName,
+               tableName: (sheet.sheetName || sheet.fileName).slice(0, 50),
+               headers, rows: body };
+    }
+    function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+    function renderImportedSheets() {
+      const box = document.getElementById("xlsSheets");
+      if (!box) return;
+      if (!importedSheets.length) { box.innerHTML = ""; return; }
+      box.innerHTML = importedSheets.map((s, si) => {
+        const head = "<tr>" + s.headers.map(h => "<th>" + esc(h) + "</th>").join("") + "</tr>";
+        const bodyRows = s.rows.slice(0, 5).map(r =>
+          "<tr>" + s.headers.map(h => "<td>" + esc(r[h]) + "</td>").join("") + "</tr>").join("");
+        const more = s.rows.length > 5 ? "<div class='xls-more'>… و " + (s.rows.length - 5) + " صفّاً آخر</div>" : "";
+        return "<div class='xls-card'>"
+          + "<div class='xls-head'><span class='xls-name'>📄 " + esc(s.fileName) + " › " + esc(s.sheetName) + "</span>"
+          + "<span class='xls-badge'>" + s.rows.length + " صف · " + s.headers.length + " عمود</span></div>"
+          + "<input class='xls-tablename' data-si='" + si + "' value='" + esc(s.tableName) + "' placeholder='اسم الجدول في Airtable' />"
+          + "<div class='xls-scroll'><table class='xls-prev'>" + head + bodyRows + "</table></div>" + more
+          + "<button class='ok set-btn' data-up='" + si + "' style='width:100%;margin-top:9px'>⬆️ رفع كجدول في Airtable</button>"
+          + "<span class='set-desc xls-status' data-st='" + si + "' style='margin:8px 0 0;display:block;white-space:pre-line'></span>"
+          + "</div>";
+      }).join("");
+      box.querySelectorAll(".xls-tablename").forEach(inp => {
+        inp.oninput = () => { importedSheets[+inp.dataset.si].tableName = inp.value.trim().slice(0, 50); };
+      });
+      box.querySelectorAll("button[data-up]").forEach(btn => {
+        btn.onclick = () => uploadSheetToAirtable(+btn.dataset.up, btn);
+      });
+    }
+    function sheetStatus(si, msg, kind) {
+      const el = document.querySelector('.xls-status[data-st="' + si + '"]');
+      if (!el) return;
+      el.textContent = msg;
+      el.style.color = kind === "err" ? "var(--danger)" : kind === "ok" ? "var(--run)" : "var(--muted)";
+    }
+    async function uploadSheetToAirtable(si, btn) {
+      const s = importedSheets[si];
+      if (!s) return;
+      const name = (s.tableName || s.sheetName || "جدول").slice(0, 50);
+      atSaveCfg({ token: (atTokenEl.value || "").trim(), baseId: (atBaseEl.value || "").trim() });
+      const cfg = atCfg();
+      if (!cfg.token || !cfg.baseId) { sheetStatus(si, "⚠️ أدخِل مفتاح API ومعرّف القاعدة في قسم Airtable أولاً.", "err"); return; }
+      btn.disabled = true;
+      try {
+        sheetStatus(si, "… جارٍ تجهيز الجدول «" + name + "»", "");
+        const fields = s.headers.map(h => fT(h));
+        await atEnsureTables([{ name: name, fields: fields }]);
+        const records = s.rows.map(r => { const o = {}; s.headers.forEach(h => { o[h] = r[h] == null ? "" : String(r[h]); }); return o; });
+        sheetStatus(si, "… جارٍ رفع " + records.length + " سجل", "");
+        const n = await atUploadRecords(name, records);
+        sheetStatus(si, "✅ رُفِع " + n + " سجل إلى جدول «" + name + "»", "ok");
+      } catch (e) { sheetStatus(si, "⚠️ " + e.message, "err"); }
+      finally { btn.disabled = false; }
+    }
+
+    document.getElementById("xlsPickBtn").onclick = () => {
+      const input = document.createElement("input");
+      input.type = "file"; input.multiple = true;
+      input.accept = ".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv";
+      input.onchange = async () => {
+        const files = Array.from(input.files || []);
+        if (!files.length) return;
+        const btn = document.getElementById("xlsPickBtn"); btn.disabled = true; const orig = btn.textContent;
+        btn.textContent = "… جارٍ القراءة";
+        try {
+          for (const file of files) {
+            try {
+              let sheets = [];
+              if (/\.csv$/i.test(file.name)) sheets = parseCsv(await file.text(), file.name);
+              else sheets = await parseXlsx(await file.arrayBuffer(), file.name);
+              for (const sh of sheets) importedSheets.push(normalizeSheet(sh));
+            } catch (e) { alert("تعذّرت قراءة «" + file.name + "»: " + e.message); }
+          }
+          renderImportedSheets();
+        } finally { btn.disabled = false; btn.textContent = orig; }
+      };
+      input.click();
+    };
+
     // ---------- التبويبات الفرعية للمؤقتات (المدد الزمنية) ----------
     document.querySelectorAll("#periodTabs button").forEach(btn => {
       btn.onclick = () => {
@@ -3461,6 +3872,7 @@
       setUmbrella.value = state.settings.umbrella || "";
       setDailyGoal.value = state.settings.dailyGoalHours;
       renderDomainWeights();
+      renderAirtable();
       const perm = ("Notification" in window) ? Notification.permission : "unsupported";
       setNotifyState.textContent = perm === "granted" ? "الإشعارات مُفعّلة ✅"
         : perm === "denied" ? "الإشعارات مرفوضة — فعّلها من إعدادات المتصفح."
