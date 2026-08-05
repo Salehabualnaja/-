@@ -247,6 +247,12 @@
     .fu-rec-meta { font-size: 12px; color: var(--muted); font-weight: 700; margin-top: 4px; }
     .fu-rec-amt { display: inline-block; margin-top: 10px; font-size: 14px; font-weight: 900; color: var(--accent-ink); background: var(--panel); border-radius: 10px; padding: 6px 14px; }
     .fu-rank { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); font-size: 11px; font-weight: 900; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
+    /* الفلتر الزمني لمسار الخطة */
+    .fu-filter { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 6px; margin-bottom: 10px; }
+    .fu-filter::-webkit-scrollbar { display: none; }
+    .fu-filter-lbl { flex: none; font-size: 11.5px; font-weight: 800; color: var(--muted); }
+    .fu-fchip { flex: none; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 999px; padding: 6px 13px; font-size: 12.5px; font-weight: 800; font-family: inherit; cursor: pointer; transition: background .12s, color .12s, border-color .12s; }
+    .fu-fchip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
     /* بطاقة «أنجز اليوم» */
     .today-card { background: linear-gradient(135deg, var(--run-soft), color-mix(in srgb, var(--run) 12%, var(--panel))); border: 1px solid color-mix(in srgb, var(--run) 30%, transparent); border-radius: var(--radius); padding: 15px 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
     .today-card .td-head { font-weight: 900; font-size: 15px; color: var(--run); }
@@ -1732,6 +1738,38 @@
     // ═══ مسار خطة 2030 (تتبّع الوتيرة الزمنية) ═══
     const PLAN_END_2030 = new Date(2030, 11, 31, 23, 59, 59).getTime();
     let trackShowAll = false; // عرض كل المتأخرات أم أهمّها فقط
+    // ═══ الفلتر الزمني لمسار الخطة (أفق التارجت) ═══
+    const FU_HORIZON_KEY = "ptt.ui.fuhorizon";
+    let followupHorizon = readUI(FU_HORIZON_KEY, ["week", "month", "quarter", "year", "hijri", "2030"], "2030");
+    const FU_HORIZONS = [
+      { k: "week", t: "الأسبوع" }, { k: "month", t: "الشهر" }, { k: "quarter", t: "٣ أشهر" },
+      { k: "year", t: "السنة" }, { k: "hijri", t: "هجري" }, { k: "2030", t: "٢٠٣٠" }
+    ];
+    function hijriYearOf(ts) {
+      try { const p = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).formatToParts(new Date(ts)); return parseInt(p.find(x => x.type === "year").value, 10); } catch (_) { return 0; }
+    }
+    function horizonEnd(now, key) {
+      const d = new Date(now);
+      if (key === "week") { const toSat = (6 - d.getDay() + 7) % 7; return new Date(d.getFullYear(), d.getMonth(), d.getDate() + toSat, 23, 59, 59).getTime(); }
+      if (key === "month") return new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59).getTime();
+      if (key === "quarter") return new Date(d.getFullYear(), d.getMonth() + 3, 0, 23, 59, 59).getTime();
+      if (key === "year") return new Date(d.getFullYear(), 11, 31, 23, 59, 59).getTime();
+      if (key === "hijri") {
+        const y = hijriYearOf(now); if (!y) return PLAN_END_2030;
+        let lo = now, hi = now + 400 * DAY_MS;
+        for (let i = 0; i < 40 && hi - lo > 60000; i++) { const mid = (lo + hi) / 2; if (hijriYearOf(mid) > y) hi = mid; else lo = mid; }
+        return Math.floor(hi) - 1;
+      }
+      return PLAN_END_2030;
+    }
+    function horizonLabel(key, now) {
+      if (key === "week") return "نهاية الأسبوع";
+      if (key === "month") return "نهاية الشهر";
+      if (key === "quarter") return "٣ أشهر";
+      if (key === "year") return "نهاية " + toArDigits(new Date(now).getFullYear());
+      if (key === "hijri") return "نهاية " + toArDigits(hijriYearOf(now)) + "هـ";
+      return "٢٠٣٠";
+    }
     function planStartMs(g) {
       if (g.startDate) { const t = dateInputToDayStart(g.startDate); if (isFinite(t)) return t; }
       return g.created || Date.now();
@@ -1740,9 +1778,9 @@
       if (g.endDate) { const t = dateInputToDayStart(g.endDate); if (isFinite(t)) return t + DAY_MS; }
       return PLAN_END_2030;
     }
-    // التقدّم المتوقّع زمنياً للمشروع الآن (0..1) = الزمن المنقضي ÷ الزمن الكلي
-    function expectedProgress(g, now) {
-      const s = planStartMs(g), e = planDeadlineMs(g);
+    // التقدّم المتوقّع زمنياً للمشروع الآن (0..1) = الزمن المنقضي ÷ الزمن الكلي حتى الأفق المختار
+    function expectedProgress(g, now, hEnd) {
+      const s = planStartMs(g), e = Math.min(planDeadlineMs(g), hEnd || PLAN_END_2030);
       if (e <= s) return now >= e ? 1 : 0;
       if (now >= e) return 1;
       if (now <= s) return 0;
@@ -1758,12 +1796,12 @@
       return habitProgress(h); // العادات المفتوحة: محايدة (لا تُحسب تأخّراً)
     }
     // المسار الكلي لخطة 2030 (متوسط مرجّح للمجالات): المُنجَز مقابل المتوقّع
-    function planTrack(now) {
+    function planTrack(now, hEnd) {
       let numA = 0, numE = 0, den = 0;
       for (const d of DOMAINS) {
         const w = weightOf(d.id, 2030); if (w <= 0) continue;
         const items = [];
-        for (const g of domainPlans(d.id)) items.push([goalProgress(g), expectedProgress(g, now)]);
+        for (const g of domainPlans(d.id)) items.push([goalProgress(g), expectedProgress(g, now, hEnd)]);
         for (const h of domainHabits(d.id)) items.push([habitProgress(h), habitExpected(h, now)]);
         if (!items.length) continue;
         const a = items.reduce((s, i) => s + i[0], 0) / items.length;
@@ -1774,10 +1812,10 @@
       return { act, exp, den };
     }
     // العناصر المتأخّرة عن جدول 2030 مرتّبة بالأشدّ تأخّراً + كمية العجز
-    function behindItems(now) {
+    function behindItems(now, hEnd) {
       const out = [];
       for (const g of state.plans) {
-        const exp = expectedProgress(g, now), act = goalProgress(g);
+        const exp = expectedProgress(g, now, hEnd), act = goalProgress(g);
         if (act + 1e-6 >= exp) continue;
         const need = (g.target > 0) ? Math.max(0, (exp * g.target) - goalCurrent(g)) : 0;
         out.push({ kind: "plan", ref: g, domain: planDomain(g), deficit: exp - act, need: need, type: g.type });
@@ -1846,15 +1884,15 @@
       document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === "stats"));
       saveUI(); render();
     }
-    function fuStatusCard(tk, now) {
+    function fuStatusCard(tk, now, hEnd, label) {
       const status = document.createElement("div"); status.className = "track-card";
       const actPct = Math.round(tk.act * 100), expPct = Math.round(tk.exp * 100);
       const onTrack = tk.act + 0.005 >= tk.exp;
       const gapPct = Math.max(0, Math.round((tk.exp - tk.act) * 100));
-      const perDay = Math.max(0, 1 - tk.act) / Math.max(1, (PLAN_END_2030 - now) / DAY_MS) * 100;
+      const perDay = Math.max(0, 1 - tk.act) / Math.max(1, (hEnd - now) / DAY_MS) * 100;
       const rate = (m) => { const v = perDay * m; return toArDigits(v >= 10 ? Math.round(v) : Math.round(v * 10) / 10); };
       status.innerHTML =
-        '<div class="tk-head"><span class="tk-title">🧭 مسارك في خطة 2030</span>'
+        '<div class="tk-head"><span class="tk-title">🧭 مسار الخطة حتى ' + label + '</span>'
         + '<span class="tk-pill ' + (onTrack ? 'ok">✅ على المسار' : 'behind">⚠️ متأخّر ' + toArDigits(gapPct) + '٪') + '</span></div>'
         + '<div class="tk-bar"><div class="tk-fill" style="width:' + actPct + '%"></div>'
         + '<div class="tk-marker" style="right:' + expPct + '%"></div></div>'
@@ -1879,16 +1917,32 @@
       if (document.activeElement && wrap.contains(document.activeElement)) document.activeElement.blur();
       wrap.replaceChildren();
       const now = Date.now();
-      const tk = planTrack(now);
+
+      // الفلتر الزمني (أفق التارجت)
+      const filter = document.createElement("div"); filter.className = "fu-filter";
+      const flabel = document.createElement("span"); flabel.className = "fu-filter-lbl"; flabel.textContent = "🎯 التارجت حتى:";
+      filter.append(flabel);
+      for (const h of FU_HORIZONS) {
+        const chip = document.createElement("button");
+        chip.className = "fu-fchip" + (followupHorizon === h.k ? " on" : "");
+        chip.textContent = h.t;
+        chip.onclick = () => { followupHorizon = h.k; try { localStorage.setItem(FU_HORIZON_KEY, h.k); } catch (_) {} renderFollowup(); };
+        filter.append(chip);
+      }
+      wrap.append(filter);
+
+      const hEnd = horizonEnd(now, followupHorizon);
+      const hLabel = horizonLabel(followupHorizon, now);
+      const tk = planTrack(now, hEnd);
       if (tk.den <= 0) {
         const empty = document.createElement("div"); empty.className = "track-card";
         empty.innerHTML = '<div class="tk-head"><span class="tk-title">🎯 المتابعة</span></div>'
           + '<div class="tk-empty">أضِف برامج ومشاريع بأهداف ومواعيد، وستساعدك هذه الصفحة على معرفة أيّها أولى بالبدء.</div>';
         wrap.append(empty); return;
       }
-      wrap.append(fuStatusCard(tk, now));
+      wrap.append(fuStatusCard(tk, now, hEnd, hLabel));
 
-      const behind = behindItems(now);
+      const behind = behindItems(now, hEnd);
       if (!behind.length) {
         const good = document.createElement("div"); good.className = "track-card";
         good.innerHTML = '<div class="tk-allgood">🎉 كل مشاريعك ضمن الجدول الزمني — لا متأخرات الآن</div>';
