@@ -247,12 +247,9 @@
     .fu-rec-meta { font-size: 12px; color: var(--muted); font-weight: 700; margin-top: 4px; }
     .fu-rec-amt { display: inline-block; margin-top: 10px; font-size: 14px; font-weight: 900; color: var(--accent-ink); background: var(--panel); border-radius: 10px; padding: 6px 14px; }
     .fu-rank { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); font-size: 11px; font-weight: 900; display: grid; place-items: center; font-variant-numeric: tabular-nums; }
-    /* الفلتر الزمني لمسار الخطة */
-    .fu-filter { display: flex; align-items: center; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 6px; margin-bottom: 10px; }
-    .fu-filter::-webkit-scrollbar { display: none; }
-    .fu-filter-lbl { flex: none; font-size: 11.5px; font-weight: 800; color: var(--muted); }
-    .fu-fchip { flex: none; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 999px; padding: 6px 13px; font-size: 12.5px; font-weight: 800; font-family: inherit; cursor: pointer; transition: background .12s, color .12s, border-color .12s; }
-    .fu-fchip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+    /* الفلتر الزمني لمسار الخطة — تصميم مقسّم ناعم */
+    .fu-filter-cap { font-size: 12px; font-weight: 800; color: var(--muted); margin-bottom: 7px; }
+    .fu-filter { margin-bottom: 12px; }
     /* بطاقة «أنجز اليوم» */
     .today-card { background: linear-gradient(135deg, var(--run-soft), color-mix(in srgb, var(--run) 12%, var(--panel))); border: 1px solid color-mix(in srgb, var(--run) 30%, transparent); border-radius: var(--radius); padding: 15px 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
     .today-card .td-head { font-weight: 900; font-size: 15px; color: var(--run); }
@@ -1728,10 +1725,9 @@
     let trackShowAll = false; // عرض كل المتأخرات أم أهمّها فقط
     // ═══ الفلتر الزمني لمسار الخطة (أفق التارجت) ═══
     const FU_HORIZON_KEY = "ptt.ui.fuhorizon";
-    let followupHorizon = readUI(FU_HORIZON_KEY, ["week", "month", "quarter", "year", "hijri", "2030"], "2030");
+    let followupHorizon = readUI(FU_HORIZON_KEY, ["week", "month", "hijri", "year"], "year");
     const FU_HORIZONS = [
-      { k: "week", t: "الأسبوع" }, { k: "month", t: "الشهر" }, { k: "quarter", t: "٣ أشهر" },
-      { k: "year", t: "السنة" }, { k: "hijri", t: "هجري" }, { k: "2030", t: "٢٠٣٠" }
+      { k: "week", t: "أسبوع" }, { k: "month", t: "شهر" }, { k: "hijri", t: "هجري" }, { k: "year", t: "ميلادي" }
     ];
     function hijriYearOf(ts) {
       try { const p = new Intl.DateTimeFormat("en-u-ca-islamic-umalqura", { year: "numeric" }).formatToParts(new Date(ts)); return parseInt(p.find(x => x.type === "year").value, 10); } catch (_) { return 0; }
@@ -1906,13 +1902,13 @@
       wrap.replaceChildren();
       const now = Date.now();
 
-      // الفلتر الزمني (أفق التارجت)
-      const filter = document.createElement("div"); filter.className = "fu-filter";
-      const flabel = document.createElement("span"); flabel.className = "fu-filter-lbl"; flabel.textContent = "🎯 التارجت حتى:";
-      filter.append(flabel);
+      // الفلتر الزمني (أفق التارجت) — تصميم مقسّم ناعم
+      const cap = document.createElement("div"); cap.className = "fu-filter-cap"; cap.textContent = "🎯 التارجت الزمني";
+      wrap.append(cap);
+      const filter = document.createElement("div"); filter.className = "tabs fu-filter";
       for (const h of FU_HORIZONS) {
         const chip = document.createElement("button");
-        chip.className = "fu-fchip" + (followupHorizon === h.k ? " on" : "");
+        if (followupHorizon === h.k) chip.className = "active";
         chip.textContent = h.t;
         chip.onclick = () => { followupHorizon = h.k; try { localStorage.setItem(FU_HORIZON_KEY, h.k); } catch (_) {} renderFollowup(); };
         filter.append(chip);
