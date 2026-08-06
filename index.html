@@ -814,15 +814,9 @@
       </div>
 
       <div class="planbar-card primary">
-        <div class="pb-head"><span class="pb-title">🌟 خطة 2030 · الخطة الأساسية</span><span class="pb-pct" id="pct2030">0٪</span></div>
+        <div class="pb-head"><span class="pb-title">🌟 خطة 2030</span><span class="pb-pct" id="pct2030">0٪</span></div>
         <div class="pb-track"><div class="pb-fill" id="fill2030"></div></div>
         <div class="pb-sub" id="sub2030">0 من 0 مشروع مكتمل</div>
-      </div>
-
-      <div class="planbar-card secondary">
-        <div class="pb-head"><span class="pb-title">📅 خطة 2026 · مرحلية</span><span class="pb-pct" id="pct2026">0٪</span></div>
-        <div class="pb-track"><div class="pb-fill alt" id="fill2026"></div></div>
-        <div class="pb-sub" id="sub2026">0 من 0 مشروع مكتمل</div>
       </div>
 
       <div id="perfWrap"></div>
@@ -919,7 +913,7 @@
 
       <div class="set-group">
         <div class="set-title">⚖️ أوزان المجالات في الخطة</div>
-        <p class="set-desc">النسبة المخصّصة لكل مجال في حساب إنجاز خطة 2030 و2026. كلما زاد وزن المجال زاد تأثيره في النسبة الكلية.</p>
+        <p class="set-desc">النسبة المخصّصة لكل مجال في حساب إنجاز الخطة. كلما زاد وزن المجال زاد تأثيره في النسبة الكلية.</p>
         <div id="setWeights"></div>
       </div>
 
@@ -961,10 +955,7 @@
       <div id="domainItemsView" hidden>
         <div class="set-group">
           <div class="set-title">⚖️ وزن المجال في الخطة</div>
-          <div class="inline" style="margin-top:10px;gap:10px">
-            <div style="flex:1"><label>وزن خطة 2026 (0–100)</label><input id="wDomain2026" type="text" inputmode="decimal" class="numfield set-input" placeholder="1" /></div>
-            <div style="flex:1"><label>وزن خطة 2030 (0–100)</label><input id="wDomain2030" type="text" inputmode="decimal" class="numfield set-input" placeholder="1" /></div>
-          </div>
+          <div style="margin-top:10px"><label>الوزن (0–100)</label><input id="wDomain2030" type="text" inputmode="decimal" class="numfield set-input" placeholder="1" /></div>
         </div>
         <button class="add-goal-btn" id="domainAddBtn">➕ إضافة برنامج أو مشروع</button>
         <div class="section-title">برامج ومشاريع المجال</div>
@@ -1541,9 +1532,6 @@
       pct2030: document.getElementById("pct2030"),
       fill2030: document.getElementById("fill2030"),
       sub2030: document.getElementById("sub2030"),
-      pct2026: document.getElementById("pct2026"),
-      fill2026: document.getElementById("fill2026"),
-      sub2026: document.getElementById("sub2026"),
     };
 
     // ---------- الرأس والملخص ----------
@@ -2081,12 +2069,10 @@
       if (uv) uv.textContent = state.settings.umbrella || "";
 
       // البارات الكبيرة (متوسط مرجّح لتقدّم المجالات)
-      const pct30 = planPct(false), pct26 = planPct(true);
-      const d30 = allDone(false), d26 = allDone(true);
+      const pct30 = planPct(false);
+      const d30 = allDone(false);
       els.fill2030.style.width = pct30 + "%"; els.pct2030.textContent = toArDigits(pct30) + "٪";
       els.sub2030.textContent = d30.total ? (toArDigits(d30.done) + " من " + toArDigits(d30.total) + " مشروع مكتمل · متوسط مرجّح") : "لا توجد مشاريع بعد";
-      els.fill2026.style.width = pct26 + "%"; els.pct2026.textContent = toArDigits(pct26) + "٪";
-      els.sub2026.textContent = d26.total ? (toArDigits(d26.done) + " من " + toArDigits(d26.total) + " مشروع مكتمل · متوسط مرجّح") : "لا توجد مشاريع لسنة 2026";
 
       renderPerformance();
 
@@ -3087,14 +3073,12 @@
     let currentDomainId = null;
     let domainTab = "stats";
 
-    const wDomain2026 = document.getElementById("wDomain2026");
     const wDomain2030 = document.getElementById("wDomain2030");
 
     function openDomain(d) {
       currentDomainId = d.id;
       domainTitle.textContent = d.icon + " " + d.name;
       const w = state.domainWeights[d.id] || {};
-      wDomain2026.value = (typeof w.w2026 === "number") ? w.w2026 : 1;
       wDomain2030.value = (typeof w.w2030 === "number") ? w.w2030 : 1;
       appMode = "domain"; domainTab = "stats";
       document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
@@ -3129,11 +3113,9 @@
       const chN = state.challenges.filter(c => challengeDomain(c) === id).length;
       const habN = domainHabits(id).length;
       const pct30 = Math.round(domainProgress(id, false) * 100);
-      const pct26 = Math.round(domainProgress(id, true) * 100);
       let hoursMs = 0; for (const pl of plans) if (pl.type === "hours") hoursMs += sessionHoursTotal(pl) * 3600000;
 
       view.append(domBar("🌟 إنجاز المجال في خطة 2030", pct30, false));
-      view.append(domBar("📅 إنجاز المجال في خطة 2026", pct26, true));
 
       const card = document.createElement("div"); card.className = "stats-card";
       const row1 = document.createElement("div"); row1.className = "stats-row";
@@ -3147,21 +3129,18 @@
       extra.innerHTML = "<div class='set-title'>أرقام مفيدة</div>"
         + domInfoRow("✅ المكتمل من المشاريع", toArDigits(doneN) + " من " + toArDigits(projN))
         + domInfoRow("⏱️ الساعات المسجّلة", fmtHours(Math.max(0, hoursMs)))
-        + domInfoRow("⚖️ وزن خطة 2026", toArDigits(weightOf(id, 2026)))
-        + domInfoRow("⚖️ وزن خطة 2030", toArDigits(weightOf(id, 2030)));
+        + domInfoRow("⚖️ وزن المجال", toArDigits(weightOf(id, 2030)));
       view.append(extra);
     }
 
     function saveWeights() {
       const w = state.domainWeights[currentDomainId] || {};
-      let a = parseFloat(wDomain2026.value); if (!isFinite(a) || a < 0) a = 0; if (a > 100) a = 100;
       let b = parseFloat(wDomain2030.value); if (!isFinite(b) || b < 0) b = 0; if (b > 100) b = 100;
-      wDomain2026.value = a; wDomain2030.value = b;
-      w.w2026 = a; w.w2030 = b;
+      wDomain2030.value = b;
+      w.w2030 = b; if (typeof w.w2026 !== "number") w.w2026 = b;
       state.domainWeights[currentDomainId] = w;
       save();
     }
-    wDomain2026.addEventListener("change", saveWeights);
     wDomain2030.addEventListener("change", saveWeights);
     // تبويبا صفحة المجال
     document.querySelectorAll("#domainTabs button").forEach(btn => {
@@ -3651,24 +3630,20 @@
         const w = state.domainWeights[d.id] || {};
         const row = document.createElement("div"); row.className = "wt-row";
         const name = document.createElement("div"); name.className = "wt-name"; name.textContent = d.icon + " " + d.name;
-        const mk = (val, year) => {
-          const wrap = document.createElement("label"); wrap.className = "wt-field";
-          const cap = document.createElement("span"); cap.textContent = year; wrap.append(cap);
-          const inp = document.createElement("input"); inp.type = "text"; inp.inputMode = "decimal"; inp.className = "numfield";
-          inp.value = (typeof val === "number") ? val : 1;
-          inp.addEventListener("input", () => { const n = normNum(inp.value); if (n !== inp.value) inp.value = n; });
-          inp.addEventListener("change", () => {
-            let v = parseFloat(normNum(inp.value)); if (!isFinite(v) || v < 0) v = 0; if (v > 100) v = 100;
-            inp.value = v;
-            const ww = state.domainWeights[d.id] || {};
-            if (typeof ww.w2030 !== "number") ww.w2030 = 1;
-            if (typeof ww.w2026 !== "number") ww.w2026 = 1;
-            if (year === 2030) ww.w2030 = v; else ww.w2026 = v;
-            state.domainWeights[d.id] = ww; save();
-          });
-          wrap.append(inp); return wrap;
-        };
-        row.append(name, mk(w.w2030, 2030), mk(w.w2026, 2026));
+        const wrap = document.createElement("label"); wrap.className = "wt-field";
+        const cap = document.createElement("span"); cap.textContent = "الوزن"; wrap.append(cap);
+        const inp = document.createElement("input"); inp.type = "text"; inp.inputMode = "decimal"; inp.className = "numfield";
+        inp.value = (typeof w.w2030 === "number") ? w.w2030 : 1;
+        inp.addEventListener("input", () => { const n = normNum(inp.value); if (n !== inp.value) inp.value = n; });
+        inp.addEventListener("change", () => {
+          let v = parseFloat(normNum(inp.value)); if (!isFinite(v) || v < 0) v = 0; if (v > 100) v = 100;
+          inp.value = v;
+          const ww = state.domainWeights[d.id] || {};
+          ww.w2030 = v; if (typeof ww.w2026 !== "number") ww.w2026 = v;
+          state.domainWeights[d.id] = ww; save();
+        });
+        wrap.append(inp);
+        row.append(name, wrap);
         setWeights.append(row);
       }
     }
