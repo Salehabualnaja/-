@@ -602,41 +602,41 @@
     #chList .goalrow .gbadge { background: var(--panel-2); }
     #chCount { text-transform: none; letter-spacing: 0; }
     .ch-achieve {
-      display: flex; align-items: center; gap: 14px; margin: 4px 0 16px; padding: 14px 16px; border-radius: 16px;
+      display: flex; align-items: center; gap: 10px; margin: 2px 0 10px; padding: 9px 13px; border-radius: 13px;
       background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent) 14%, var(--panel)));
       border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
     }
-    .ch-achieve .ach-icon { font-size: 30px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(180,83,9,.3)); }
-    .ch-achieve .ach-body { display: flex; flex-direction: column; gap: 2px; }
-    .ch-achieve .ach-num { font-size: 34px; font-weight: 900; color: var(--accent-ink); line-height: 1; }
-    .ch-achieve .ach-lbl { font-size: 12.5px; font-weight: 700; color: var(--muted); }
+    .ch-achieve .ach-icon { font-size: 22px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(180,83,9,.3)); }
+    .ch-achieve .ach-body { display: flex; flex-direction: row; align-items: baseline; gap: 7px; }
+    .ch-achieve .ach-num { font-size: 24px; font-weight: 900; color: var(--accent-ink); line-height: 1; }
+    .ch-achieve .ach-lbl { font-size: 12px; font-weight: 700; color: var(--muted); }
 
     /* نافذة التحدي الواسعة والمنظّمة */
     #challengeDlg { width: 560px; max-width: 96vw; max-height: 92dvh; overflow: hidden; padding: 0; }
     .ch-dlg { display: flex; flex-direction: column; max-height: inherit; padding: 0; }
-    .ch-head { padding: 18px 20px 12px; border-bottom: 1px solid var(--border); }
-    .ch-head-top { display: flex; align-items: center; justify-content: space-between; margin: 0 0 12px; }
+    .ch-head { padding: 12px 16px 10px; border-bottom: 1px solid var(--border); }
+    .ch-head-top { display: flex; align-items: center; justify-content: space-between; margin: 0 0 9px; }
     .ch-head-top h3 { margin: 0; }
     .ch-x { flex: none; border: none; background: var(--panel-2); color: var(--muted); width: 32px; height: 32px; border-radius: 50%; font-size: 14px; line-height: 1; cursor: pointer; display: grid; place-items: center; transition: background .15s, color .15s; }
     .ch-x:hover { background: var(--border); color: var(--text); }
     .ch-x:active { transform: scale(.9); }
-    .ch-head .ch-achieve { margin: 0 0 14px; }
-    .ch-add { display: flex; flex-direction: column; gap: 8px; }
+    .ch-head .ch-achieve { margin: 0 0 9px; }
+    .ch-add { display: flex; flex-direction: column; gap: 6px; }
+    .ch-add input, .ch-add select { width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 9px; padding: 8px 11px; font-size: 13px; font-family: inherit; box-sizing: border-box; }
     .ch-add-row { display: flex; gap: 8px; }
     .ch-add-row select { flex: 1; }
     .ch-add-row .ch-addbtn { flex: 1; }
     .ch-dom, .ch-proj { width: 100%; }
-    .ct-proj { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
-    .ch-add-row .ch-addbtn { flex: 0 0 auto; padding: 0 24px; border: none; border-radius: 10px; background: var(--fab); color: #fff; font-weight: 800; font-size: 15px; cursor: pointer; font-family: inherit; }
+    .ch-add-row .ch-addbtn { flex: 0 0 auto; padding: 8px 20px; border: none; border-radius: 9px; background: var(--fab); color: #fff; font-weight: 800; font-size: 13.5px; cursor: pointer; font-family: inherit; }
     .ch-add-row .ch-addbtn:active { transform: scale(.96); }
-    .ch-add-row .ch-canceledit { flex: 0 0 auto; width: 44px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--panel-2); color: var(--muted); font-size: 15px; cursor: pointer; font-family: inherit; }
+    .ch-add-row .ch-canceledit { flex: 0 0 auto; width: 40px; border: 1px solid var(--border-strong); border-radius: 9px; background: var(--panel-2); color: var(--muted); font-size: 14px; cursor: pointer; font-family: inherit; }
     .ch-add-row .ch-canceledit[hidden] { display: none; }
     .ch-add.editing input { border-color: var(--accent); outline: 2px solid var(--accent-soft); }
-    .ch-task .ch-edit { flex: 0 0 auto; border: none; background: none; cursor: pointer; font-size: 15px; opacity: .65; padding: 4px; }
+    .ch-task .ch-edit { flex: 0 0 auto; border: none; background: none; cursor: pointer; font-size: 13px; opacity: .65; padding: 3px; }
     .ch-task .ch-edit:active { opacity: 1; }
-    .ch-toolbar { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
-    .ch-toolbar #chCount { font-size: 13px; font-weight: 800; color: var(--text); }
-    .ch-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 12px 20px 6px; min-height: 140px; }
+    .ch-toolbar { display: flex; align-items: center; justify-content: space-between; margin-top: 9px; }
+    .ch-toolbar #chCount { font-size: 12.5px; font-weight: 800; color: var(--text); }
+    .ch-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 8px 16px 6px; min-height: 46dvh; }
     .ch-foot { padding: 12px 20px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
     .ch-foot .ch-closebtn { width: 100%; border: none; border-radius: 12px; padding: 14px 0; font-weight: 800; font-size: 15px; background: var(--accent); color: #fff; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(180,83,9,.28); transition: background .15s, transform .1s, box-shadow .2s; }
     .ch-foot .ch-closebtn:hover { background: var(--accent-ink); box-shadow: 0 6px 16px rgba(180,83,9,.36); }
@@ -645,15 +645,16 @@
 
     .ch-group { margin-bottom: 16px; }
     .ch-group:last-child { margin-bottom: 4px; }
-    .ch-group-head { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 13px; color: var(--accent-ink); padding: 8px 4px; position: sticky; top: -12px; background: var(--panel); z-index: 1; }
-    .ch-group-head .cg-count { margin-inline-start: auto; font-size: 11px; color: var(--muted); font-weight: 700; }
-    .ch-task { display: flex; align-items: center; gap: 12px; padding: 13px 13px; border: 1px solid var(--border); border-radius: 12px; margin-bottom: 8px; background: var(--panel-2); transition: opacity .15s; }
+    .ch-group-head { display: flex; align-items: center; gap: 7px; font-weight: 800; font-size: 12px; color: var(--accent-ink); padding: 6px 4px; position: sticky; top: -8px; background: var(--panel); z-index: 1; }
+    .ch-group-head .cg-count { margin-inline-start: auto; font-size: 10.5px; color: var(--muted); font-weight: 700; }
+    .ch-task { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 5px; background: var(--panel-2); transition: opacity .15s; }
     .ch-task.done { opacity: .6; }
-    .ch-check { flex: 0 0 auto; width: 27px; height: 27px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; cursor: pointer; display: grid; place-items: center; font-size: 15px; font-weight: 800; color: #fff; transition: background .15s, border-color .15s; }
+    .ch-check { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; cursor: pointer; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff; transition: background .15s, border-color .15s; }
     .ch-check.on { background: var(--accent); border-color: var(--accent); }
-    .ch-task .ct-text { flex: 1; font-size: 14.5px; font-weight: 600; line-height: 1.4; word-break: break-word; }
+    .ch-task .ct-text { flex: 1; font-size: 12.5px; font-weight: 600; line-height: 1.35; word-break: break-word; }
     .ch-task.done .ct-text { text-decoration: line-through; }
-    .ch-del { flex: 0 0 auto; border: none; background: none; cursor: pointer; font-size: 16px; opacity: .65; padding: 4px; }
+    .ct-proj { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+    .ch-del { flex: 0 0 auto; border: none; background: none; cursor: pointer; font-size: 14px; opacity: .65; padding: 3px; }
     .ch-del:active { opacity: 1; }
     .ch-empty { text-align: center; color: var(--muted); font-size: 13.5px; padding: 36px 12px; line-height: 1.7; }
 
