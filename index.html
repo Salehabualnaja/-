@@ -621,8 +621,14 @@
     .ch-x:hover { background: var(--border); color: var(--text); }
     .ch-x:active { transform: scale(.9); }
     .ch-head .ch-achieve { margin: 0 0 9px; }
+    .ch-title-wrap { display: flex; align-items: baseline; gap: 0; min-width: 0; flex-wrap: wrap; }
+    .ch-achieve-mini { display: inline-flex; align-items: baseline; gap: 5px; margin-inline-start: 10px; padding: 4px 11px; border-radius: 999px; background: var(--accent-soft); white-space: nowrap; }
+    .ch-achieve-mini .ach-icon { font-size: 13px; }
+    .ch-achieve-mini b { font-size: 15px; font-weight: 900; color: var(--accent-ink); }
+    .ch-achieve-mini .ach-lbl { font-size: 10.5px; font-weight: 700; color: var(--muted); }
     .ch-add { display: flex; flex-direction: column; gap: 6px; }
     .ch-add input, .ch-add select { width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 9px; padding: 8px 11px; font-size: 13px; font-family: inherit; box-sizing: border-box; }
+    .ch-add-row input { flex: 1; min-width: 0; }
     .ch-add-row { display: flex; gap: 8px; }
     .ch-add-row select { flex: 1; }
     .ch-add-row .ch-addbtn { flex: 1; }
@@ -637,11 +643,11 @@
     .ch-toolbar { display: flex; align-items: center; justify-content: space-between; margin-top: 9px; }
     .ch-toolbar #chCount { font-size: 12.5px; font-weight: 800; color: var(--text); }
     .ch-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 8px 16px 6px; min-height: 46dvh; }
-    .ch-foot { padding: 12px 20px calc(16px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
-    .ch-foot .ch-closebtn { width: 100%; border: none; border-radius: 12px; padding: 14px 0; font-weight: 800; font-size: 15px; background: var(--accent); color: #fff; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(180,83,9,.28); transition: background .15s, transform .1s, box-shadow .2s; }
-    .ch-foot .ch-closebtn:hover { background: var(--accent-ink); box-shadow: 0 6px 16px rgba(180,83,9,.36); }
+    .ch-foot { padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); border-top: 1px solid var(--border); }
+    .ch-foot .ch-closebtn { width: 100%; border: none; border-radius: 12px; padding: 12px 0; font-weight: 800; font-size: 15px; line-height: 1; background: var(--accent); color: #fff; cursor: pointer; font-family: inherit; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 4px 12px rgba(180,83,9,.24); transition: background .15s, transform .1s, box-shadow .2s; }
+    .ch-foot .ch-closebtn:hover { background: var(--accent-ink); box-shadow: 0 6px 16px rgba(180,83,9,.34); }
     .ch-foot .ch-closebtn:active { transform: scale(.985); }
-    .ch-foot .ch-closebtn .cc-ic { display: grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: rgba(255,255,255,.22); font-size: 12px; font-weight: 900; }
+    .ch-foot .ch-closebtn .cc-ic { display: grid; place-items: center; width: 19px; height: 19px; border-radius: 50%; background: rgba(255,255,255,.22); font-size: 11px; font-weight: 900; flex: none; }
 
     .ch-group { margin-bottom: 16px; }
     .ch-group:last-child { margin-bottom: 4px; }
@@ -1081,23 +1087,21 @@
     <div class="dlg ch-dlg">
       <div class="ch-head">
         <div class="ch-head-top">
-          <h3>🔥 تحدي</h3>
+          <div class="ch-title-wrap">
+            <h3>🔥 تحدي</h3>
+            <span class="ch-achieve-mini"><span class="ach-icon">🏆</span><b id="chAchNum">0</b><span class="ach-lbl">منجَزة</span></span>
+          </div>
           <button class="ch-x" id="chX" aria-label="إغلاق" title="إغلاق">✕</button>
         </div>
-        <div class="ch-achieve">
-          <span class="ach-icon">🏆</span>
-          <div class="ach-body">
-            <span class="ach-num" id="chAchNum">0</span>
-            <span class="ach-lbl">مهمة منجَزة</span>
-          </div>
-        </div>
         <div class="ch-add" id="chAddWrap">
-          <input id="chInput" type="text" placeholder="اكتب مهمة جديدة…" autocomplete="off" />
-          <select id="chDomain" class="ch-dom" title="المجال"></select>
-          <select id="chProject" class="ch-proj" title="المشروع ضمن المجال المختار (اختياري)"></select>
           <div class="ch-add-row">
+            <input id="chInput" type="text" placeholder="اكتب مهمة جديدة…" autocomplete="off" />
             <button class="ch-addbtn" id="chAdd">➕ إضافة</button>
             <button class="ch-canceledit" id="chCancelEdit" hidden title="إلغاء التعديل" aria-label="إلغاء التعديل">✕</button>
+          </div>
+          <div class="ch-add-row">
+            <select id="chDomain" class="ch-dom" title="المجال"></select>
+            <select id="chProject" class="ch-proj" title="المشروع ضمن المجال المختار (اختياري)"></select>
           </div>
         </div>
         <div class="ch-toolbar">
