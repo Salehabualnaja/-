@@ -322,16 +322,17 @@
     .gkebab { background: transparent; border: none; cursor: pointer; color: var(--muted); font-size: 20px; line-height: 1; padding: 6px 9px; border-radius: 9px; transition: background .15s; }
     .gkebab:hover { background: var(--panel-2); }
     .gkebab:active { background: var(--border); }
-    .gmenu-pop { position: absolute; left: 0; right: auto; top: calc(100% + 6px); z-index: 45; background: var(--panel); border: 1px solid var(--border-strong); border-radius: 14px; box-shadow: 0 12px 32px rgba(20,15,8,.24), 0 3px 10px rgba(20,15,8,.12); padding: 7px; min-width: 210px; display: flex; flex-direction: column; gap: 2px; transform-origin: top left; animation: gmenu-in .15s ease; }
+    .gmenu-pop { position: absolute; left: 0; right: auto; top: calc(100% + 8px); z-index: 45; background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(16px) saturate(1.2); border: 1px solid var(--border); border-radius: 18px; box-shadow: 0 18px 44px rgba(20,15,8,.22), 0 4px 12px rgba(20,15,8,.10); padding: 8px; min-width: 232px; display: flex; flex-direction: column; gap: 3px; transform-origin: top left; animation: gmenu-in .2s cubic-bezier(.2,.8,.2,1); }
     .gmenu-pop[hidden] { display: none; }
-    .gmenu-pop.up { top: auto; bottom: calc(100% + 6px); transform-origin: bottom left; }
-    @keyframes gmenu-in { from { opacity: 0; transform: translateY(-6px) scale(.97); } to { opacity: 1; transform: none; } }
-    .gmenu-item { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14px; font-weight: 700; color: var(--text); text-align: start; padding: 12px 12px; border-radius: 10px; transition: background .12s; }
-    .gmenu-item:hover, .gmenu-item:active { background: var(--panel-2); }
-    .gmenu-item .gmi-ic { font-size: 16px; width: 30px; height: 30px; display: grid; place-items: center; flex: none; background: var(--panel-2); border-radius: 9px; }
+    .gmenu-pop.up { top: auto; bottom: calc(100% + 8px); transform-origin: bottom left; }
+    @keyframes gmenu-in { from { opacity: 0; transform: translateY(-8px) scale(.94); } to { opacity: 1; transform: none; } }
+    .gmenu-item { display: flex; align-items: center; gap: 12px; width: 100%; background: none; border: none; cursor: pointer; font-family: inherit; font-size: 14.5px; font-weight: 600; letter-spacing: -.1px; color: var(--text); text-align: start; padding: 11px 12px; border-radius: 13px; transition: background .14s ease, transform .1s ease; }
+    .gmenu-item:hover { background: var(--accent-soft); }
+    .gmenu-item:active { transform: scale(.98); }
+    .gmenu-item .gmi-ic { font-size: 16px; width: 34px; height: 34px; display: grid; place-items: center; flex: none; background: var(--accent-soft); color: var(--accent-ink); border-radius: 11px; transition: background .14s ease; }
     .gmenu-item:hover .gmi-ic { background: var(--panel); }
-    .gmenu-item.danger { color: var(--danger); margin-top: 5px; padding-top: 13px; border-top: 1px solid var(--border); }
-    .gmenu-item.danger .gmi-ic { background: color-mix(in srgb, var(--danger) 13%, transparent); }
+    .gmenu-item.danger { color: var(--danger); margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border); border-radius: 0 0 13px 13px; }
+    .gmenu-item.danger .gmi-ic { background: color-mix(in srgb, var(--danger) 13%, transparent); color: var(--danger); }
     .gmenu-item.danger:hover { background: color-mix(in srgb, var(--danger) 12%, transparent); }
     .goalrow .gyear { flex: none; font-size: 11px; font-weight: 700; border-radius: 7px; padding: 3px 9px; cursor: pointer; background: var(--accent-soft); color: var(--accent-ink); border: 1px solid var(--border); }
     .goalrow .gmeta { font-size: 11px; color: var(--muted); margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
@@ -2351,6 +2352,7 @@
       const pctEl = document.createElement("span"); pctEl.className = "ph-pct"; pctEl.textContent = toArDigits(pct) + "٪";
       head.append(pctEl);
       head.append(buildKebabMenu([
+        { icon: "➕", label: "إضافة مشروع في البرنامج", onClick: () => openItem(null, prog.id) },
         { icon: "✏️", label: "تعديل البرنامج", onClick: () => openProgram(prog) },
         { icon: "🗑️", label: "حذف البرنامج", danger: true, onClick: () => deleteProgram(prog) }
       ]));
