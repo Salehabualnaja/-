@@ -484,6 +484,10 @@
     .dlg label { font-size: 12px; color: var(--muted); display: block; margin-bottom: 5px; font-weight: 600; }
     .dlg input, .dlg select { width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 10px 12px; font-size: 15px; font-family: inherit; }
     .dlg input:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
+    /* قائمة اختيار البرنامج: مجمّعة حسب المجال بخط أصغر أنعم */
+    #itemProgram { font-size: 13.5px; }
+    #itemProgram optgroup { font-weight: 800; font-size: 12.5px; color: var(--accent-ink); }
+    #itemProgram option { font-weight: 600; font-size: 13.5px; color: var(--text); }
     .dlg .inline { display: flex; gap: 10px; }
     .dlg .inline > div { flex: 1; }
     .dlg .actions { display: flex; gap: 10px; margin-top: 18px; }
@@ -3238,10 +3242,21 @@
         const o = document.createElement("option"); o.value = ""; o.textContent = "— لا برامج، أنشئ برنامجاً أولاً —"; itemProgram.append(o);
         itemProgram.value = ""; return;
       }
-      for (const pr of state.programs) {
-        const opt = document.createElement("option");
-        opt.value = pr.id; opt.textContent = pr.name + (pr.domainId ? " · " + domainName(pr.domainId) : "");
-        itemProgram.append(opt);
+      // مجمّعة حسب المجال (رؤوس أقسام) وبأسماء مرتّبة أبجدياً لتسهيل الاختيار
+      const groups = [];
+      for (const d of DOMAINS) {
+        const progs = state.programs.filter(pr => (pr.domainId || "") === d.id);
+        if (progs.length) groups.push({ label: d.icon + " " + d.name, progs });
+      }
+      const noDom = state.programs.filter(pr => !pr.domainId || !DOMAINS.some(d => d.id === pr.domainId));
+      if (noDom.length) groups.push({ label: "📌 بلا مجال", progs: noDom });
+      for (const g of groups) {
+        const og = document.createElement("optgroup"); og.label = g.label;
+        for (const pr of g.progs.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"))) {
+          const opt = document.createElement("option"); opt.value = pr.id; opt.textContent = pr.name;
+          og.append(opt);
+        }
+        itemProgram.append(og);
       }
       itemProgram.value = (selected && state.programs.some(pr => pr.id === selected)) ? selected : state.programs[0].id;
     }
