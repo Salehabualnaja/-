@@ -1244,7 +1244,6 @@
     //   جلسة مؤقت: { start, end|null }
     //   إدخال يدوي: { manual:true, day:<بداية يوم العمل ms>, ms:<موجب/سالب>, created }
     // state.settings: { dailyGoalHours }
-    // state.goals[]: { id, domainId, year: 2026|2030, title, done, created }
     const DOMAINS = [
       { id: "worship", name: "العبادة", icon: "🕌" },
       { id: "morals",  name: "الأخلاق", icon: "🌸" },
@@ -1358,11 +1357,10 @@
       if (!p.domainUpdated || typeof p.domainUpdated !== "object") p.domainUpdated = {};
       // التذكيرات
       if (!Array.isArray(p.reminders)) p.reminders = [];
-      // أوزان المجالات في خطتَي 2026 و2030 (افتراضي: متساوٍ = 1)
+      // وزن كل مجال في الخطة (افتراضي = 1)
       if (!p.domainWeights || typeof p.domainWeights !== "object") p.domainWeights = {};
       for (const d of DOMAINS) {
         const w = p.domainWeights[d.id] || {};
-        if (typeof w.w2026 !== "number") w.w2026 = 1;
         if (typeof w.w2030 !== "number") w.w2030 = 1;
         p.domainWeights[d.id] = w;
       }
@@ -1618,12 +1616,6 @@
     function programOf(pl) { return state.programs.find(pr => pr.id === pl.programId) || null; }
     function planDomain(pl) { const pr = programOf(pl); return pr ? (pr.domainId || "") : (pl.domainId || ""); }
     function domainPlans(domainId) { return state.plans.filter(pl => planDomain(pl) === domainId); }
-    // انتماء المشروع لخطة سنة: يُشتق من نهاية الفترة (وإلا 2030)
-    function planYear(g) {
-      if (g.endDate) return parseInt(g.endDate.slice(0, 4), 10);
-      if (typeof g.year === "number") return g.year;
-      return 2030;
-    }
     // المُنجَز الفعلي: لمشاريع الساعات = يدوي + ساعات المؤقّت
     function goalCurrent(g) {
       const base = g.current || 0;
@@ -1690,31 +1682,28 @@
     function domainHabits(domainId) { return state.habits.filter(h => habitDomain(h) === domainId); }
     function programHabits(progId) { return state.habits.filter(h => (h.programId || "") === progId); }
 
-    function domainProgress(domainId, only2026) {
-      let list = domainPlans(domainId);
-      if (only2026) list = list.filter(g => planYear(g) <= 2026);
+    function domainProgress(domainId) {
+      const list = domainPlans(domainId);
       const vals = list.map(goalProgress);
-      for (const h of domainHabits(domainId)) vals.push(habitProgress(h)); // العادات تصبّ في الخطتين
+      for (const h of domainHabits(domainId)) vals.push(habitProgress(h)); // العادات تصبّ في الخطة
       if (!vals.length) return 0;
       return vals.reduce((a, b) => a + b, 0) / vals.length;
     }
-    function domainDone(domainId, only2026) {
-      let list = domainPlans(domainId);
-      if (only2026) list = list.filter(g => planYear(g) <= 2026);
+    function domainDone(domainId) {
+      const list = domainPlans(domainId);
       return { done: list.filter(isComplete).length, total: list.length };
     }
-    function weightOf(domainId, year) {
-      const w = state.domainWeights[domainId] || {};
-      const v = year === 2026 ? w.w2026 : w.w2030;
+    function weightOf(domainId) {
+      const v = (state.domainWeights[domainId] || {}).w2030;
       return (typeof v === "number" && v >= 0) ? v : 1;
     }
     // نسبة الخطة (متوسط مرجّح لتقدّم المجالات) 0..100
-    function planPct(only2026) {
+    function planPct() {
       let num = 0, den = 0;
       for (const d of DOMAINS) {
-        const w = weightOf(d.id, only2026 ? 2026 : 2030);
+        const w = weightOf(d.id);
         if (w <= 0) continue;
-        num += domainProgress(d.id, only2026) * w;
+        num += domainProgress(d.id) * w;
         den += w;
       }
       return den > 0 ? Math.round(num / den * 100) : 0;
@@ -2109,9 +2098,8 @@
       els.domainsGrid.replaceChildren(frag);
     }
 
-    function allDone(only2026) {
-      let list = state.plans;
-      if (only2026) list = list.filter(g => planYear(g) <= 2026);
+    function allDone() {
+      const list = state.plans;
       return { done: list.filter(isComplete).length, total: list.length };
     }
 
@@ -3133,7 +3121,7 @@
       const w = state.domainWeights[currentDomainId] || {};
       let b = parseFloat(wDomain2030.value); if (!isFinite(b) || b < 0) b = 0; if (b > 100) b = 100;
       wDomain2030.value = b;
-      w.w2030 = b; if (typeof w.w2026 !== "number") w.w2026 = b;
+      w.w2030 = b;
       state.domainWeights[currentDomainId] = w;
       save();
     }
@@ -3635,7 +3623,7 @@
           let v = parseFloat(normNum(inp.value)); if (!isFinite(v) || v < 0) v = 0; if (v > 100) v = 100;
           inp.value = v;
           const ww = state.domainWeights[d.id] || {};
-          ww.w2030 = v; if (typeof ww.w2026 !== "number") ww.w2026 = v;
+          ww.w2030 = v;
           state.domainWeights[d.id] = ww; save();
         });
         wrap.append(inp);
