@@ -347,6 +347,13 @@
     .gprogress .gp-val { width: 68px; height: 42px; flex: none; text-align: center; font-size: 18px; font-weight: 800; border: 1.5px solid var(--border-strong); border-radius: 12px; background: var(--panel); color: var(--text); font-family: inherit; font-variant-numeric: tabular-nums; }
     .gprogress .gp-val:focus { outline: 2px solid var(--accent); outline-offset: 1px; border-color: transparent; }
     .gprogress .gp-of { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+    /* مؤقّت مشروع الساعات في بطاقة المشروع */
+    .gtimer { display: flex; align-items: center; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
+    .gtimer-btn { flex: none; border: none; border-radius: 12px; padding: 10px 18px; font-family: inherit; font-weight: 800; font-size: 14px; cursor: pointer; background: var(--run); color: #fff; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 3px 10px color-mix(in srgb, var(--run) 32%, transparent); transition: background .15s, transform .1s; }
+    .gtimer-btn.on { background: var(--danger); box-shadow: 0 3px 10px color-mix(in srgb, var(--danger) 32%, transparent); }
+    .gtimer-btn:active { transform: scale(.95); }
+    .gtimer-info { font-size: 12.5px; color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+    .gtimer-info b { color: var(--text); }
 
     /* صفحة الأهداف */
     .goals-group { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 12px; }
@@ -2163,6 +2170,15 @@
     function fmtNum(n) { return toArDigits(Number.isInteger(n) ? n : Math.round(n * 10) / 10); }
 
     // صف هدف مشترك (يُستخدم في صفحة الأهداف ونافذة المجال)
+    // نصّ مؤقّت مشروع الساعات (يتحدّث حياً كل ثانية أثناء التشغيل)
+    function gtimerText(g) {
+      const pct = Math.round(goalProgress(g) * 100);
+      const base = fmtNum(goalCurrent(g)) + " / " + fmtNum(g.target) + " س · " + toArDigits(pct) + "٪";
+      if (!isRunning(g)) return base;
+      const now = Date.now(); let sMs = 0;
+      for (const s of (g.sessions || [])) if (!s.manual && s.end == null) sMs += now - s.start;
+      return "⏱️ " + fmtClock(sMs) + " · " + base;
+    }
     function buildGoalRow(g) {
       const complete = isComplete(g);
       const hasTarget = g.target && g.target > 0;
@@ -2185,16 +2201,21 @@
       const badges = ['<span class="gbadge">' + typeLabel(g.type) + '</span>'];
       const per = fmtPeriod(g);
       if (per) badges.push('<span class="gbadge">' + per + '</span>');
-      if (hasTarget && g.type === "hours") {
-        const pct = Math.round(goalProgress(g) * 100);
-        badges.push('<span class="gbadge">الإجمالي ' + fmtNum(goalCurrent(g)) + " / " + fmtNum(g.target) + " س (" + toArDigits(pct) + "٪)</span>");
-        badges.push('<span class="gbadge">⏱️ يُوقَّت في المؤقتات</span>');
-      }
       meta.innerHTML = badges.join(" ");
       main.append(t, meta);
 
-      // لوحة إدخال التقدّم — أزرار كبيرة + حقل قابل للتحرير (للنقاط والساعات)
-      if (hasTarget) {
+      // مشاريع الساعات = مؤقّت (ابدأ/أوقف)، ومشاريع النقاط = أزرار +/−
+      if (hasTarget && g.type === "hours") {
+        const running = isRunning(g);
+        const tw = document.createElement("div"); tw.className = "gtimer";
+        const btn = document.createElement("button"); btn.className = "gtimer-btn" + (running ? " on" : "");
+        btn.textContent = running ? "⏸ إيقاف المؤقّت" : "▶ ابدأ المؤقّت";
+        btn.onclick = (e) => { e.stopPropagation(); running ? stopItem(g) : startItem(g); };
+        const info = document.createElement("div"); info.className = "gtimer-info gtimer-live"; info.dataset.gid = g.id;
+        info.textContent = gtimerText(g);
+        tw.append(btn, info);
+        main.append(tw);
+      } else if (hasTarget) {
         const setCur = (v) => {
           let n = parseFloat(v); if (!isFinite(n) || n < 0) n = 0;
           n = Math.min(n, g.target * 4); // سقف أمان
@@ -2214,7 +2235,7 @@
         plus.onclick = () => setCur((g.current || 0) + 1);
         const of = document.createElement("span"); of.className = "gp-of";
         const pct = Math.round(goalProgress(g) * 100);
-        of.textContent = "من " + fmtNum(g.target) + (g.type === "hours" ? " ساعة" : " نقطة") + " · " + toArDigits(pct) + "٪";
+        of.textContent = "من " + fmtNum(g.target) + " نقطة · " + toArDigits(pct) + "٪";
         gp.append(minus, val, plus, of);
         main.append(gp);
       }
@@ -2818,6 +2839,11 @@
 
     // ---------- التحديث الحي ----------
     function tick() {
+      // تحديث حيّ لمؤقتات مشاريع الساعات أينما ظهرت (المشاريع/المجال/المفضلة/المتابعة)
+      document.querySelectorAll('.gtimer-live[data-gid]').forEach(el => {
+        const g = state.plans.find(p => p.id === el.dataset.gid);
+        if (g) el.textContent = gtimerText(g);
+      });
       if (!(appMode === "stats" && statsTab === "timer") || currentView !== "today") return;
       const now = Date.now();
       const today = dayStartOf(now);
