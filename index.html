@@ -3364,7 +3364,9 @@
         itemName.value = item.name || "";
         fillProgramSelect(item.programId || "");
         itemHabitDays.value = item.targetDays ? item.targetDays : "";
-        itemTHours.hidden = true; itemTPoints.hidden = true; itemTHabit.hidden = false;
+        // حقول جاهزة عند التحويل إلى مشروع
+        itemStart.value = ""; itemEnd.value = ""; itemTarget.value = ""; itemCurrent.value = ""; setNiFav(!!item.favorite);
+        itemTHours.hidden = false; itemTPoints.hidden = false; itemTHabit.hidden = false;
       } else if (item) {
         editingGoalId = item.id; type = item.type || "hours";
         itemDlgTitleEl.textContent = "✏️ تعديل المشروع"; itemSave.textContent = "حفظ";
@@ -3373,8 +3375,9 @@
         fillProgramSelect(item.programId || "");
         itemTarget.value = item.target ? item.target : "";
         itemCurrent.value = item.current ? item.current : "";
+        itemHabitDays.value = ""; // جاهز عند التحويل إلى عادة
         setNiFav(!!item.favorite);
-        itemTHours.hidden = false; itemTPoints.hidden = false; itemTHabit.hidden = true;
+        itemTHours.hidden = false; itemTPoints.hidden = false; itemTHabit.hidden = false;
       } else {
         type = presetType || "hours";
         itemDlgTitleEl.textContent = "📄 مشروع جديد"; itemSave.textContent = "إضافة";
@@ -3390,22 +3393,29 @@
     itemSave.onclick = () => {
       const t = itemName.value.trim();
       if (!t) { itemName.focus(); return; }
+      const programId = itemProgram.value || "";
+      if (!programId) { alert("اختر برنامجاً، أو أنشئ برنامجاً أولاً من زر ➕."); return; }
+
       if (niType === "habit") {
-        const programId = itemProgram.value || "";
-        if (!programId) { alert("اختر برنامجاً للعادة، أو أنشئ برنامجاً أولاً من زر ➕."); return; }
         let days = parseInt(itemHabitDays.value, 10); if (!isFinite(days) || days < 0) days = 0;
         if (editingHabitId) {
           const h = state.habits.find(x => x.id === editingHabitId);
           if (h) { const old = habitDomain(h); h.name = t; h.programId = programId; h.targetDays = days; touchDomain(old); touchDomain(habitDomain(h)); }
+        } else if (editingGoalId) {
+          // تحويل مشروع → عادة
+          const g = state.plans.find(x => x.id === editingGoalId);
+          const oldDomain = g ? planDomain(g) : "";
+          state.plans = state.plans.filter(x => x.id !== editingGoalId);
+          const nh = { id: uid(), name: t, programId: programId, domainId: "", targetDays: days, favorite: g ? !!g.favorite : false, created: (g && g.created) || Date.now(), log: {} };
+          state.habits.push(nh); touchDomain(oldDomain); touchDomain(habitDomain(nh));
         } else {
           const nh = { id: uid(), name: t, programId: programId, domainId: "", targetDays: days, favorite: false, created: Date.now(), log: {} };
           state.habits.push(nh); touchDomain(habitDomain(nh));
         }
         save(); itemDlg.close(); refreshViews(); return;
       }
+
       // مشروع (ساعات/نقاط)
-      const programId = itemProgram.value || "";
-      if (!programId) { alert("اختر برنامجاً للمشروع، أو أنشئ برنامجاً أولاً من زر ➕."); return; }
       let target = parseFloat(itemTarget.value); if (!isFinite(target) || target < 0) target = 0;
       let current = parseFloat(itemCurrent.value); if (!isFinite(current) || current < 0) current = 0;
       if (editingGoalId) {
@@ -3418,6 +3428,18 @@
           g.done = target > 0 ? (current >= target) : g.done;
           touchDomain(oldDomain); touchDomain(planDomain(g));
         }
+      } else if (editingHabitId) {
+        // تحويل عادة → مشروع
+        const h = state.habits.find(x => x.id === editingHabitId);
+        const oldDomain = h ? habitDomain(h) : "";
+        state.habits = state.habits.filter(x => x.id !== editingHabitId);
+        const np = {
+          id: uid(), name: t, programId: programId, domainId: "",
+          done: target > 0 ? (current >= target) : false, created: (h && h.created) || Date.now(),
+          startDate: itemStart.value || "", endDate: itemEnd.value || "",
+          type: niType, favorite: h ? !!h.favorite : niFav, target: target, current: current, sessions: []
+        };
+        state.plans.push(np); touchDomain(oldDomain); touchDomain(planDomain(np));
       } else {
         const np = {
           id: uid(), name: t, programId: programId, domainId: "",
