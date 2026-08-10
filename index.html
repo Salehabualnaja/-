@@ -520,6 +520,8 @@
     .dlg .ok:hover { background: var(--accent-ink); }
     .dlg .ok.danger { background: var(--danger); }
     .dlg .cancel { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+    /* التطبيق عربي (RTL): زر الإلغاء دائماً على اليمين */
+    .actions .cancel { order: -1; }
 
     .seg { display: flex; border: 1px solid var(--border-strong); border-radius: 10px; overflow: hidden; }
     .seg button { flex: 1; border: none; background: var(--panel-2); color: var(--muted); font-family: inherit; font-weight: 700; padding: 9px 0; cursor: pointer; font-size: 14px; transition: background .15s, color .15s; }
