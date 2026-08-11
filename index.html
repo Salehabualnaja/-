@@ -642,6 +642,8 @@
     .ch-add-row select { flex: 1; }
     .ch-add-row .ch-addbtn { flex: 1; }
     .ch-dom, .ch-proj { width: 100%; }
+    .ch-add-row select, .ch-add-row .picker-btn { flex: 1; min-width: 0; }
+    .ch-add-row .picker-btn { padding: 8px 11px; font-size: 13px; }
     .ch-add-row .ch-addbtn { flex: 0 0 auto; padding: 8px 20px; border: none; border-radius: 9px; background: var(--fab); color: #fff; font-weight: 800; font-size: 13.5px; cursor: pointer; font-family: inherit; }
     .ch-add-row .ch-addbtn:active { transform: scale(.96); }
     .ch-add-row .ch-canceledit { flex: 0 0 auto; width: 40px; border: 1px solid var(--border-strong); border-radius: 9px; background: var(--panel-2); color: var(--muted); font-size: 14px; cursor: pointer; font-family: inherit; }
@@ -1014,6 +1016,14 @@
     </div>
   </dialog>
 
+  <!-- منتقي مشروع التحدي المخصّص (مصنّف حسب المجال) -->
+  <dialog id="chProjectPickerDlg" class="picker-dlg">
+    <div class="pk-sheet">
+      <div class="pk-head"><h3>اختر المشروع</h3><button class="ch-x" id="chpkClose" aria-label="إغلاق">✕</button></div>
+      <div class="pk-list" id="chpkList"></div>
+    </div>
+  </dialog>
+
   <!-- منتقي البرنامج المخصّص (مصنّف حسب المجال) -->
   <dialog id="programPickerDlg" class="picker-dlg">
     <div class="pk-sheet">
@@ -1110,7 +1120,8 @@
           </div>
           <div class="ch-add-row">
             <select id="chDomain" class="ch-dom" title="المجال"></select>
-            <select id="chProject" class="ch-proj" title="المشروع ضمن المجال المختار (اختياري)"></select>
+            <input type="hidden" id="chProject" />
+            <button type="button" id="chProjectBtn" class="picker-btn ch-proj" title="المشروع (اختياري)"><span id="chProjectLabel" class="pk-label">📌 بدون مشروع</span><span class="pk-caret">▾</span></button>
           </div>
         </div>
         <div class="ch-toolbar">
@@ -3462,6 +3473,12 @@
     const chInput = document.getElementById("chInput");
     const chDomain = document.getElementById("chDomain");
     const chProject = document.getElementById("chProject");
+    const chProjectBtn = document.getElementById("chProjectBtn");
+    const chProjectLabel = document.getElementById("chProjectLabel");
+    const chProjectPickerDlg = document.getElementById("chProjectPickerDlg");
+    const chpkList = document.getElementById("chpkList");
+    document.getElementById("chpkClose").onclick = () => chProjectPickerDlg.close();
+    chProjectBtn.onclick = () => { fillChProjects(chProject.value); chProjectPickerDlg.showModal(); };
     const chAdd = document.getElementById("chAdd");
     const chCancelEdit = document.getElementById("chCancelEdit");
     const chAddWrap = document.getElementById("chAddWrap");
@@ -3484,25 +3501,42 @@
       if (c.projectId) { const p = state.plans.find(x => x.id === c.projectId); if (p) return planDomain(p); }
       return c.domainId || "";
     }
-    // قائمة مشاريع التحدي (اختياري) — تعرض فقط مشاريع المجال المختار لتسهيل الاختيار
-    function fillChProjects(selected) {
-      chProject.replaceChildren();
-      const dom = chDomain.value || "";
-      const plans = state.plans.filter(pl => planDomain(pl) === dom);
-      const none = document.createElement("option"); none.value = "";
-      none.textContent = plans.length ? "📌 بدون مشروع محدّد" : "— لا مشاريع في هذا المجال —";
-      chProject.append(none);
-      for (const pl of plans) {
-        const pr = programOf(pl);
-        const o = document.createElement("option"); o.value = pl.id;
-        o.textContent = pl.name + (pr ? " · " + pr.name : "");
-        chProject.append(o);
-      }
-      chProject.value = (selected && plans.some(pl => pl.id === selected)) ? selected : "";
-      chProject.disabled = !plans.length;
+    // ضبط مشروع التحدي المختار (يحدّث الزر ويشتقّ المجال والتمييز)
+    function setChProject(id) {
+      const pl = id ? state.plans.find(p => p.id === id) : null;
+      chProject.value = pl ? pl.id : "";
+      chProjectLabel.textContent = pl ? pl.name : "📌 بدون مشروع";
+      if (pl) { const d = planDomain(pl); if (d && DOMAINS.some(x => x.id === d)) chDomain.value = d; }
+      chpkList.querySelectorAll(".pk-opt").forEach(o => o.classList.toggle("sel", o.dataset.id === chProject.value));
     }
-    // تغيير المجال يعيد بناء قائمة مشاريعه
-    chDomain.addEventListener("change", () => fillChProjects(""));
+    // منتقي مشروع التحدي — قائمة منظّمة مصنّفة حسب المجال (مثل منتقي البرنامج)
+    function fillChProjects(selected) {
+      chpkList.replaceChildren();
+      const none = document.createElement("button"); none.type = "button"; none.className = "pk-opt"; none.dataset.id = "";
+      none.innerHTML = '<span class="pk-nm">📌 بدون مشروع</span><span class="pk-check">✓</span>';
+      none.onclick = () => { setChProject(""); chProjectPickerDlg.close(); };
+      chpkList.append(none);
+      const groups = [];
+      for (const d of DOMAINS) {
+        const plans = state.plans.filter(pl => planDomain(pl) === d.id);
+        if (plans.length) groups.push({ label: d.icon + " " + d.name, plans });
+      }
+      const noDom = state.plans.filter(pl => { const dd = planDomain(pl); return !dd || !DOMAINS.some(d => d.id === dd); });
+      if (noDom.length) groups.push({ label: "📌 بلا مجال", plans: noDom });
+      for (const g of groups) {
+        const gh = document.createElement("div"); gh.className = "pk-group"; gh.textContent = g.label; chpkList.append(gh);
+        for (const pl of g.plans.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"))) {
+          const pr = programOf(pl);
+          const o = document.createElement("button"); o.type = "button"; o.className = "pk-opt"; o.dataset.id = pl.id;
+          o.innerHTML = '<span class="pk-nm">' + escapeHtml(pl.name) + (pr ? ' · ' + escapeHtml(pr.name) : '') + '</span><span class="pk-check">✓</span>';
+          o.onclick = () => { setChProject(pl.id); chProjectPickerDlg.close(); };
+          chpkList.append(o);
+        }
+      }
+      setChProject((selected && state.plans.some(pl => pl.id === selected)) ? selected : "");
+    }
+    // تغيير المجال يدوياً يُلغي اختيار المشروع (لأنّ المشروع يشتقّ مجاله)
+    chDomain.addEventListener("change", () => setChProject(""));
 
     let editingChId = null;
     function chTaskRow(c) {
