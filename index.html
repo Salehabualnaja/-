@@ -255,6 +255,16 @@
     .pp-track { height: 8px; border-radius: 999px; background: var(--track); overflow: hidden; margin: 8px 0 6px; }
     .pp-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent-ink), var(--accent)); transition: width .4s ease; }
     .pp-sub { font-size: 11.5px; color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
+    /* محرّر معادلة مؤشّر الأداء */
+    .perf-formula { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 12px; box-shadow: var(--shadow); overflow: hidden; }
+    .perf-formula > summary { cursor: pointer; list-style: none; padding: 12px 16px; font-weight: 800; font-size: 13.5px; color: var(--accent-ink); }
+    .perf-formula > summary::-webkit-details-marker { display: none; }
+    .perf-formula .pf-body { padding: 0 16px 14px; }
+    .pf-eq { font-size: 12.5px; font-weight: 800; color: var(--text); background: var(--panel-2); border-radius: 12px; padding: 10px 12px; margin-bottom: 12px; line-height: 1.7; }
+    .pf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .pf-field { display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 700; color: var(--muted); }
+    .pf-field input { width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 8px 10px; font-size: 14px; font-family: inherit; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+    .pf-note { font-size: 11.5px; color: var(--muted); font-weight: 600; line-height: 1.7; margin-top: 12px; }
     /* توصية المتابعة */
     .fu-rec { display: block; width: 100%; text-align: start; border: none; cursor: pointer; font-family: inherit; border-radius: var(--radius); padding: 15px 16px; margin-bottom: 12px; color: var(--accent-ink);
       background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent) 16%, var(--panel))); box-shadow: var(--shadow); }
@@ -1344,9 +1354,10 @@
     let reminderView = readUI(REM_VIEW_KEY, ["daily", "weekly", "monthly", "yearly"], "daily");
     // فلاتر لوحة أداء الإحصاءات
     const PERF_TYPE_KEY = "ptt.ui.perftype", PERF_PERIOD_KEY = "ptt.ui.perfperiod", PERF_DOM_KEY = "ptt.ui.perfdom";
-    let perfType = readUI(PERF_TYPE_KEY, ["hours", "points", "habits"], "hours");
+    let perfType = readUI(PERF_TYPE_KEY, ["hours", "points", "habits", "composite"], "hours");
     let perfPeriod = readUI(PERF_PERIOD_KEY, ["day", "week", "month", "quarter"], "week");
     let perfDomain = "";
+    let formulaOpen = false;
     try { const v = localStorage.getItem(PERF_DOM_KEY); if (v !== null) perfDomain = v; } catch (_) {}
     let remMonthOffset = 0, remYearOffset = 0, remSelDay = null, remSelMonth = null;
 
@@ -1363,6 +1374,13 @@
       if (!p.settings) p.settings = {};
       if (typeof p.settings.dailyGoalHours !== "number") p.settings.dailyGoalHours = 8;
       if (typeof p.settings.umbrella !== "string") p.settings.umbrella = "قُلْ إِنَّ صَلَاتِي وَنُسُكِي وَمَحْيَايَ وَمَمَاتِي لِلَّهِ رَبِّ الْعَالَمِينَ";
+      // معادلة مؤشّر الأداء المركّب: أوزان الساعات/العادات/النقاط + هدف النقاط
+      if (!p.settings.composite || typeof p.settings.composite !== "object") p.settings.composite = {};
+      { const cw = p.settings.composite;
+        if (typeof cw.wHours !== "number") cw.wHours = 50;
+        if (typeof cw.wHabits !== "number") cw.wHabits = 30;
+        if (typeof cw.wPoints !== "number") cw.wPoints = 20;
+        if (typeof cw.pointsTarget !== "number") cw.pointsTarget = 1000; }
       // المؤقت الحر: وقت غير مرتبط بمشروع محدّد
       if (!p.freeTimer || typeof p.freeTimer !== "object") p.freeTimer = { id: "free", name: "مؤقت حر", type: "hours", sessions: [] };
       if (!Array.isArray(p.freeTimer.sessions)) p.freeTimer.sessions = [];
@@ -1926,7 +1944,7 @@
 
       // ── الفلاتر: النوع · الفترة · المجال ──
       const fil = document.createElement("div"); fil.className = "perf-filters";
-      fil.append(mkSeg([["hours", "⏱️ ساعات"], ["points", "⭐ نقاط"], ["habits", "🔁 عادات"]], perfType, v => { perfType = v; try { localStorage.setItem(PERF_TYPE_KEY, v); } catch (_) {} renderPerformance(); }));
+      fil.append(mkSeg([["hours", "⏱️ ساعات"], ["points", "⭐ نقاط"], ["habits", "🔁 عادات"], ["composite", "🎯 مجمل الأداء"]], perfType, v => { perfType = v; try { localStorage.setItem(PERF_TYPE_KEY, v); } catch (_) {} renderPerformance(); }));
       fil.append(mkSeg([["day", "يوم"], ["week", "أسبوع"], ["month", "شهر"], ["quarter", "ربع"]], perfPeriod, v => { perfPeriod = v; try { localStorage.setItem(PERF_PERIOD_KEY, v); } catch (_) {} renderPerformance(); }));
       const domSel = document.createElement("select"); domSel.className = "perf-dom";
       const optAll = document.createElement("option"); optAll.value = ""; optAll.textContent = "🗂️ كل المجالات"; domSel.append(optAll);
@@ -1953,6 +1971,49 @@
         wrap.append(card);
         if (buckets.length) wrap.append(columnChartCard("النقاط حسب " + (perfDomain ? "المشروع" : "المجال"), buckets, 0, null, v => toArDigits(Math.round(v)) + " ن"));
         else { const e = document.createElement("div"); e.className = "perf-empty"; e.textContent = "لا مشاريع نقاط في هذا النطاق."; wrap.append(e); }
+        wrap.append(buildProgramsPerf());
+        return;
+      }
+
+      if (perfType === "composite") {
+        // مؤشّر مركّب: يوحّد الساعات والعادات والنقاط في رقم واحد (٠–١٠٠+) وفق معادلة قابلة للتعديل
+        const cfg = compositeCfg();
+        const goal = goalMs();
+        const totalHabits = state.habits.filter(h => !perfDomain || habitDomain(h) === perfDomain).length;
+        const curPts = state.plans.filter(p => p.type === "points" && (!perfDomain || planDomain(p) === perfDomain)).reduce((s, p) => s + (p.current || 0), 0);
+        const pointsFrac = cfg.pointsTarget > 0 ? curPts / cfg.pointsTarget : 0;
+
+        const rangeN = { day: 1, week: 7, month: 30, quarter: 90 }[perfPeriod];
+        const chartN = { day: 7, week: 7, month: 30, quarter: 90 }[perfPeriod];
+        const bucketMode = perfPeriod === "quarter" ? "week" : "day";
+        const need = Math.max(chartN, rangeN * 2), arr = [];
+        for (let i = need - 1; i >= 0; i--) {
+          const ds = dayStartAgo(i);
+          const hf = goal > 0 ? perfDayValue("hours", perfDomain, ds, now) / goal : 0;
+          const bf = totalHabits > 0 ? perfDayValue("habits", perfDomain, ds, now) / totalHabits : 0;
+          const idx = 100 * (cfg.Wh * hf + cfg.Wb * bf + cfg.Wp * pointsFrac);
+          arr.push({ ds, v: idx, hf, bf });
+        }
+        const avgLast = (n, off) => { let s = 0, c = 0; for (let k = 0; k < n; k++) { const idx = arr.length - 1 - (off || 0) - k; if (idx >= 0) { s += arr[idx].v; c++; } } return c ? s / c : 0; };
+        const cur = avgLast(rangeN, 0), prv = avgLast(rangeN, rangeN);
+        card.append(mkMetric("🎯 مؤشّر الأداء · " + PERIOD_LABEL[perfPeriod], toArDigits(Math.round(cur)) + " / ١٠٠", perfDelta(cur, prv)));
+
+        const rangeArr = arr.slice(-rangeN);
+        const avgHf = rangeArr.reduce((s, x) => s + x.hf, 0) / rangeN;
+        const avgBf = rangeArr.reduce((s, x) => s + x.bf, 0) / rangeN;
+        card.append(statRow([
+          [toArDigits(Math.round(avgHf * 100)) + "٪", "الساعات"],
+          [toArDigits(Math.round(avgBf * 100)) + "٪", "العادات"],
+          [toArDigits(Math.round(pointsFrac * 100)) + "٪", "النقاط"],
+        ]));
+        wrap.append(card);
+
+        wrap.append(buildFormulaEditor(cfg, goal));
+
+        const cut = arr.slice(-chartN);
+        const buckets = compositeBuckets(cut, bucketMode);
+        const chartTitle = "مؤشّر الأداء — " + (bucketMode === "week" ? "متوسّط أسبوعي" : "آخر " + toArDigits(chartN) + " يوم");
+        wrap.append(columnChartCard(chartTitle, buckets, 100, b => b.ms >= 100, v => toArDigits(Math.round(v))));
         wrap.append(buildProgramsPerf());
         return;
       }
@@ -2013,6 +2074,54 @@
       for (const [num, lbl] of pairs) row.append(statTile(num, lbl));
       return row;
     }
+    // ── مؤشّر الأداء المركّب: أوزان مُطبَّعة + هدف النقاط ──
+    function compositeCfg() {
+      const c = state.settings.composite || {};
+      const wh = Math.max(0, c.wHours || 0), wb = Math.max(0, c.wHabits || 0), wp = Math.max(0, c.wPoints || 0);
+      const tot = (wh + wb + wp) || 1;
+      return { wh, wb, wp, Wh: wh / tot, Wb: wb / tot, Wp: wp / tot, pointsTarget: Math.max(0, c.pointsTarget || 0) };
+    }
+    // تجميع مؤشّر يومي إلى أعمدة (متوسّط داخل كل أسبوع لوضع الربع)
+    function compositeBuckets(rows, mode) {
+      if (mode !== "week") return rows.map(r => ({ label: fmtDayShort(r.ds), full: fmtDayLong(r.ds), ms: r.v }));
+      const out = [];
+      for (let i = 0; i < rows.length; i += 7) {
+        const end = Math.min(i + 7, rows.length); let s = 0, c = 0;
+        for (let j = i; j < end; j++) { s += rows[j].v; c++; }
+        out.push({ label: fmtDayShort(rows[i].ds), full: "أسبوع " + fmtDayShort(rows[i].ds) + " ← " + fmtDayShort(rows[end - 1].ds), ms: c ? s / c : 0 });
+      }
+      return out;
+    }
+    // محرّر المعادلة: يعدّل الأوزان وهدف النقاط
+    function buildFormulaEditor(cfg, goal) {
+      const d = document.createElement("details"); d.className = "perf-formula"; d.open = formulaOpen;
+      d.addEventListener("toggle", () => { formulaOpen = d.open; });
+      const sum = document.createElement("summary"); sum.textContent = "⚙️ إعداد المعادلة"; d.append(sum);
+      const body = document.createElement("div"); body.className = "pf-body";
+      const eq = document.createElement("div"); eq.className = "pf-eq";
+      eq.textContent = "المؤشّر = (" + toArDigits(Math.round(cfg.Wh * 100)) + "٪ × الساعات) + ("
+        + toArDigits(Math.round(cfg.Wb * 100)) + "٪ × العادات) + (" + toArDigits(Math.round(cfg.Wp * 100)) + "٪ × النقاط)";
+      body.append(eq);
+      const grid = document.createElement("div"); grid.className = "pf-grid";
+      grid.append(pfField("وزن الساعات", cfg.wh, v => { state.settings.composite.wHours = v; }));
+      grid.append(pfField("وزن العادات", cfg.wb, v => { state.settings.composite.wHabits = v; }));
+      grid.append(pfField("وزن النقاط", cfg.wp, v => { state.settings.composite.wPoints = v; }));
+      grid.append(pfField("هدف النقاط", cfg.pointsTarget, v => { state.settings.composite.pointsTarget = v; }));
+      body.append(grid);
+      const note = document.createElement("div"); note.className = "pf-note";
+      note.textContent = "كل مكوّن يُطبَّع نسبةً إلى هدفه: الساعات نسبةً إلى الهدف اليومي (" + toArDigits(state.settings.dailyGoalHours) + " ساعة)، العادات نسبةً إلى عدد العادات، والنقاط نسبةً إلى هدف النقاط (رصيد حالي — بلا سجلّ زمني). القيمة القصوى المرجعية = ١٠٠.";
+      body.append(note);
+      d.append(body);
+      return d;
+    }
+    function pfField(label, val, setter) {
+      const f = document.createElement("label"); f.className = "pf-field";
+      const s = document.createElement("span"); s.textContent = label; f.append(s);
+      const inp = document.createElement("input"); inp.type = "number"; inp.min = "0"; inp.inputMode = "numeric"; inp.value = val;
+      inp.onchange = () => { const n = Math.max(0, Math.round(parseFloat(inp.value) || 0)); setter(n); save(); formulaOpen = true; renderPerformance(); };
+      f.append(inp); return f;
+    }
+
     // أداء البرامج (ضمن المجال المختار) — الأضعف أولاً لاتخاذ القرار
     function buildProgramsPerf() {
       const card = document.createElement("div"); card.className = "perf-progs";
