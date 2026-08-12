@@ -668,7 +668,8 @@
     .ch-task.done { opacity: .6; }
     .ch-check { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; cursor: pointer; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff; transition: background .15s, border-color .15s; }
     .ch-check.on { background: var(--accent); border-color: var(--accent); }
-    .ch-task .ct-text { flex: 1; font-size: 12.5px; font-weight: 600; line-height: 1.35; word-break: break-word; }
+    .ch-task .ct-text { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; line-height: 1.35; word-break: break-word; border: none; background: none; font-family: inherit; color: var(--text); text-align: start; cursor: pointer; padding: 2px 0; border-radius: 8px; }
+    .ch-task .ct-text:active { opacity: .6; }
     .ch-task.done .ct-text { text-decoration: line-through; }
     .ct-proj { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
     .ch-del { flex: 0 0 auto; border: none; background: none; cursor: pointer; font-size: 14px; opacity: .65; padding: 3px; }
@@ -3544,18 +3545,17 @@
       const check = document.createElement("button"); check.className = "ch-check" + (c.done ? " on" : "");
       check.textContent = c.done ? "✓" : ""; check.title = "تبديل الإنجاز";
       check.onclick = () => { c.done = !c.done; save(); renderChallenges(); };
-      const txt = document.createElement("div"); txt.className = "ct-text";
+      const txt = document.createElement("button"); txt.className = "ct-text"; txt.title = "اضغط لعرض التفاصيل والتعديل";
       const tline = document.createElement("div"); tline.textContent = c.text; txt.append(tline);
       if (c.projectId) { const p = state.plans.find(x => x.id === c.projectId); if (p) { const sub = document.createElement("div"); sub.className = "ct-proj"; sub.textContent = "📄 " + p.name; txt.append(sub); } }
-      const edit = document.createElement("button"); edit.className = "ch-edit"; edit.textContent = "✏️"; edit.title = "تعديل المهمة وتصنيفها";
-      edit.onclick = () => enterChEdit(c);
+      txt.onclick = () => enterChEdit(c); // الضغط على المهمة يفتح تفاصيلها للتعديل
       const del = document.createElement("button"); del.className = "ch-del"; del.textContent = "🗑️"; del.title = "حذف";
       del.onclick = () => {
         if (editingChId === c.id) exitChEdit();
         if (c.done) state.challengeStats.deletedDone = ((state.challengeStats && state.challengeStats.deletedDone) || 0) + 1;
         state.challenges = state.challenges.filter(x => x.id !== c.id); save(); renderChallenges();
       };
-      row.append(check, txt, edit, del);
+      row.append(check, txt, del);
       return row;
     }
     function enterChEdit(c) {
