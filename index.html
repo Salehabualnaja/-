@@ -238,6 +238,23 @@
     .perf-delta.down { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); }
     .perf-delta.flat { color: var(--muted); background: var(--panel-2); }
     .perf-empty { font-size: 12.5px; color: var(--muted); text-align: center; padding: 14px; background: var(--panel-2); border-radius: 12px; margin-bottom: 12px; }
+    /* لوحة الأداء الموحّدة */
+    .perf-filters { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+    .perf-seg { margin: 0; }
+    .perf-seg button { font-size: 12.5px; padding: 8px 2px; }
+    .perf-dom { width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 12px; padding: 9px 11px; font-size: 13px; font-family: inherit; font-weight: 700; }
+    .perf-dash { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+    .perf-metric .pm-lbl { font-size: 12.5px; color: var(--muted); font-weight: 700; }
+    .perf-metric .pm-val { font-size: 28px; font-weight: 900; color: var(--accent-ink); line-height: 1.1; margin-top: 3px; font-variant-numeric: tabular-nums; }
+    .perf-metric .perf-delta { display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 800; border-radius: 8px; padding: 4px 10px; }
+    .perf-progs { margin-bottom: 6px; }
+    .pp-row { background: var(--panel); border: 1px solid var(--border); border-radius: 13px; padding: 11px 13px; margin-bottom: 8px; box-shadow: var(--shadow); }
+    .pp-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+    .pp-name { font-weight: 800; font-size: 13.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pp-pct { flex: none; font-weight: 900; font-size: 14px; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .pp-track { height: 8px; border-radius: 999px; background: var(--track); overflow: hidden; margin: 8px 0 6px; }
+    .pp-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--accent-ink), var(--accent)); transition: width .4s ease; }
+    .pp-sub { font-size: 11.5px; color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; }
     /* توصية المتابعة */
     .fu-rec { display: block; width: 100%; text-align: start; border: none; cursor: pointer; font-family: inherit; border-radius: var(--radius); padding: 15px 16px; margin-bottom: 12px; color: var(--accent-ink);
       background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent) 16%, var(--panel))); box-shadow: var(--shadow); }
@@ -1325,6 +1342,12 @@
     let projectsView = readUI(PROJ_VIEW_KEY, ["favorites", "domain"], "favorites");
     const REM_VIEW_KEY = "ptt.ui.remview";
     let reminderView = readUI(REM_VIEW_KEY, ["daily", "weekly", "monthly", "yearly"], "daily");
+    // فلاتر لوحة أداء الإحصاءات
+    const PERF_TYPE_KEY = "ptt.ui.perftype", PERF_PERIOD_KEY = "ptt.ui.perfperiod", PERF_DOM_KEY = "ptt.ui.perfdom";
+    let perfType = readUI(PERF_TYPE_KEY, ["hours", "points", "habits"], "hours");
+    let perfPeriod = readUI(PERF_PERIOD_KEY, ["day", "week", "month", "quarter"], "week");
+    let perfDomain = "";
+    try { const v = localStorage.getItem(PERF_DOM_KEY); if (v !== null) perfDomain = v; } catch (_) {}
     let remMonthOffset = 0, remYearOffset = 0, remSelDay = null, remSelMonth = null;
 
     function load() {
@@ -1871,40 +1894,144 @@
       else { const d = Math.round((curMs - prevMs) / prevMs * 100); dl.classList.add(d > 0 ? "up" : d < 0 ? "down" : "flat"); dl.textContent = (d > 0 ? "▲ +" : d < 0 ? "▼ −" : "= ") + toArDigits(Math.abs(d)) + "٪"; }
       row.append(left, val, dl); return row;
     }
+    // شريط مقسّم صغير لفلاتر الأداء
+    function mkSeg(opts, current, onPick) {
+      const seg = document.createElement("div"); seg.className = "tabs perf-seg";
+      for (const [v, label] of opts) {
+        const btn = document.createElement("button"); if (v === current) btn.className = "active"; btn.textContent = label;
+        btn.onclick = () => onPick(v);
+        seg.append(btn);
+      }
+      return seg;
+    }
+    // قيمة اليوم للمؤشّر المختار (ساعات=ms، عادات=عدد العلامات) ضمن المجال المحدّد
+    function perfDayValue(type, domId, dayStart, now) {
+      if (type === "habits") {
+        const key = toDateInput(dayStart); let c = 0;
+        for (const h of state.habits) if ((!domId || habitDomain(h) === domId) && h.log && h.log[key]) c++;
+        return c;
+      }
+      let ms = 0;
+      for (const g of hoursGoals()) if (!domId || planDomain(g) === domId) ms += Math.max(0, projectMsInDay(g, dayStart, now));
+      if (!domId) ms += Math.max(0, projectMsInDay(state.freeTimer, dayStart, now));
+      return ms;
+    }
+    const PERIOD_LABEL = { day: "اليوم", week: "الأسبوع", month: "الشهر", quarter: "الربع" };
     function renderPerformance() {
       const wrap = document.getElementById("perfWrap"); if (!wrap) return;
       wrap.replaceChildren();
       const now = Date.now();
-      const items = [...timerItems(), state.freeTimer];
-      const days = 60, arr = [];
-      for (let i = days - 1; i >= 0; i--) {
-        const ds = dayStartAgo(i);
-        let t = 0; for (const it of items) t += Math.max(0, projectMsInDay(it, ds, now));
-        arr.push({ ds, ms: t });
+
+      const st = document.createElement("div"); st.className = "section-title"; st.textContent = "📊 لوحة الأداء"; wrap.append(st);
+
+      // ── الفلاتر: النوع · الفترة · المجال ──
+      const fil = document.createElement("div"); fil.className = "perf-filters";
+      fil.append(mkSeg([["hours", "⏱️ ساعات"], ["points", "⭐ نقاط"], ["habits", "🔁 عادات"]], perfType, v => { perfType = v; try { localStorage.setItem(PERF_TYPE_KEY, v); } catch (_) {} renderPerformance(); }));
+      fil.append(mkSeg([["day", "يوم"], ["week", "أسبوع"], ["month", "شهر"], ["quarter", "ربع"]], perfPeriod, v => { perfPeriod = v; try { localStorage.setItem(PERF_PERIOD_KEY, v); } catch (_) {} renderPerformance(); }));
+      const domSel = document.createElement("select"); domSel.className = "perf-dom";
+      const optAll = document.createElement("option"); optAll.value = ""; optAll.textContent = "🗂️ كل المجالات"; domSel.append(optAll);
+      for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; domSel.append(o); }
+      domSel.value = perfDomain;
+      domSel.onchange = () => { perfDomain = domSel.value; try { localStorage.setItem(PERF_DOM_KEY, perfDomain); } catch (_) {} renderPerformance(); };
+      fil.append(domSel);
+      wrap.append(fil);
+
+      const card = document.createElement("div"); card.className = "perf-dash";
+
+      if (perfType === "points") {
+        // النقاط: لا سجلّ زمني — نعرض الرصيد الحالي موزّعاً حسب المجال أو المشروع
+        let buckets, totalPts;
+        if (!perfDomain) {
+          buckets = DOMAINS.map(d => ({ label: d.name, full: d.icon + " " + d.name, ms: state.plans.filter(p => p.type === "points" && planDomain(p) === d.id).reduce((s, p) => s + (p.current || 0), 0) })).filter(b => b.ms > 0);
+        } else {
+          buckets = state.plans.filter(p => p.type === "points" && planDomain(p) === perfDomain).map(p => ({ label: p.name, full: p.name, ms: (p.current || 0) }));
+        }
+        const plans = state.plans.filter(p => p.type === "points" && (!perfDomain || planDomain(p) === perfDomain));
+        totalPts = plans.reduce((s, p) => s + (p.current || 0), 0);
+        card.append(mkMetric("⭐ إجمالي النقاط", toArDigits(Math.round(totalPts)) + " نقطة", null));
+        card.append(statRow([[toArDigits(plans.length), "مشاريع نقاط"], [toArDigits(plans.filter(isComplete).length), "مكتملة"], [toArDigits(plans.filter(p => !isComplete(p)).length), "قيد التنفيذ"]]));
+        wrap.append(card);
+        if (buckets.length) wrap.append(columnChartCard("النقاط حسب " + (perfDomain ? "المشروع" : "المجال"), buckets, 0, null, v => toArDigits(Math.round(v)) + " ن"));
+        else { const e = document.createElement("div"); e.className = "perf-empty"; e.textContent = "لا مشاريع نقاط في هذا النطاق."; wrap.append(e); }
+        wrap.append(buildProgramsPerf());
+        return;
       }
-      const sumLast = (n, off) => { let s = 0; for (let k = 0; k < n; k++) { const idx = arr.length - 1 - (off || 0) - k; if (idx >= 0) s += arr[idx].ms; } return s; };
-      const today = arr[arr.length - 1].ms, yest = arr.length > 1 ? arr[arr.length - 2].ms : 0;
-      const wk = sumLast(7, 0), wkPrev = sumLast(7, 7);
-      const mo = sumLast(30, 0), moPrev = sumLast(30, 30);
-      const anyData = arr.some(x => x.ms > 0);
 
-      const st = document.createElement("div"); st.className = "section-title"; st.textContent = "📈 قراءة الأداء"; wrap.append(st);
+      // ساعات / عادات (سلسلة زمنية)
+      const rangeN = { day: 1, week: 7, month: 30, quarter: 90 }[perfPeriod];
+      const chartN = { day: 7, week: 7, month: 30, quarter: 90 }[perfPeriod];
+      const bucketMode = perfPeriod === "quarter" ? "week" : "day";
+      const need = Math.max(chartN, rangeN * 2), arr = [];
+      for (let i = need - 1; i >= 0; i--) { const ds = dayStartAgo(i); arr.push({ ds, v: perfDayValue(perfType, perfDomain, ds, now) }); }
+      const sumLast = (n, off) => { let s = 0; for (let k = 0; k < n; k++) { const idx = arr.length - 1 - (off || 0) - k; if (idx >= 0) s += arr[idx].v; } return s; };
+      const total = sumLast(rangeN, 0), prev = sumLast(rangeN, rangeN);
+      const isHours = perfType === "hours";
+      const fmtV = isHours ? fmtHM : (v => toArDigits(Math.round(v)) + " مرّة");
+      const totalTxt = isHours ? fmtHours(total) : (toArDigits(total) + " مرّة");
+      const deltaChip = perfDelta(total, prev);
+      card.append(mkMetric((isHours ? "⏱️ ساعات " : "🔁 إنجاز عادات ") + PERIOD_LABEL[perfPeriod], totalTxt, deltaChip));
 
-      const cmp = document.createElement("div"); cmp.className = "perf-card";
-      cmp.append(perfRow("اليوم", "مقابل أمس", today, yest));
-      cmp.append(perfRow("هذا الأسبوع", "مقابل الأسبوع السابق", wk, wkPrev));
-      cmp.append(perfRow("هذا الشهر", "مقابل الشهر السابق", mo, moPrev));
-      wrap.append(cmp);
-
-      if (!anyData) {
-        const e = document.createElement("div"); e.className = "perf-empty"; e.textContent = "ابدأ تسجيل الساعات من المؤقتات لتظهر رسومات الأداء هنا.";
-        wrap.append(e); return;
+      // أرقام القرار
+      const goal = goalMs();
+      const rangeArr = arr.slice(-rangeN);
+      if (isHours) {
+        const avg = total / rangeN, best = Math.max(0, ...rangeArr.map(x => x.v));
+        const met = goal > 0 ? rangeArr.filter(x => x.v >= goal).length : 0;
+        const tiles = [[fmtHM(avg), "المعدّل اليومي"], [fmtHM(best), "أفضل يوم"]];
+        if (goal > 0) tiles.push([toArDigits(met) + "/" + toArDigits(rangeN), "أيام حقّقت الهدف"]);
+        card.append(statRow(tiles));
+      } else {
+        const activeDays = rangeArr.filter(x => x.v > 0).length;
+        const habN = state.habits.filter(h => !perfDomain || habitDomain(h) === perfDomain).length;
+        card.append(statRow([[toArDigits(total), "مرّات الإنجاز"], [toArDigits(activeDays) + "/" + toArDigits(rangeN), "أيام نشطة"], [toArDigits(habN), "عادات"]]));
       }
-      const g = goalMs();
-      const last7 = arr.slice(-7);
-      wrap.append(columnChartCard("ساعات آخر 7 أيام", buildBuckets(last7.map(x => x.ds), last7.map(x => x.ms), "day"), g, g > 0 ? (b => b.ms >= g) : null));
-      const last56 = arr.slice(-56);
-      wrap.append(columnChartCard("الاتجاه الأسبوعي (8 أسابيع)", buildBuckets(last56.map(x => x.ds), last56.map(x => x.ms), "week"), 0, null));
+      wrap.append(card);
+
+      const cut = arr.slice(-chartN);
+      const chartTitle = (isHours ? "ساعات — " : "العادات — ") + (bucketMode === "week" ? "١٢ أسبوعاً" : "آخر " + toArDigits(chartN) + " يوم");
+      const goalPer = (isHours && bucketMode === "day") ? goal : 0;
+      wrap.append(columnChartCard(chartTitle, buildBuckets(cut.map(x => x.ds), cut.map(x => x.v), bucketMode), goalPer, (goalPer > 0 ? (b => b.ms >= goalPer) : null), fmtV));
+
+      wrap.append(buildProgramsPerf());
+    }
+    function perfDelta(cur, prev) {
+      const s = document.createElement("span"); s.className = "perf-delta";
+      if (prev <= 0 && cur <= 0) { s.textContent = "—"; s.classList.add("flat"); }
+      else if (prev <= 0) { s.textContent = "▲ جديد"; s.classList.add("up"); }
+      else { const d = Math.round((cur - prev) / prev * 100); s.classList.add(d > 0 ? "up" : d < 0 ? "down" : "flat"); s.textContent = (d > 0 ? "▲ +" : d < 0 ? "▼ −" : "= ") + toArDigits(Math.abs(d)) + "٪ عن السابق"; }
+      return s;
+    }
+    function mkMetric(label, valueTxt, deltaEl) {
+      const m = document.createElement("div"); m.className = "perf-metric";
+      const l = document.createElement("div"); l.className = "pm-lbl"; l.textContent = label;
+      const v = document.createElement("div"); v.className = "pm-val"; v.textContent = valueTxt;
+      m.append(l, v); if (deltaEl) m.append(deltaEl);
+      return m;
+    }
+    function statRow(pairs) {
+      const row = document.createElement("div"); row.className = "stats-row"; row.style.marginTop = "12px";
+      for (const [num, lbl] of pairs) row.append(statTile(num, lbl));
+      return row;
+    }
+    // أداء البرامج (ضمن المجال المختار) — الأضعف أولاً لاتخاذ القرار
+    function buildProgramsPerf() {
+      const card = document.createElement("div"); card.className = "perf-progs";
+      const title = document.createElement("div"); title.className = "section-title"; title.textContent = "🧭 أداء البرامج" + (perfDomain ? " · " + domainName(perfDomain) : "");
+      card.append(title);
+      const progs = state.programs.filter(pr => !perfDomain || (pr.domainId || "") === perfDomain)
+        .map(pr => ({ pr, pct: programPct(pr.id), n: programProjects(pr.id).length }))
+        .filter(x => x.n > 0).sort((a, b) => a.pct - b.pct);
+      if (!progs.length) { const e = document.createElement("div"); e.className = "perf-empty"; e.textContent = "لا برامج ذات مشاريع بعد."; card.append(e); return card; }
+      for (const { pr, pct, n } of progs.slice(0, 12)) {
+        const done = programProjects(pr.id).filter(isComplete).length;
+        const row = document.createElement("div"); row.className = "pp-row";
+        row.innerHTML = '<div class="pp-top"><span class="pp-name">' + (pr.domainId ? domainIcon(pr.domainId) + " " : "") + escapeHtml(pr.name) + '</span>'
+          + '<span class="pp-pct">' + toArDigits(pct) + '٪</span></div>'
+          + '<div class="pp-track"><div class="pp-fill" style="width:' + pct + '%"></div></div>'
+          + '<div class="pp-sub">' + toArDigits(done) + " من " + toArDigits(n) + " مشروع مكتمل</div>";
+        card.append(row);
+      }
+      return card;
     }
 
     // ═══ صفحة المتابعة: أيّ المشاريع أولى بالبدء (بناءً على المتأخرات) ═══
@@ -2731,7 +2858,8 @@
     }
 
     // مخطط أعمدة (SVG) مع خط الهدف وتفاعل باللمس
-    function columnChartCard(title, buckets, goalPerBucket, metFn) {
+    function columnChartCard(title, buckets, goalPerBucket, metFn, fmt) {
+      const fmtVal = fmt || fmtHM;
       const card = document.createElement("div");
       card.className = "report-card";
       const h = document.createElement("h4"); h.textContent = title; card.append(h);
@@ -2768,7 +2896,7 @@
       });
 
       function showBucket(b, el) {
-        readout.textContent = (b.full || b.label) + " — " + fmtHM(b.ms);
+        readout.textContent = (b.full || b.label) + " — " + fmtVal(b.ms);
         svg.querySelectorAll("rect.cbar").forEach(x => x.classList.remove("sel"));
         if (el) el.classList.add("sel");
       }
