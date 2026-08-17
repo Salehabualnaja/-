@@ -15,12 +15,22 @@ import re
 import time
 import urllib.robotparser
 from dataclasses import dataclass, field
-from urllib.parse import urljoin, urlparse
+from urllib.parse import parse_qs, urljoin, urlparse
 
 import requests
 from bs4 import BeautifulSoup
 
-from saudi_phones import PhoneHit, find_numbers, normalize, to_ascii_digits
+from saudi_phones import (
+    CHANNEL_TEL, CHANNEL_TEXT, CHANNEL_WHATSAPP, PhoneHit, PhoneNumber,
+    find_numbers, normalize, to_ascii_digits,
+)
+
+# زيادة ثقة حسب قناة ورود الرقم: الرقم المنشور في زر اتصال أو واتساب
+# رقم تردّ عليه الشركة فعلًا، بخلاف رقم عابر في فقرة نصّية.
+CHANNEL_BONUS = {CHANNEL_TEL: 1, CHANNEL_WHATSAPP: 2, CHANNEL_TEXT: 0}
+
+# صيغ روابط واتساب المستعملة في المواقع: wa.me، api/web.whatsapp.com، whatsapp://
+_WHATSAPP_HOSTS = ("wa.me", "api.whatsapp.com", "web.whatsapp.com", "whatsapp.com")
 
 USER_AGENT = (
     "RiyadhCarRentalLeads/1.0 (B2B contact research; respects robots.txt)"
@@ -82,6 +92,14 @@ class SiteResult:
     def sales_hits(self) -> list[PhoneHit]:
         ranked = [h for h in self.hits if h.score >= 3]
         return sorted(ranked, key=lambda h: h.score, reverse=True)
+
+    @property
+    def mobiles(self) -> list[PhoneHit]:
+        """الجوالات فقط — الأرضي و920 و800 لا توصل إلى شخص مبيعات."""
+        return sorted(
+            (h for h in self.hits if h.phone.kind == "mobile"),
+            key=lambda h: (h.score, h.on_whatsapp), reverse=True,
+        )
 
     @property
     def sales_emails(self) -> list[str]:
@@ -153,6 +171,34 @@ class PoliteFetcher:
         if "html" not in response.headers.get("Content-Type", "").lower():
             return None
         return response.content
+
+
+# ---------------------------------------------------------------- واتساب
+
+
+def whatsapp_number(href: str) -> PhoneNumber | None:
+    """يستخرج الجوال من رابط واتساب، أو None إن لم يكن الرابط واتساب.
+
+    الرقم هنا جوال بالضرورة (واتساب لا يعمل على أرضي أو 920)، وهو غالبًا
+    الرقم الذي تردّ عليه إدارة المبيعات — لذلك يُعدّ أقوى مصدر لما نريد.
+    """
+    if not href:
+        return None
+    candidate = href.strip()
+    parsed = urlparse(candidate)
+    host = parsed.netloc.lower().removeprefix("www.")
+
+    if parsed.scheme == "whatsapp":
+        raw = parse_qs(parsed.query).get("phone", [""])[0]
+    elif host in _WHATSAPP_HOSTS:
+        # wa.me/966501234567 يضع الرقم في المسار، وapi.whatsapp.com في ?phone=
+        raw = parse_qs(parsed.query).get("phone", [""])[0] or parsed.path.strip("/")
+    else:
+        return None
+
+    phone = normalize(raw)
+    # الحماية من روابط عامة مثل wa.me/settings أو رقم غير سعودي
+    return phone if phone is not None and phone.kind == "mobile" else None
 
 
 # ---------------------------------------------------------------- التقييم
@@ -239,13 +285,12 @@ def extract_from_html(html: str | bytes, page_url: str) -> tuple[list[PhoneHit],
 
     hits: dict[str, PhoneHit] = {}
 
-    def record(phone, near: str, display: str, from_tel: bool) -> None:
+    def record(phone, near: str, display: str, channel: str) -> None:
         score, labels = score_context(near, page_url)
-        if from_tel:
-            score += 1  # روابط tel: أدقّ من نصّ عابر
+        score += CHANNEL_BONUS.get(channel, 0)
         hit = PhoneHit(
             phone=phone, context=display[:400], source_url=page_url,
-            from_tel_link=from_tel, labels=labels, score=score,
+            channels=[channel], labels=labels, score=score,
         )
         if hit.phone.key in hits:
             hits[hit.phone.key].merge(hit)
@@ -258,22 +303,31 @@ def extract_from_html(html: str | bytes, page_url: str) -> tuple[list[PhoneHit],
         if phone is None:
             continue
         context = _block_context(anchor) or anchor.get_text(" ", strip=True)
-        record(phone, context, context, from_tel=True)
+        record(phone, context, context, CHANNEL_TEL)
 
-    # 2) العُقد النصّية — كل رقم يُقيَّم داخل كتلته وحدها
+    # 2) روابط واتساب — أهم مصدر لجوال المبيعات في المواقع السعودية:
+    #    الرقم في الرابط جوال بالضرورة، وهو الرقم الذي تردّ عليه الشركة فعلًا.
+    for anchor in soup.find_all("a", href=True):
+        phone = whatsapp_number(anchor["href"])
+        if phone is None:
+            continue
+        context = _block_context(anchor) or anchor.get_text(" ", strip=True)
+        record(phone, context, context or "زر واتساب", CHANNEL_WHATSAPP)
+
+    # 3) العُقد النصّية — كل رقم يُقيَّم داخل كتلته وحدها
     for node in soup.find_all(string=_HAS_DIGIT_RE.search):
         block = _block_context(node)
         for phone, near, wide in find_numbers(str(node)):
             context = block if 0 < len(block) <= _MAX_BLOCK_CHARS else (near or wide)
-            record(phone, context, block or wide, from_tel=False)
+            record(phone, context, block or wide, CHANNEL_TEXT)
 
-    # 3) احتياطي للأرقام المجزّأة بين وسوم (<span>011</span><span>2345678</span>):
+    # 4) احتياطي للأرقام المجزّأة بين وسوم (<span>011</span><span>2345678</span>):
     #    نقرأ الصفحة مسطّحة، لكن للأرقام الجديدة فقط حتى لا يلوّث السياق العريض
     #    درجات الأرقام التي قيّمناها بدقّة أعلاه.
     text = soup.get_text("\n", strip=True)
     for phone, near, wide in find_numbers(text):
         if phone.key not in hits:
-            record(phone, near, wide, from_tel=False)
+            record(phone, near, wide, CHANNEL_TEXT)
 
     emails = sorted({
         match.group().lower()

@@ -24,7 +24,17 @@ from places_client import (  # noqa: E402
     DEFAULT_QUERIES, RIYADH_BBOX, Place, PlacesClient, QuotaExceeded, cell_size_km,
 )
 from saudi_phones import normalize  # noqa: E402
-from site_enrich import PoliteFetcher, enrich_site  # noqa: E402
+from site_enrich import PoliteFetcher, SiteResult, enrich_site  # noqa: E402
+
+# العتبة التي يُعدّ الرقم فوقها رقم مبيعات لا رقم استقبال
+SALES_THRESHOLD = 3
+PRIORITY_ORDER = ["عالية", "متوسطة", "منخفضة"]
+
+MOBILES_COLUMNS = [
+    "الاسم", "الجوال", "الجوال_المحلي", "واتساب", "الأولوية", "درجة_الترجيح",
+    "المصدر", "الدلائل", "السياق", "رابط_المصدر", "العنوان", "التقييم",
+    "الموقع_الإلكتروني", "رابط_الخرائط", "معرّف_المكان",
+]
 
 PLACES_COLUMNS = [
     "الاسم", "الهاتف_الرئيسي", "هاتف_محلي", "الموقع_الإلكتروني", "العنوان",
@@ -118,8 +128,8 @@ def stage_discover(args, api_key: str) -> dict[str, Place]:
     return places
 
 
-def stage_enrich(places: dict[str, Place], args) -> list[dict]:
-    """يزحف على مواقع الشركات ويبني جدول جهات اتصال المبيعات."""
+def stage_enrich(places: dict[str, Place], args) -> dict[str, SiteResult]:
+    """يزحف على مواقع الشركات ويعيد نتيجة كل موقع مفهرسةً بمعرّف المكان."""
     fetcher = PoliteFetcher(
         delay=args.crawl_delay, timeout=args.timeout,
         respect_robots=not args.ignore_robots,
@@ -128,48 +138,126 @@ def stage_enrich(places: dict[str, Place], args) -> list[dict]:
     log(f"» {len(with_site)} مكتبًا لديه موقع إلكتروني. بدء الزحف "
         f"(حتى {args.max_pages} صفحة لكل موقع، مهلة {args.crawl_delay} ث)...")
 
-    contacts: list[dict] = []
-    sales_count = 0
-
+    results: dict[str, SiteResult] = {}
     for index, place in enumerate(with_site, 1):
         result = enrich_site(place.website, fetcher, max_pages=args.max_pages)
+        results[place.place_id] = result
+
+        if result.error:
+            log(f"  [{index}/{len(with_site)}] {place.name}: {result.error}")
+        elif index % 10 == 0:
+            found = sum(len(r.mobiles) for r in results.values())
+            log(f"  [{index}/{len(with_site)}] تقدّم — {found} جوّالًا حتى الآن")
+    return results
+
+
+def build_contacts(places: dict[str, Place], results: dict[str, SiteResult],
+                   mobiles_only: bool = False) -> list[dict]:
+    """جدول كل الأرقام المستخرجة مع تقييم ارتباطها بالمبيعات."""
+    contacts: list[dict] = []
+    for place in places.values():
+        result = results.get(place.place_id)
+        if result is None:
+            continue
         sales_email = " | ".join(result.sales_emails)
-
-        # نستبعد الرقم الرئيسي المعروف من جوجل حتى لا نكرّره بلا فائدة
-        main_key = None
-        if place.phone_intl:
-            main = normalize(place.phone_intl)
-            main_key = main.key if main else None
-
         ranked = result.sales_hits or result.hits[:3]
+        if mobiles_only:
+            ranked = [h for h in ranked if h.phone.kind == "mobile"]
         for hit in ranked:
-            is_sales = hit.score >= 3
-            sales_count += int(is_sales)
             contacts.append({
                 "الاسم": place.name,
                 "الرقم": hit.phone.e164 or hit.phone.national,
                 "الرقم_المحلي": hit.phone.national,
                 "النوع": KIND_LABELS.get(hit.phone.kind, hit.phone.kind),
                 "درجة_الترجيح": hit.score,
-                "مبيعات؟": "نعم" if is_sales else "محتمل",
+                "مبيعات؟": "نعم" if hit.score >= SALES_THRESHOLD else "محتمل",
                 "الدلائل": " | ".join(hit.labels[:6]),
                 "رابط_المصدر": hit.source_url,
                 "السياق": hit.context[:220],
                 "بريد_المبيعات": sales_email,
                 "الموقع_الإلكتروني": place.website,
                 "معرّف_المكان": place.place_id,
-                "_هو_الرقم_الرئيسي": hit.phone.key == main_key,
+            })
+    contacts.sort(key=lambda row: row["درجة_الترجيح"], reverse=True)
+    return contacts
+
+
+def build_mobiles(places: dict[str, Place],
+                  results: dict[str, SiteResult]) -> list[dict]:
+    """قائمة الجوالات القابلة للاتصال، مرتّبة بحسب أولوية الاتصال.
+
+    مصدران: الرقم المنشور في بطاقة جوجل حين يكون جوّالًا (وهو الحال في كثير
+    من المكاتب الصغيرة التي لا موقع لها أصلًا)، وما يظهر في موقع الشركة —
+    وأهمّه أزرار واتساب لأنّ رقمها جوال بالضرورة وتردّ عليه المبيعات عادةً.
+    """
+    rows: list[dict] = []
+
+    for place in places.values():
+        result = results.get(place.place_id)
+        # المفتاح: الرقم — لدمج ما يرد من جوجل ومن الموقع في صفّ واحد
+        merged: dict[str, dict] = {}
+
+        google_phone = normalize(place.phone_intl or place.phone_national or "")
+        if google_phone is not None and google_phone.kind == "mobile":
+            merged[google_phone.key] = {
+                "phone": google_phone, "score": 0, "channels": ["جوجل"],
+                "labels": [], "context": "الرقم المعلن في بطاقة النشاط",
+                "source_url": place.maps_url, "whatsapp": False,
+            }
+
+        for hit in (result.mobiles if result else []):
+            entry = merged.get(hit.phone.key)
+            if entry is None:
+                merged[hit.phone.key] = {
+                    "phone": hit.phone, "score": hit.score,
+                    "channels": [hit.channels_label], "labels": hit.labels,
+                    "context": hit.context, "source_url": hit.source_url,
+                    "whatsapp": hit.on_whatsapp,
+                }
+            else:
+                # نفس الرقم في جوجل وفي الموقع ⇒ ثقة أعلى ودلائل أوضح
+                entry["score"] = max(entry["score"], hit.score)
+                entry["channels"].append(hit.channels_label)
+                entry["labels"] = entry["labels"] or hit.labels
+                entry["whatsapp"] = entry["whatsapp"] or hit.on_whatsapp
+                if hit.score > 0:
+                    entry["context"] = hit.context
+                    entry["source_url"] = hit.source_url
+
+        for entry in merged.values():
+            rows.append({
+                "الاسم": place.name,
+                "الجوال": entry["phone"].e164,
+                "الجوال_المحلي": entry["phone"].national,
+                "واتساب": "نعم" if entry["whatsapp"] else "",
+                "الأولوية": _priority(entry),
+                "درجة_الترجيح": entry["score"],
+                "المصدر": " + ".join(dict.fromkeys(entry["channels"])),
+                "الدلائل": " | ".join(entry["labels"][:6]),
+                "السياق": entry["context"][:220],
+                "رابط_المصدر": entry["source_url"],
+                "العنوان": place.address,
+                "التقييم": place.rating if place.rating is not None else "",
+                "الموقع_الإلكتروني": place.website,
+                "رابط_الخرائط": place.maps_url,
+                "معرّف_المكان": place.place_id,
             })
 
-        if result.error:
-            log(f"  [{index}/{len(with_site)}] {place.name}: {result.error}")
-        elif index % 10 == 0:
-            log(f"  [{index}/{len(with_site)}] تقدّم — {sales_count} رقم مبيعات مرشّح")
+    rows.sort(key=lambda row: (
+        PRIORITY_ORDER.index(row["الأولوية"]),
+        -row["درجة_الترجيح"],
+        row["الاسم"],
+    ))
+    return rows
 
-    contacts.sort(key=lambda row: row["درجة_الترجيح"], reverse=True)
-    log(f"» انتهى الزحف: {sales_count} رقمًا مرجّحًا لقسم المبيعات "
-        f"من أصل {len(contacts)} رقمًا مستخرجًا.")
-    return contacts
+
+def _priority(entry: dict) -> str:
+    """أولوية الاتصال: دليل مبيعات صريح ← رقم منشور للتواصل ← رقم عابر."""
+    if entry["score"] >= SALES_THRESHOLD:
+        return "عالية"
+    if entry["whatsapp"] or entry["channels"] != ["نصّ الصفحة"]:
+        return "متوسطة"
+    return "منخفضة"
 
 
 # ---------------------------------------------------------------- الواجهة
@@ -191,7 +279,9 @@ def parse_args(argv=None):
     parser.add_argument("--queries", nargs="*", default=DEFAULT_QUERIES,
                         help="صيغ البحث المستخدمة")
     parser.add_argument("--no-enrich", action="store_true",
-                        help="تخطّي الزحف على المواقع")
+                        help="تخطّي الزحف على المواقع (يبقى mobiles.csv من أرقام جوجل)")
+    parser.add_argument("--mobiles-only", action="store_true",
+                        help="اقصر sales_contacts.csv على الجوالات كذلك")
     parser.add_argument("--enrich-only", action="store_true",
                         help="استخدام places.jsonl الموجود بدل استدعاء الواجهة")
     parser.add_argument("--max-pages", type=int, default=8,
@@ -233,13 +323,26 @@ def main(argv=None) -> int:
                   [place_row(p) for p in places.values()])
         log(f"» حُفظت المكاتب في {out_dir/'places.csv'}")
 
-    if args.no_enrich:
-        return 0
+    results = {} if args.no_enrich else stage_enrich(places, args)
 
-    contacts = stage_enrich(places, args)
-    write_csv(out_dir / "sales_contacts.csv", CONTACTS_COLUMNS, contacts)
-    write_jsonl(out_dir / "sales_contacts.jsonl", contacts)
-    log(f"» حُفظت جهات اتصال المبيعات في {out_dir/'sales_contacts.csv'}")
+    # الجوالات أولًا: هي وحدها ما يوصل إلى شخص تكلّمه
+    mobiles = build_mobiles(places, results)
+    write_csv(out_dir / "mobiles.csv", MOBILES_COLUMNS, mobiles)
+    write_jsonl(out_dir / "mobiles.jsonl", mobiles)
+
+    by_priority = {level: sum(1 for m in mobiles if m["الأولوية"] == level)
+                   for level in PRIORITY_ORDER}
+    on_whatsapp = sum(1 for m in mobiles if m["واتساب"])
+    log(f"» {len(mobiles)} جوّالًا قابلًا للاتصال — "
+        f"عالية {by_priority['عالية']} · متوسطة {by_priority['متوسطة']} · "
+        f"منخفضة {by_priority['منخفضة']} · على واتساب {on_whatsapp}")
+    log(f"» حُفظت الجوالات في {out_dir/'mobiles.csv'}  ← ابدأ من هنا")
+
+    if not args.no_enrich:
+        contacts = build_contacts(places, results, mobiles_only=args.mobiles_only)
+        write_csv(out_dir / "sales_contacts.csv", CONTACTS_COLUMNS, contacts)
+        write_jsonl(out_dir / "sales_contacts.jsonl", contacts)
+        log(f"» وكل الأرقام (أرضي و920 أيضًا) في {out_dir/'sales_contacts.csv'}")
     return 0
 
 

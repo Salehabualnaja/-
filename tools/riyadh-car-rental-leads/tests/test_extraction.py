@@ -100,12 +100,33 @@ class TestHtmlExtraction(unittest.TestCase):
              "+966551112222",    # مدير مبيعات الشركات
              "+966920001122",    # الرقم الموحّد (مكتوب بأرقام عربية-هندية)
              "+966114445555",    # الدعم الفني
-             "+966119998888"},   # فاكس
+             "+966119998888",    # فاكس
+             "+966505550001",    # زر واتساب عائم
+             "+966533334444"},   # واتساب الشركات والأساطيل
         )
 
     def test_only_sales_numbers_pass_threshold(self):
         passing = {key for key, hit in self.by_key.items() if hit.score >= 3}
-        self.assertEqual(passing, {"+966112345678", "+966551112222"})
+        self.assertEqual(
+            passing,
+            {"+966112345678", "+966551112222", "+966533334444"},
+        )
+
+    def test_whatsapp_numbers_are_flagged_as_mobiles(self):
+        for key in ("+966505550001", "+966533334444"):
+            with self.subTest(key=key):
+                self.assertTrue(self.by_key[key].on_whatsapp)
+                self.assertEqual(self.by_key[key].phone.kind, "mobile")
+
+    def test_landline_whatsapp_link_is_rejected(self):
+        # web.whatsapp.com?phone=966112345678 أرضي — لا يجوز وسمه بواتساب
+        self.assertFalse(self.by_key["+966112345678"].on_whatsapp)
+
+    def test_generic_whatsapp_button_is_medium_not_sales(self):
+        # «تواصل معنا واتساب» رقم صالح للاتصال لكنّه ليس دليل مبيعات
+        generic = self.by_key["+966505550001"]
+        self.assertTrue(generic.on_whatsapp)
+        self.assertLess(generic.score, 3)
 
     def test_support_and_fax_are_pushed_below_neutral(self):
         neutral = self.by_key["+966920001122"].score

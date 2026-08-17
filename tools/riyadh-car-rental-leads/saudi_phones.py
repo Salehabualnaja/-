@@ -120,6 +120,20 @@ def normalize(raw: str) -> PhoneNumber | None:
     return None
 
 
+# قنوات ورود الرقم، مرتّبة من الأضعف إلى الأقوى دلالةً على أنّه رقم للاتصال
+CHANNEL_TEXT = "text"          # ورد في نصّ الصفحة فقط
+CHANNEL_TEL = "tel"            # رابط <a href="tel:">
+CHANNEL_WHATSAPP = "whatsapp"  # رابط wa.me — جوال بالضرورة
+CHANNEL_GOOGLE = "google"      # من بطاقة النشاط في خرائط جوجل
+
+CHANNEL_LABELS = {
+    CHANNEL_TEXT: "نصّ الصفحة",
+    CHANNEL_TEL: "زر اتصال",
+    CHANNEL_WHATSAPP: "واتساب",
+    CHANNEL_GOOGLE: "جوجل",
+}
+
+
 @dataclass
 class PhoneHit:
     """رقم مُستخرج مع السياق النصّي المحيط به."""
@@ -127,9 +141,21 @@ class PhoneHit:
     phone: PhoneNumber
     context: str
     source_url: str = ""
-    from_tel_link: bool = False
+    channels: list[str] = field(default_factory=list)
     labels: list[str] = field(default_factory=list)
     score: int = 0
+
+    @property
+    def from_tel_link(self) -> bool:
+        return CHANNEL_TEL in self.channels
+
+    @property
+    def on_whatsapp(self) -> bool:
+        return CHANNEL_WHATSAPP in self.channels
+
+    @property
+    def channels_label(self) -> str:
+        return " + ".join(CHANNEL_LABELS.get(c, c) for c in self.channels)
 
     def merge(self, other: "PhoneHit") -> None:
         """يدمج تكرارًا لنفس الرقم مع الاحتفاظ بأقوى إشارة."""
@@ -137,7 +163,9 @@ class PhoneHit:
             self.score = other.score
             self.context = other.context
             self.source_url = other.source_url
-        self.from_tel_link = self.from_tel_link or other.from_tel_link
+        for channel in other.channels:
+            if channel not in self.channels:
+                self.channels.append(channel)
         for label in other.labels:
             if label not in self.labels:
                 self.labels.append(label)
