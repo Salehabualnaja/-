@@ -365,6 +365,9 @@
     .goalrow .gyear { flex: none; font-size: 11px; font-weight: 700; border-radius: 7px; padding: 3px 9px; cursor: pointer; background: var(--accent-soft); color: var(--accent-ink); border: 1px solid var(--border); }
     .goalrow .gmeta { font-size: 11px; color: var(--muted); margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
     .gbadge { font-size: 10.5px; font-weight: 700; border-radius: 6px; padding: 1px 7px; background: var(--panel-2); border: 1px solid var(--border); color: var(--muted); }
+    /* «آخر تحديث» — ناعم وبسيط */
+    .upd-ago { font-size: 10.5px; font-weight: 600; color: var(--muted); white-space: nowrap; opacity: .8; font-variant-numeric: tabular-nums; }
+    .prog-head .upd-ago { margin-inline-start: 2px; }
     .gstar { flex: none; background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; padding: 4px; color: var(--dial-gold); }
     /* لوحة إدخال التقدّم — أزرار كبيرة وحقل قابل للتحرير */
     .gprogress { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
@@ -1488,6 +1491,42 @@
       const d = Math.floor(h / 24), rh = h % 24;
       return "قبل " + toArDigits(d) + " يوم" + (rh ? " " + toArDigits(rh) + " س" : "");
     }
+    // نصّ «آخر تحديث» مختصر وناعم (أرقام عربية)
+    function fmtUpdatedShort(ts) {
+      if (!ts) return "";
+      const s = Math.floor((Date.now() - ts) / 1000);
+      if (s < 60) return "الآن";
+      const m = Math.floor(s / 60); if (m < 60) return "قبل " + toArDigits(m) + " د";
+      const h = Math.floor(m / 60); if (h < 24) return "قبل " + toArDigits(h) + " س";
+      const d = Math.floor(h / 24); if (d < 30) return "قبل " + toArDigits(d) + " يوم";
+      const mo = Math.floor(d / 30); if (mo < 12) return "قبل " + toArDigits(mo) + " شهر";
+      return "قبل " + toArDigits(Math.floor(mo / 12)) + " سنة";
+    }
+    // آخر نشاط لجلسات مشروع ساعات (نهاية/بداية/يدوي)
+    function sessionsLastTs(item) {
+      let t = 0;
+      for (const s of (item.sessions || [])) {
+        if (s.manual) t = Math.max(t, s.day || 0);
+        else t = Math.max(t, s.end || s.start || 0);
+      }
+      return t;
+    }
+    // آخر تحديث لمشروع: أحدث تعديل يدوي/إكمال أو نشاط جلسة أو تاريخ الإنشاء
+    function planUpdatedAt(g) { return Math.max(g.updated || 0, g.created || 0, sessionsLastTs(g)); }
+    // آخر تحديث لبرنامج: أحدث تحديث بين مشاريعه (أو تعديل البرنامج نفسه)
+    function programUpdatedAt(prog) {
+      let t = prog.updated || 0;
+      for (const pl of programProjects(prog.id)) t = Math.max(t, planUpdatedAt(pl));
+      return t;
+    }
+    // عنصر ناعم يعرض «آخر تحديث»
+    function updatedChip(ts) {
+      const txt = fmtUpdatedShort(ts);
+      const s = document.createElement("span"); s.className = "upd-ago";
+      s.textContent = txt ? "🕒 " + txt : "🕒 لم يُحدَّث";
+      s.title = "آخر تحديث";
+      return s;
+    }
 
     // ---------- حدود يوم العمل (يبدأ 5 صباحاً) ----------
     function dayStartOf(dateLike) {
@@ -2439,7 +2478,7 @@
       check.className = "gcheck" + (complete ? " done" : "");
       check.textContent = complete ? "✓" : "";
       check.title = "تبديل الإكمال";
-      check.onclick = () => { toggleComplete(g); touchDomain(planDomain(g)); save(); refreshViews(); };
+      check.onclick = () => { toggleComplete(g); g.updated = Date.now(); touchDomain(planDomain(g)); save(); refreshViews(); };
 
       const main = document.createElement("div");
       main.className = "gtitle";
@@ -2451,6 +2490,7 @@
       const per = fmtPeriod(g);
       if (per) badges.push('<span class="gbadge">' + per + '</span>');
       meta.innerHTML = badges.join(" ");
+      meta.append(updatedChip(planUpdatedAt(g)));
       main.append(t, meta);
 
       // مشاريع الساعات = مؤقّت (ابدأ/أوقف)، ومشاريع النقاط = أزرار +/−
@@ -2470,7 +2510,7 @@
           n = Math.min(n, g.target * 4); // سقف أمان
           g.current = n; g.done = goalCurrent(g) >= g.target;
           delete g._prevCurrent; // إدخال يدوي يُلغي القيمة المحفوظة
-          touchDomain(planDomain(g)); save(); refreshViews();
+          g.updated = Date.now(); touchDomain(planDomain(g)); save(); refreshViews();
         };
         const gp = document.createElement("div"); gp.className = "gprogress";
         const minus = document.createElement("button"); minus.className = "gp-btn"; minus.textContent = "−"; minus.title = "إنقاص";
@@ -2646,6 +2686,7 @@
       const nm = document.createElement("span"); nm.className = "ph-name";
       nm.innerHTML = '<span class="dc-icon">📁</span> ' + escapeHtml(prog.name);
       head.append(nm);
+      head.append(updatedChip(programUpdatedAt(prog)));
       if (prog.domainId && !hideDomainBadge) {
         const bd = document.createElement("span"); bd.className = "ph-badge";
         bd.textContent = domainIcon(prog.domainId) + " " + domainName(prog.domainId);
@@ -3507,9 +3548,9 @@
       const nm = programName.value.trim(); if (!nm) return;
       if (editingProgramId) {
         const prog = state.programs.find(x => x.id === editingProgramId);
-        if (prog) { prog.name = nm; prog.domainId = programDomain.value || ""; touchDomain(prog.domainId); }
+        if (prog) { prog.name = nm; prog.domainId = programDomain.value || ""; prog.updated = Date.now(); touchDomain(prog.domainId); }
       } else {
-        const np = { id: uid(), name: nm, domainId: programDomain.value || "" };
+        const np = { id: uid(), name: nm, domainId: programDomain.value || "", updated: Date.now() };
         state.programs.push(np); touchDomain(np.domainId);
       }
       save(); refreshViews();
@@ -3675,6 +3716,7 @@
           g.startDate = itemStart.value || ""; g.endDate = itemEnd.value || "";
           g.target = target; g.current = current;
           g.done = target > 0 ? (current >= target) : g.done;
+          g.updated = Date.now();
           touchDomain(oldDomain); touchDomain(planDomain(g));
         }
       } else if (editingHabitId) {
