@@ -1511,11 +1511,16 @@
       }
       return t;
     }
-    // آخر تحديث لمشروع: أحدث تعديل يدوي/إكمال أو نشاط جلسة أو تاريخ الإنشاء
-    function planUpdatedAt(g) { return Math.max(g.updated || 0, g.created || 0, sessionsLastTs(g)); }
-    // آخر تحديث لبرنامج: أحدث تحديث بين مشاريعه (أو تعديل البرنامج نفسه)
+    // آخر تحديث لمشروع:
+    //  - النقاط: آخر وقت أُدخلت فيه نقطة (ptsAt)، وإلا آخر نشاط سابق، وإلا الإنشاء
+    //  - الساعات: آخر نشاط جلسة، وإلا الإنشاء
+    function planUpdatedAt(g) {
+      if (g.type === "hours") return Math.max(sessionsLastTs(g), g.created || 0);
+      return g.ptsAt || g.updated || g.created || 0;
+    }
+    // آخر تحديث لبرنامج: أحدث إدخال نقطة/نشاط بين مشاريعه
     function programUpdatedAt(prog) {
-      let t = prog.updated || 0;
+      let t = 0;
       for (const pl of programProjects(prog.id)) t = Math.max(t, planUpdatedAt(pl));
       return t;
     }
@@ -2478,7 +2483,7 @@
       check.className = "gcheck" + (complete ? " done" : "");
       check.textContent = complete ? "✓" : "";
       check.title = "تبديل الإكمال";
-      check.onclick = () => { toggleComplete(g); g.updated = Date.now(); touchDomain(planDomain(g)); save(); refreshViews(); };
+      check.onclick = () => { toggleComplete(g); touchDomain(planDomain(g)); save(); refreshViews(); };
 
       const main = document.createElement("div");
       main.className = "gtitle";
@@ -2510,7 +2515,7 @@
           n = Math.min(n, g.target * 4); // سقف أمان
           g.current = n; g.done = goalCurrent(g) >= g.target;
           delete g._prevCurrent; // إدخال يدوي يُلغي القيمة المحفوظة
-          g.updated = Date.now(); touchDomain(planDomain(g)); save(); refreshViews();
+          g.ptsAt = Date.now(); touchDomain(planDomain(g)); save(); refreshViews();
         };
         const gp = document.createElement("div"); gp.className = "gprogress";
         const minus = document.createElement("button"); minus.className = "gp-btn"; minus.textContent = "−"; minus.title = "إنقاص";
@@ -3712,11 +3717,13 @@
         const g = state.plans.find(x => x.id === editingGoalId);
         if (g) {
           const oldDomain = planDomain(g);
+          const prevCurrent = g.current || 0;
           g.name = t; g.programId = programId; g.type = niType; g.favorite = niFav;
           g.startDate = itemStart.value || ""; g.endDate = itemEnd.value || "";
           g.target = target; g.current = current;
           g.done = target > 0 ? (current >= target) : g.done;
-          g.updated = Date.now();
+          // نحتسب التحديث فقط عند إدخال/تغيير نقطة في مشروع نقاط
+          if (niType === "points" && current !== prevCurrent) g.ptsAt = Date.now();
           touchDomain(oldDomain); touchDomain(planDomain(g));
         }
       } else if (editingHabitId) {
