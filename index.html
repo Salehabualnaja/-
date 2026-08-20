@@ -3787,34 +3787,33 @@
       if (pl) { const d = planDomain(pl); if (d && DOMAINS.some(x => x.id === d)) chDomain.value = d; }
       chpkList.querySelectorAll(".pk-opt").forEach(o => o.classList.toggle("sel", o.dataset.id === chProject.value));
     }
-    // منتقي مشروع التحدي — قائمة منظّمة مصنّفة حسب المجال (مثل منتقي البرنامج)
+    // منتقي مشروع التحدي — يعرض مشاريع المجال المختار فقط
     function fillChProjects(selected) {
       chpkList.replaceChildren();
+      const dom = chDomain.value;
       const none = document.createElement("button"); none.type = "button"; none.className = "pk-opt"; none.dataset.id = "";
       none.innerHTML = '<span class="pk-nm">📌 بدون مشروع</span><span class="pk-check">✓</span>';
       none.onclick = () => { setChProject(""); chProjectPickerDlg.close(); };
       chpkList.append(none);
-      const groups = [];
-      for (const d of DOMAINS) {
-        const plans = state.plans.filter(pl => planDomain(pl) === d.id);
-        if (plans.length) groups.push({ label: d.icon + " " + d.name, plans });
-      }
-      const noDom = state.plans.filter(pl => { const dd = planDomain(pl); return !dd || !DOMAINS.some(d => d.id === dd); });
-      if (noDom.length) groups.push({ label: "📌 بلا مجال", plans: noDom });
-      for (const g of groups) {
-        const gh = document.createElement("div"); gh.className = "pk-group"; gh.textContent = g.label; chpkList.append(gh);
-        for (const pl of g.plans.slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"))) {
+      const plans = state.plans.filter(pl => planDomain(pl) === dom)
+        .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"));
+      if (plans.length) {
+        const dobj = DOMAINS.find(d => d.id === dom);
+        const gh = document.createElement("div"); gh.className = "pk-group"; gh.textContent = dobj ? (dobj.icon + " " + dobj.name) : "المشاريع"; chpkList.append(gh);
+        for (const pl of plans) {
           const pr = programOf(pl);
           const o = document.createElement("button"); o.type = "button"; o.className = "pk-opt"; o.dataset.id = pl.id;
           o.innerHTML = '<span class="pk-nm">' + escapeHtml(pl.name) + (pr ? ' · ' + escapeHtml(pr.name) : '') + '</span><span class="pk-check">✓</span>';
           o.onclick = () => { setChProject(pl.id); chProjectPickerDlg.close(); };
           chpkList.append(o);
         }
+      } else {
+        const e = document.createElement("div"); e.className = "pk-empty"; e.textContent = "لا مشاريع في هذا المجال."; chpkList.append(e);
       }
-      setChProject((selected && state.plans.some(pl => pl.id === selected)) ? selected : "");
+      setChProject((selected && plans.some(pl => pl.id === selected)) ? selected : "");
     }
-    // تغيير المجال يدوياً يُلغي اختيار المشروع (لأنّ المشروع يشتقّ مجاله)
-    chDomain.addEventListener("change", () => setChProject(""));
+    // تغيير المجال يدوياً يُلغي اختيار المشروع ويحدّث قائمة المشاريع للمجال الجديد
+    chDomain.addEventListener("change", () => fillChProjects(""));
 
     let editingChId = null;
     function chTaskRow(c) {
