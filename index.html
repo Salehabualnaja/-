@@ -535,6 +535,11 @@
     .pk-list { overflow-y: auto; padding: 8px; -webkit-overflow-scrolling: touch; }
     .pk-group { font-size: 12.5px; font-weight: 800; color: var(--accent-ink); background: var(--accent-soft); border-radius: 10px; padding: 8px 12px; margin: 9px 3px 5px; position: sticky; top: 0; z-index: 1; }
     .pk-group:first-child { margin-top: 3px; }
+    /* بار البرنامج داخل منتقي التحدي — لون مميّز ليسهل التنظيم */
+    .pk-prog { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 800; color: #fff; background: var(--accent); border-radius: 10px; padding: 8px 12px; margin: 10px 3px 5px; position: sticky; top: 0; z-index: 1; box-shadow: 0 2px 7px rgba(180,83,9,.22); }
+    .pk-prog:first-of-type { margin-top: 3px; }
+    .pk-prog.plain { color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); box-shadow: none; }
+    .pk-prog ~ .pk-opt { padding-inline-start: 22px; }
     .pk-opt { display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: none; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--text); text-align: start; padding: 11px 14px; border-radius: 11px; cursor: pointer; transition: background .12s; }
     .pk-opt:hover { background: var(--panel-2); }
     .pk-opt.sel { background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; }
@@ -3787,7 +3792,7 @@
       if (pl) { const d = planDomain(pl); if (d && DOMAINS.some(x => x.id === d)) chDomain.value = d; }
       chpkList.querySelectorAll(".pk-opt").forEach(o => o.classList.toggle("sel", o.dataset.id === chProject.value));
     }
-    // منتقي مشروع التحدي — يعرض مشاريع المجال المختار فقط
+    // منتقي مشروع التحدي — مشاريع المجال المختار فقط، منظّمة ببارات حسب البرنامج
     function fillChProjects(selected) {
       chpkList.replaceChildren();
       const dom = chDomain.value;
@@ -3795,20 +3800,33 @@
       none.innerHTML = '<span class="pk-nm">📌 بدون مشروع</span><span class="pk-check">✓</span>';
       none.onclick = () => { setChProject(""); chProjectPickerDlg.close(); };
       chpkList.append(none);
-      const plans = state.plans.filter(pl => planDomain(pl) === dom)
-        .sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"));
-      if (plans.length) {
-        const dobj = DOMAINS.find(d => d.id === dom);
-        const gh = document.createElement("div"); gh.className = "pk-group"; gh.textContent = dobj ? (dobj.icon + " " + dobj.name) : "المشاريع"; chpkList.append(gh);
-        for (const pl of plans) {
-          const pr = programOf(pl);
-          const o = document.createElement("button"); o.type = "button"; o.className = "pk-opt"; o.dataset.id = pl.id;
-          o.innerHTML = '<span class="pk-nm">' + escapeHtml(pl.name) + (pr ? ' · ' + escapeHtml(pr.name) : '') + '</span><span class="pk-check">✓</span>';
-          o.onclick = () => { setChProject(pl.id); chProjectPickerDlg.close(); };
-          chpkList.append(o);
-        }
-      } else {
+      const plans = state.plans.filter(pl => planDomain(pl) === dom);
+      if (!plans.length) {
         const e = document.createElement("div"); e.className = "pk-empty"; e.textContent = "لا مشاريع في هذا المجال."; chpkList.append(e);
+        setChProject(""); return;
+      }
+      // تجميع مشاريع المجال حسب البرنامج
+      const byProg = new Map();
+      for (const pl of plans) {
+        const pid = programOf(pl) ? pl.programId : "";
+        if (!byProg.has(pid)) byProg.set(pid, []);
+        byProg.get(pid).push(pl);
+      }
+      const order = state.programs.filter(pr => (pr.domainId || "") === dom && byProg.has(pr.id)).map(pr => pr.id);
+      if (byProg.has("")) order.push("");
+      const addOpt = (pl) => {
+        const o = document.createElement("button"); o.type = "button"; o.className = "pk-opt"; o.dataset.id = pl.id;
+        o.innerHTML = '<span class="pk-nm">' + escapeHtml(pl.name) + '</span><span class="pk-check">✓</span>';
+        o.onclick = () => { setChProject(pl.id); chProjectPickerDlg.close(); };
+        chpkList.append(o);
+      };
+      for (const pid of order) {
+        const list = byProg.get(pid).slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"));
+        const bar = document.createElement("div");
+        if (pid) { const pr = programOf(list[0]) || state.programs.find(p => p.id === pid); bar.className = "pk-prog"; bar.textContent = "📁 " + (pr ? pr.name : "برنامج"); }
+        else { bar.className = "pk-prog plain"; bar.textContent = "📌 بلا برنامج"; }
+        chpkList.append(bar);
+        for (const pl of list) addOpt(pl);
       }
       setChProject((selected && plans.some(pl => pl.id === selected)) ? selected : "");
     }
