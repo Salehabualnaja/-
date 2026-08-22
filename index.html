@@ -390,6 +390,10 @@
     .goals-group-title { display: flex; align-items: center; gap: 8px; padding: 12px 14px; font-weight: 800; font-size: 14px; border-bottom: 1px solid var(--border); background: var(--panel-2); }
     .goals-group-title .ggcount { margin-inline-start: auto; font-size: 12px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
     .goals-group .goalrow { padding-inline: 14px; }
+    /* العادات داخل صفحة المشاريع */
+    .goals-group > .habit-card { margin: 10px; }
+    .grp-sublabel { padding: 10px 14px 2px; font-size: 12px; font-weight: 800; color: var(--muted); border-top: 1px solid var(--border); margin-top: 4px; }
+    .prog-head.static { cursor: default; }
 
     /* زر إضافة هدف بارز */
     .add-goal-btn { width: 100%; margin-bottom: 14px; border: 1.5px dashed var(--border-strong); background: var(--panel); color: var(--accent); font-family: inherit; font-weight: 800; font-size: 15px; padding: 14px 0; border-radius: var(--radius); cursor: pointer; box-shadow: var(--shadow); transition: border-color .15s, background .15s; }
@@ -2626,6 +2630,18 @@
       block.append(box);
       return block;
     }
+    // كتلة عادات مستقلة (على مستوى المجال أو بلا مجال) — تُعرض في صفحة المشاريع
+    function habitsBlock(title, habits) {
+      const block = document.createElement("div"); block.className = "prog-block";
+      const head = document.createElement("div"); head.className = "prog-head static";
+      head.innerHTML = '<span class="ph-name"><span class="dc-icon">🔁</span> ' + escapeHtml(title) + '</span>'
+        + '<span class="ph-count">(' + toArDigits(habits.length) + ')</span>';
+      block.append(head);
+      const box = document.createElement("div"); box.className = "goals-group";
+      for (const h of habits) box.append(habitCard(h));
+      block.append(box);
+      return block;
+    }
 
     function renderProjects() {
       renderProjStats();
@@ -2639,10 +2655,10 @@
 
       const frag = document.createDocumentFragment();
       const ungroupedPlans = programProjects("");
-      if (!state.programs.length && !ungroupedPlans.length) {
+      if (!state.programs.length && !ungroupedPlans.length && !state.habits.length) {
         const e = document.createElement("div");
         e.className = "empty";
-        e.textContent = "لا توجد برامج أو مشاريع بعد. اضغط «➕ إضافة برنامج أو مشروع» للبدء.";
+        e.textContent = "لا توجد برامج أو مشاريع أو عادات بعد. اضغط «➕ إضافة» للبدء.";
         els.projectsList.replaceChildren(e);
         return;
       }
@@ -2651,13 +2667,16 @@
       frag.append(makeReorderHint());
       for (const d of DOMAINS) {
         const progs = state.programs.filter(pr => (pr.domainId || "") === d.id);
-        if (!progs.length) continue;
+        // عادات المجال غير المرتبطة ببرنامج (المرتبطة تظهر داخل كتلة برنامجها)
+        const domHabits = state.habits.filter(h => habitDomain(h) === d.id && !habitProgramOf(h));
+        if (!progs.length && !domHabits.length) continue;
         const sec = document.createElement("div"); sec.className = "dom-section";
         const head = document.createElement("div"); head.className = "dom-section-head";
         const pct = Math.round(domainProgress(d.id, false) * 100);
         head.innerHTML = "<span>" + d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪</span>";
         sec.append(head);
         for (const prog of progs) sec.append(buildProgramBlock(prog, true, true));
+        if (domHabits.length) sec.append(habitsBlock("عادات " + d.name, domHabits));
         frag.append(sec);
       }
       const noDomProgs = state.programs.filter(pr => !pr.domainId || !DOMAINS.some(d => d.id === pr.domainId));
@@ -2670,6 +2689,9 @@
         frag.append(sec);
       }
       if (ungroupedPlans.length) frag.append(ungroupedBlock(ungroupedPlans));
+      // عادات بلا برنامج وبلا مجال
+      const ungroupedHabits = state.habits.filter(h => !habitProgramOf(h) && !DOMAINS.some(d => d.id === habitDomain(h)));
+      if (ungroupedHabits.length) frag.append(habitsBlock("عادات بلا مجال", ungroupedHabits));
       els.projectsList.replaceChildren(frag);
       wireProjectReordering();
     }
@@ -2680,6 +2702,7 @@
       block.dataset.progId = prog.id;
       const pct = programPct(prog.id);
       const list = programProjects(prog.id);
+      const habits = programHabits(prog.id);
       const expanded = expandedPrograms.has(prog.id);
 
       const head = document.createElement("div"); head.className = "prog-head" + (expanded ? " open" : "");
@@ -2694,8 +2717,9 @@
         bd.textContent = domainIcon(prog.domainId) + " " + domainName(prog.domainId);
         head.append(bd);
       }
-      const count = document.createElement("span"); count.className = "ph-count"; count.textContent = "(" + toArDigits(list.length) + ")";
-      count.title = list.length + " مشروع";
+      const count = document.createElement("span"); count.className = "ph-count";
+      count.textContent = "(" + toArDigits(list.length) + (habits.length ? " · " + toArDigits(habits.length) + " 🔁" : "") + ")";
+      count.title = list.length + " مشروع" + (habits.length ? " و" + habits.length + " عادة" : "");
       head.append(count);
       const pctEl = document.createElement("span"); pctEl.className = "ph-pct"; pctEl.textContent = toArDigits(pct) + "٪";
       head.append(pctEl);
@@ -2715,12 +2739,16 @@
 
       const box = document.createElement("div"); box.className = "goals-group"; box.hidden = !expanded;
       box.dataset.progId = prog.id;
-      if (!list.length) {
-        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا مشاريع بعد في هذا البرنامج."; box.append(e);
+      if (!list.length && !habits.length) {
+        const e = document.createElement("div"); e.className = "logempty"; e.textContent = "لا مشاريع أو عادات بعد في هذا البرنامج."; box.append(e);
       } else {
         // في العرض «حسب البرامج» نحترم ترتيب المستخدم اليدوي؛ وإلا نرتّب المكتمل أسفل
         const sorted = manual ? list : list.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
         for (const pl of sorted) box.append(buildGoalRow(pl));
+        if (habits.length) {
+          const sl = document.createElement("div"); sl.className = "grp-sublabel"; sl.textContent = "🔁 العادات"; box.append(sl);
+          for (const h of habits) box.append(habitCard(h));
+        }
       }
       block.append(box);
       return block;
