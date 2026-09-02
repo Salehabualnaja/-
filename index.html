@@ -708,10 +708,25 @@
     .ch-toolbar #chCount { font-size: 12.5px; font-weight: 800; color: var(--text); }
     .ch-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 8px 16px calc(14px + env(safe-area-inset-bottom)); min-height: 58dvh; }
 
-    .ch-group { margin-bottom: 16px; }
+    /* ── التحديات: كتل متداخلة واضحة (مجال ← برنامج ← مشروع) ── */
+    .ch-group { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
     .ch-group:last-child { margin-bottom: 4px; }
-    .ch-group-head { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 12.5px; color: var(--accent-ink); padding: 8px 11px; margin-bottom: 8px; border-radius: 10px; background: color-mix(in srgb, var(--accent) 8%, var(--panel)); border: 1px solid color-mix(in srgb, var(--accent) 15%, transparent); position: sticky; top: -8px; z-index: 2; }
-    .ch-group-head .cg-count { margin-inline-start: auto; font-size: 10.5px; color: var(--muted); font-weight: 700; }
+    .ch-group-head { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 13.5px; color: var(--accent-ink); padding: 11px 13px; background: color-mix(in srgb, var(--accent) 11%, var(--panel)); border-bottom: 1px solid color-mix(in srgb, var(--accent) 18%, transparent); position: sticky; top: -8px; z-index: 2; }
+    .ch-group-head .cg-ic { font-size: 16px; line-height: 1; }
+    .ch-group-head .cg-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ch-group-head .cg-count { margin-inline-start: auto; font-size: 10.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .ch-group-body { padding: 10px; }
+    .ch-general { display: flex; flex-direction: column; }
+    /* كتلة البرنامج */
+    .ch-prog-box { background: var(--panel-2); border: 1px solid var(--border); border-inline-start: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 12px; margin-top: 10px; overflow: hidden; }
+    .ch-general + .ch-prog-box { margin-top: 8px; }
+    .ch-prog-box.plain { border-inline-start-color: var(--border-strong); }
+    .ch-prog { font-size: 12.5px; font-weight: 800; color: color-mix(in srgb, var(--accent-ink) 85%, var(--text)); padding: 8px 12px; border-bottom: 1px solid var(--border); }
+    .ch-prog-box.plain .ch-prog { color: var(--muted); }
+    .ch-prog-body { padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+    /* كتلة المشروع */
+    .ch-proj-box { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px; }
+    .ch-proj-head { font-size: 11.5px; font-weight: 800; color: var(--accent-ink); margin-bottom: 6px; padding-inline-start: 2px; display: flex; align-items: center; gap: 5px; }
     .ch-task { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 10px; margin-bottom: 5px; background: var(--panel-2); transition: opacity .15s; }
     .ch-task.done { opacity: .6; }
     .ch-check { flex: 0 0 auto; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border-strong); background: transparent; cursor: pointer; display: grid; place-items: center; font-size: 12px; font-weight: 800; color: #fff; transition: background .15s, border-color .15s; }
@@ -720,11 +735,6 @@
     .ch-task .ct-text:active { opacity: .6; }
     .ch-task.done .ct-text { text-decoration: line-through; }
     .ct-proj { font-size: 10.5px; color: var(--muted); margin-top: 2px; }
-    /* تنظيم التحديات بألوان هادئة وتدرّج إزاحة ناعم: مجال ← برنامج ← مشروع */
-    .ch-prog { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 800; color: color-mix(in srgb, var(--accent-ink) 82%, var(--text)); background: var(--panel-2); border: 1px solid var(--border); border-inline-start: 3px solid color-mix(in srgb, var(--accent) 42%, transparent); border-radius: 9px; padding: 6px 11px; margin: 9px 0 6px; margin-inline-start: 8px; }
-    .ch-prog.plain { color: var(--muted); border-inline-start-color: var(--border-strong); }
-    .ch-proj-head { display: flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--muted); border-inline-start: 2px solid color-mix(in srgb, var(--accent) 24%, transparent); padding: 3px 0; padding-inline-start: 9px; margin: 6px 0 4px; margin-inline-start: 16px; }
-    .ch-task.nested { margin-inline-start: 24px; }
     .ch-del { flex: 0 0 auto; border: none; background: none; cursor: pointer; font-size: 14px; opacity: .65; padding: 3px; }
     .ch-del:active { opacity: 1; }
     .ch-empty { text-align: center; color: var(--muted); font-size: 13.5px; padding: 36px 12px; line-height: 1.7; }
@@ -3936,7 +3946,7 @@
 
     let editingChId = null;
     function chTaskRow(c, hideProj) {
-      const row = document.createElement("div"); row.className = "ch-task" + (c.done ? " done" : "") + (hideProj ? " nested" : "");
+      const row = document.createElement("div"); row.className = "ch-task" + (c.done ? " done" : "");
       const check = document.createElement("button"); check.className = "ch-check" + (c.done ? " on" : "");
       check.textContent = c.done ? "✓" : ""; check.title = "تبديل الإنجاز";
       check.onclick = () => { c.done = !c.done; save(); renderChallenges(); };
@@ -3997,18 +4007,26 @@
         const sec = document.createElement("div"); sec.className = "ch-group";
         const head = document.createElement("div"); head.className = "ch-group-head";
         const pend = g.items.filter(c => !c.done).length;
-        head.innerHTML = "<span>" + g.icon + "</span><span>" + g.name + "</span><span class='cg-count'>" + (pend ? pend + " قيد التنفيذ" : "اكتملت ✓") + "</span>";
+        const total = g.items.length;
+        head.innerHTML = "<span class='cg-ic'>" + g.icon + "</span><span class='cg-nm'>" + g.name + "</span>"
+          + "<span class='cg-count'>" + (pend ? toArDigits(pend) + " قيد التنفيذ" : "اكتملت ✓") + " · " + toArDigits(total) + "</span>";
         sec.append(head);
-        renderChallengeDomain(sec, g.items, sortCh);
+        const body = document.createElement("div"); body.className = "ch-group-body";
+        renderChallengeDomain(body, g.items, sortCh);
+        sec.append(body);
         chList.append(sec);
       }
     }
-    // داخل المجال: ننظّم المهام حسب البرنامج ثم المشروع، والمهام العامة أولاً
-    function renderChallengeDomain(sec, items, sortCh) {
+    // داخل المجال: كتلة لكل برنامج، وبداخلها كتلة لكل مشروع، والمهام العامة أولاً
+    function renderChallengeDomain(body, items, sortCh) {
       const projOf = (c) => (c.projectId ? state.plans.find(p => p.id === c.projectId) : null) || null;
       // مهام عامة (بلا مشروع) — تُعرض مباشرةً تحت المجال
       const general = items.filter(c => !projOf(c));
-      for (const c of sortCh(general)) sec.append(chTaskRow(c));
+      if (general.length) {
+        const gb = document.createElement("div"); gb.className = "ch-general";
+        for (const c of sortCh(general)) gb.append(chTaskRow(c));
+        body.append(gb);
+      }
       // مهام مرتبطة بمشاريع → تجميع حسب البرنامج ثم المشروع
       const withProj = items.filter(c => projOf(c));
       if (!withProj.length) return;
@@ -4025,15 +4043,23 @@
       if (byProg.has("")) progOrder.push("");
       for (const pk of progOrder) {
         const projMap = byProg.get(pk);
-        if (pk) { const pr = state.programs.find(p => p.id === pk); const bar = document.createElement("div"); bar.className = "ch-prog"; bar.textContent = "📁 " + (pr ? pr.name : "برنامج"); sec.append(bar); }
-        else { const bar = document.createElement("div"); bar.className = "ch-prog plain"; bar.textContent = "📌 بلا برنامج"; sec.append(bar); }
-        // المشاريع بترتيب state.plans
+        const pbox = document.createElement("div"); pbox.className = "ch-prog-box" + (pk ? "" : " plain");
+        const ph = document.createElement("div"); ph.className = "ch-prog";
+        if (pk) { const pr = state.programs.find(p => p.id === pk); ph.textContent = "📁 " + (pr ? pr.name : "برنامج"); }
+        else ph.textContent = "📌 بلا برنامج";
+        pbox.append(ph);
+        const pbody = document.createElement("div"); pbody.className = "ch-prog-body";
         const projIds = state.plans.filter(pl => projMap.has(pl.id)).map(pl => pl.id);
         for (const pid of projIds) {
           const pl = state.plans.find(p => p.id === pid);
-          const ph = document.createElement("div"); ph.className = "ch-proj-head"; ph.textContent = "📄 " + (pl ? pl.name : "مشروع"); sec.append(ph);
-          for (const c of sortCh(projMap.get(pid))) sec.append(chTaskRow(c, true));
+          const jbox = document.createElement("div"); jbox.className = "ch-proj-box";
+          const jh = document.createElement("div"); jh.className = "ch-proj-head"; jh.textContent = "📄 " + (pl ? pl.name : "مشروع");
+          jbox.append(jh);
+          for (const c of sortCh(projMap.get(pid))) jbox.append(chTaskRow(c, true));
+          pbody.append(jbox);
         }
+        pbox.append(pbody);
+        body.append(pbox);
       }
     }
     function addChallenge() {
