@@ -179,6 +179,20 @@
     .colchart .cbar.met { fill: var(--run); }
     .colchart .cbar.sel { fill: var(--accent-ink); }
     .colchart .clabel { fill: var(--muted); font-size: 10px; font-family: inherit; }
+    /* رادار توازن المجالات */
+    .radar { display: block; touch-action: manipulation; }
+    .radar .radar-ring { fill: none; stroke: var(--border); stroke-width: 1; opacity: .75; }
+    .radar .radar-spoke { stroke: var(--border); stroke-width: 1; opacity: .6; }
+    .radar .radar-ref { fill: none; stroke: color-mix(in srgb, var(--accent) 50%, transparent); stroke-width: 1.5; stroke-dasharray: 4 3; }
+    .radar .radar-actual { fill: color-mix(in srgb, var(--accent) 20%, transparent); stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+    .radar .radar-dot { fill: var(--accent); }
+    .radar .radar-dot.sel { fill: var(--accent-ink); r: 5; }
+    .radar .radar-label { font-size: 15px; font-family: inherit; }
+    .radar .radar-hit { fill: transparent; cursor: pointer; }
+    .radar-legend { display: flex; gap: 18px; justify-content: center; margin-top: 10px; font-size: 11.5px; color: var(--muted); font-weight: 700; }
+    .radar-legend i { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: -1px; margin-inline-end: 5px; }
+    .radar-legend .lg-actual { background: color-mix(in srgb, var(--accent) 28%, transparent); border: 2px solid var(--accent); }
+    .radar-legend .lg-ref { background: transparent; border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, transparent); }
 
     .section-title { font-size: 11px; color: var(--muted); margin: 6px 4px 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
 
@@ -897,6 +911,8 @@
       </div>
 
       <div id="perfWrap"></div>
+
+      <div id="balanceWrap"></div>
 
       <div class="section-title">المجالات الثمانية</div>
       <div class="domains-grid" id="domainsGrid"></div>
@@ -1672,6 +1688,7 @@
       domainSection: document.getElementById("domainSection"),
       statsTabs: document.getElementById("statsTabs"),
       domainsGrid: document.getElementById("domainsGrid"),
+      balanceWrap: document.getElementById("balanceWrap"),
       pct2030: document.getElementById("pct2030"),
       fill2030: document.getElementById("fill2030"),
       sub2030: document.getElementById("sub2030"),
@@ -2403,6 +2420,7 @@
       els.sub2030.textContent = d30.total ? (toArDigits(d30.done) + " من " + toArDigits(d30.total) + " مشروع مكتمل · متوسط مرجّح") : "لا توجد مشاريع بعد";
 
       renderPerformance();
+      renderBalanceRadar();
 
       // المربعات الثمانية
       const frag = document.createDocumentFragment();
@@ -2439,6 +2457,56 @@
         frag.append(card);
       }
       els.domainsGrid.replaceChildren(frag);
+    }
+
+    // ═══ رسم توازن المجالات (رادار/مضلّع) وفق المستهدفات والأوزان ═══
+    function renderBalanceRadar() {
+      const wrap = els.balanceWrap; if (!wrap) return;
+      wrap.replaceChildren();
+      const N = DOMAINS.length;
+      const prog = DOMAINS.map(d => Math.max(0, Math.min(1, domainProgress(d.id, false))));
+      const weights = DOMAINS.map(d => weightOf(d.id));
+      const maxW = Math.max(1, ...weights);
+      const ref = weights.map(w => maxW > 0 ? Math.max(0, Math.min(1, w / maxW)) : 0);
+
+      const card = document.createElement("div"); card.className = "report-card balance-card";
+      const h = document.createElement("h4"); h.textContent = "🧭 توازن المجالات"; card.append(h);
+      const readout = document.createElement("div"); readout.className = "chart-readout";
+      const setDefault = () => { readout.textContent = "التوازن المرجّح: " + toArDigits(planPct(false)) + "٪ · اضغط رأس مجال لتفاصيله"; };
+      setDefault(); card.append(readout);
+
+      const size = 300, cx = size / 2, cy = size / 2 + 4, R = 100;
+      const svg = svgEl("svg", { viewBox: "0 0 " + size + " " + (size + 24), class: "radar", preserveAspectRatio: "xMidYMid meet" });
+      svg.style.width = "100%"; svg.style.maxWidth = "340px"; svg.style.height = "auto"; svg.style.display = "block"; svg.style.margin = "4px auto 0";
+      const ang = i => -Math.PI / 2 + i * 2 * Math.PI / N;
+      const pt = (i, r) => [cx + Math.cos(ang(i)) * R * r, cy + Math.sin(ang(i)) * R * r];
+      const polyStr = rs => rs.map((r, i) => pt(i, r).join(",")).join(" ");
+
+      for (const g of [0.25, 0.5, 0.75, 1]) svg.append(svgEl("polygon", { points: polyStr(DOMAINS.map(() => g)), class: "radar-ring" }));
+      for (let i = 0; i < N; i++) { const [x, y] = pt(i, 1); svg.append(svgEl("line", { x1: cx, y1: cy, x2: x, y2: y, class: "radar-spoke" })); }
+      svg.append(svgEl("polygon", { points: polyStr(ref), class: "radar-ref" }));
+      svg.append(svgEl("polygon", { points: polyStr(prog), class: "radar-actual" }));
+      for (let i = 0; i < N; i++) { const [dx, dy] = pt(i, prog[i]); svg.append(svgEl("circle", { cx: dx, cy: dy, r: 3.2, class: "radar-dot" })); }
+      // أيقونات المجالات + مناطق لمس
+      for (let i = 0; i < N; i++) {
+        const [lx, ly] = pt(i, 1.17);
+        const t = svgEl("text", { x: lx, y: ly, class: "radar-label", "text-anchor": lx < cx - 3 ? "end" : (lx > cx + 3 ? "start" : "middle"), "dominant-baseline": ly < cy - 3 ? "auto" : (ly > cy + 3 ? "hanging" : "middle") });
+        t.textContent = DOMAINS[i].icon; svg.append(t);
+        const [hx, hy] = pt(i, 1);
+        const hit = svgEl("circle", { cx: hx, cy: hy, r: 16, class: "radar-hit" }); hit.dataset.i = i; svg.append(hit);
+      }
+      svg.addEventListener("pointerdown", e => {
+        const r = e.target.closest ? e.target.closest(".radar-hit") : null; if (!r) return;
+        const i = +r.dataset.i, d = DOMAINS[i];
+        readout.textContent = d.icon + " " + d.name + ": إنجاز " + toArDigits(Math.round(prog[i] * 100)) + "٪ · وزن ×" + toArDigits(weights[i]);
+        svg.querySelectorAll(".radar-dot").forEach((c, k) => c.classList.toggle("sel", k === i));
+      });
+      card.append(svg);
+
+      const legend = document.createElement("div"); legend.className = "radar-legend";
+      legend.innerHTML = '<span><i class="lg-actual"></i> الإنجاز الفعلي</span><span><i class="lg-ref"></i> المستهدف حسب الوزن</span>';
+      card.append(legend);
+      wrap.append(card);
     }
 
     function allDone() {
