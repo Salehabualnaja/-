@@ -818,14 +818,19 @@
     .umbrella .orn { color: var(--dial-gold); font-size: 22px; flex: none; opacity: .9; }
 
     /* ترويسة مجموعة البرنامج */
-    .prog-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); margin-bottom: 10px; cursor: pointer; }
+    .prog-head { display: block; padding: 11px 13px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); margin-bottom: 10px; cursor: pointer; }
     .prog-head.open { margin-bottom: 6px; border-color: var(--border-strong); }
+    .prog-head .ph-row1 { display: flex; align-items: center; gap: 8px; }
     .prog-head .prog-chev { flex: none; font-size: 12px; color: var(--muted); transition: transform .2s; }
     .prog-head:not(.open) .prog-chev { transform: rotate(-90deg); }
-    .prog-head .ph-name { font-weight: 800; font-size: 15px; }
-    .prog-head .ph-badge { font-size: 11px; font-weight: 700; background: var(--accent-soft); color: var(--accent-ink); border-radius: 7px; padding: 2px 8px; }
-    .prog-head .ph-count { margin-inline-start: auto; font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; }
-    .prog-head .ph-pct { font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .prog-head .ph-name { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 14.5px; }
+    .prog-head .ph-name .ph-nm-txt { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .prog-head .ph-name .dc-icon { flex: none; }
+    .prog-head .ph-star { flex: none; color: var(--dial-gold); font-size: 13px; }
+    .prog-head .ph-pct { flex: none; font-weight: 800; font-size: 13.5px; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .prog-head .ph-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-top: 6px; padding-inline-start: 20px; }
+    .prog-head .ph-count { font-size: 11px; font-weight: 700; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .prog-head .ph-badge { font-size: 10.5px; font-weight: 700; background: var(--accent-soft); color: var(--accent-ink); border-radius: 7px; padding: 2px 8px; }
     .prog-head .iconbtn { margin: 0; }
     /* حقول إدخال أرقام الإنجاز — أوسع وأوضح */
     .dlg input.numfield-lg { width: 100%; padding: 14px 16px; font-size: 20px; font-weight: 800; text-align: center; letter-spacing: 1px; font-variant-numeric: tabular-nums; }
@@ -1486,6 +1491,7 @@
       if (!p.freeTimer || typeof p.freeTimer !== "object") p.freeTimer = { id: "free", name: "مؤقت حر", type: "hours", sessions: [] };
       if (!Array.isArray(p.freeTimer.sessions)) p.freeTimer.sessions = [];
       if (!Array.isArray(p.programs)) p.programs = [];
+      for (const pr of p.programs) { if (typeof pr.favorite !== "boolean") pr.favorite = false; }
       if (!Array.isArray(p.plans)) p.plans = [];
 
       // ترحيل النموذج القديم (أهداف داخل مشاريع) إلى: مشاريع قابلة للقياس مرتبطة ببرامج
@@ -2611,16 +2617,15 @@
 
     // بطاقات المفضلة (تُعرض في صفحة المشاريع) — مشاريع وعادات قابلة للتعديل وإدخال التقدّم
     function buildFavoritesFrag() {
-      const favPlans = state.plans.filter(g => g.favorite);
+      const favPrograms = state.programs.filter(p => p.favorite);
       const favHabits = state.habits.filter(h => h.favorite);
       const frag = document.createDocumentFragment();
-      if (!favPlans.length && !favHabits.length) {
+      if (!favPrograms.length && !favHabits.length) {
         const e = document.createElement("div"); e.className = "empty";
-        e.textContent = "لا مفضّلة بعد. أضِف أي مشروع أو عادة إلى المفضلة عبر النجمة ★ من قائمة الخيارات.";
+        e.textContent = "لا مفضّلة بعد. أضِف أي برنامج أو عادة إلى المفضلة عبر النجمة ★ من قائمة الخيارات.";
         frag.append(e); return frag;
       }
-      favPlans.sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created));
-      for (const g of favPlans) frag.append(buildGoalRow(g));
+      for (const prog of favPrograms) frag.append(buildProgramBlock(prog, false, true));
       favHabits.sort((a, b) => habitStreak(b) - habitStreak(a) || (b.created - a.created));
       for (const h of favHabits) frag.append(habitCard(h));
       return frag;
@@ -2653,7 +2658,6 @@
       const main = document.createElement("div");
       main.className = "gtitle";
       const t = document.createElement("div"); t.className = "gname";
-      if (g.favorite) { const fi = document.createElement("span"); fi.className = "gfav-ind"; fi.textContent = "★"; t.append(fi); }
       const nameSpan = document.createElement("span"); nameSpan.textContent = g.name; t.append(nameSpan);
       const meta = document.createElement("div"); meta.className = "gmeta";
       const badges = ['<span class="gbadge">' + typeLabel(g.type) + '</span>'];
@@ -2699,9 +2703,8 @@
         main.append(gp);
       }
 
-      // قائمة الثلاث نقاط: المفضلة · تنبيه · تعديل · حذف
+      // قائمة الثلاث نقاط: تنبيه · تعديل · حذف
       const menu = buildKebabMenu([
-        { icon: g.favorite ? "★" : "☆", label: g.favorite ? "إزالة من المفضلة" : "إضافة للمفضلة", onClick: () => { g.favorite = !g.favorite; save(); refreshViews(); } },
         { icon: "🔔", label: "تنبيه وتذكير", onClick: () => openReminder("project:" + g.id) },
         { icon: "✏️", label: "تعديل", onClick: () => openItem(g) },
         { icon: "🗑️", label: "حذف", danger: true, onClick: () => { const d = planDomain(g); state.plans = state.plans.filter(x => x.id !== g.id); touchDomain(d); save(); refreshViews(); } }
@@ -2892,29 +2895,35 @@
       const expanded = expandedPrograms.has(prog.id);
 
       const head = document.createElement("div"); head.className = "prog-head" + (expanded ? " open" : "");
+      // الصف الأول: السهم · الاسم (مع النجمة) · النسبة · القائمة
+      const row1 = document.createElement("div"); row1.className = "ph-row1";
       const chev = document.createElement("span"); chev.className = "prog-chev"; chev.textContent = "▾";
-      head.append(chev);
       const nm = document.createElement("span"); nm.className = "ph-name";
-      nm.innerHTML = '<span class="dc-icon">📁</span> ' + escapeHtml(prog.name);
-      head.append(nm);
-      head.append(updatedChip(programUpdatedAt(prog)));
-      if (prog.domainId && !hideDomainBadge) {
-        const bd = document.createElement("span"); bd.className = "ph-badge";
-        bd.textContent = domainIcon(prog.domainId) + " " + domainName(prog.domainId);
-        head.append(bd);
-      }
-      const count = document.createElement("span"); count.className = "ph-count";
-      count.textContent = "(" + toArDigits(list.length) + (habits.length ? " · " + toArDigits(habits.length) + " 🔁" : "") + ")";
-      count.title = list.length + " مشروع" + (habits.length ? " و" + habits.length + " عادة" : "");
-      head.append(count);
+      nm.innerHTML = '<span class="dc-icon">📁</span><span class="ph-nm-txt">' + escapeHtml(prog.name) + '</span>'
+        + (prog.favorite ? '<span class="ph-star">★</span>' : '');
       const pctEl = document.createElement("span"); pctEl.className = "ph-pct"; pctEl.textContent = toArDigits(pct) + "٪";
-      head.append(pctEl);
-      head.append(buildKebabMenu([
+      const kebab = buildKebabMenu([
+        { icon: prog.favorite ? "★" : "☆", label: prog.favorite ? "إزالة من المفضلة" : "إضافة للمفضلة", onClick: () => { prog.favorite = !prog.favorite; save(); refreshViews(); } },
         { icon: "➕", label: "إضافة مشروع", onClick: () => openItem(null, prog.id) },
         { icon: "🔔", label: "تنبيه وتذكير", onClick: () => openReminder("program:" + prog.id) },
         { icon: "✏️", label: "تعديل البرنامج", onClick: () => openProgram(prog) },
         { icon: "🗑️", label: "حذف البرنامج", danger: true, onClick: () => deleteProgram(prog) }
-      ]));
+      ]);
+      row1.append(chev, nm, pctEl, kebab);
+      head.append(row1);
+      // الصف الثاني: البيانات الوصفية (آخر تحديث · العدد · المجال)
+      const meta = document.createElement("div"); meta.className = "ph-meta";
+      meta.append(updatedChip(programUpdatedAt(prog)));
+      const count = document.createElement("span"); count.className = "ph-count";
+      count.textContent = "(" + toArDigits(list.length) + (habits.length ? " · " + toArDigits(habits.length) + " 🔁" : "") + ")";
+      count.title = list.length + " مشروع" + (habits.length ? " و" + habits.length + " عادة" : "");
+      meta.append(count);
+      if (prog.domainId && !hideDomainBadge) {
+        const bd = document.createElement("span"); bd.className = "ph-badge";
+        bd.textContent = domainIcon(prog.domainId) + " " + domainName(prog.domainId);
+        meta.append(bd);
+      }
+      head.append(meta);
       // النقر على رأس البرنامج يفتح/يطوي قائمة المشاريع
       head.onclick = (e) => {
         if (e.target.closest(".gmenu")) return;
@@ -3664,7 +3673,7 @@
       const plans = domainPlans(id);
       const projN = plans.length;
       const doneN = plans.filter(isComplete).length;
-      const favN = plans.filter(p => p.favorite).length;
+      const favN = state.programs.filter(pr => (pr.domainId || "") === id && pr.favorite).length;
       const chN = state.challenges.filter(c => challengeDomain(c) === id).length;
       const habN = domainHabits(id).length;
       const pct30 = Math.round(domainProgress(id, false) * 100);
@@ -3894,7 +3903,7 @@
       itemTargetRow.hidden = habit;
       itemCurrentRow.hidden = habit;
       itemDatesRow.hidden = habit;
-      itemFav.hidden = habit;
+      itemFav.hidden = true; // المفضلة صارت للبرامج لا للمشاريع
       itemHabitDaysRow.hidden = !habit;
       itemNameLabel.textContent = habit ? "اسم العادة" : "اسم المشروع";
       itemName.placeholder = habit ? "مثال: قراءة وِرد القرآن" : "مثال: قراءة 12 كتاباً";
