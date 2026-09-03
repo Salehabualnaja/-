@@ -896,12 +896,16 @@
     .habit-top .hb-dom { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 4px; }
     .habit-streak { display: flex; align-items: center; gap: 5px; font-weight: 900; color: var(--accent-ink); background: var(--accent-soft); border-radius: 10px; padding: 6px 11px; font-size: 15px; white-space: nowrap; flex: none; font-variant-numeric: tabular-nums; }
     .habit-streak.zero { color: var(--muted); background: var(--panel-2); }
-    .habit-days { display: flex; gap: 5px; margin-top: 13px; }
-    .hday { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
-    .hday .hd-dot { width: 100%; max-width: 34px; aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: 13px; background: var(--panel-2); border: 1.5px solid var(--border); color: var(--muted); cursor: pointer; }
+    .habit-days { display: flex; gap: 6px; margin-top: 13px; overflow-x: auto; direction: ltr; padding-bottom: 6px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+    .habit-days::-webkit-scrollbar { height: 5px; }
+    .habit-days::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
+    .hday { flex: none; width: 46px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .hday .hd-dot { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; background: var(--panel-2); border: 1.5px solid var(--border); color: var(--muted); cursor: pointer; }
     .hday .hd-dot.on { background: var(--run); border-color: var(--run); color: #fff; }
     .hday .hd-dot.today { border-color: var(--accent); border-width: 2px; }
-    .hday .hd-lbl { font-size: 9px; color: var(--muted); font-weight: 700; }
+    .hday .hd-lbl { font-size: 8.5px; font-style: italic; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .hday .hd-date { font-size: 8px; color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; opacity: .8; }
+    .hday .hd-dot.today + .hd-lbl { color: var(--accent-ink); }
     .habit-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 13px; gap: 10px; }
     .habit-check { flex: 1; border: 1px solid var(--border-strong); border-radius: 11px; padding: 11px 0; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; background: var(--panel-2); color: var(--text); display: flex; align-items: center; justify-content: center; gap: 8px; transition: background .15s; }
     .habit-check.on { background: var(--run); color: #fff; border-color: var(--run); }
@@ -4295,22 +4299,27 @@
       top.append(nameWrap, st, menu);
       card.append(top);
 
-      // آخر 7 أيام
+      // خانات الأيام حسب المدة المستهدَفة — قابلة للتمرير أفقياً
+      const total = h.targetDays > 0 ? h.targetDays : 30;
       const days = document.createElement("div"); days.className = "habit-days";
       const today = dayStartOf(Date.now());
-      for (let i = 6; i >= 0; i--) {
+      for (let i = total - 1; i >= 0; i--) {
         const dayMs = today - i * DAY_MS;
+        const d = new Date(dayMs);
         const cell = document.createElement("div"); cell.className = "hday";
         const dot = document.createElement("button");
         const on = habitDoneOn(h, dayMs), isToday = i === 0;
         dot.className = "hd-dot" + (on ? " on" : "") + (isToday ? " today" : "");
         dot.textContent = on ? "✓" : "";
-        dot.title = fmtDayShort(dayMs);
+        dot.title = fmtDayLong(dayMs);
         dot.onclick = () => { const k = habitKey(dayMs); if (!h.log) h.log = {}; if (h.log[k]) delete h.log[k]; else h.log[k] = true; touchDomain(habitDomain(h)); save(); refreshViews(); };
-        const lbl = document.createElement("div"); lbl.className = "hd-lbl"; lbl.textContent = AR_WD_MINI[new Date(dayMs).getDay()];
-        cell.append(dot, lbl); days.append(cell);
+        const lbl = document.createElement("div"); lbl.className = "hd-lbl"; lbl.textContent = AR_WD[d.getDay()];
+        const dnum = document.createElement("div"); dnum.className = "hd-date"; dnum.textContent = toArDigits(d.getDate()) + "/" + toArDigits(d.getMonth() + 1);
+        cell.append(dot, lbl, dnum); days.append(cell);
       }
       card.append(days);
+      // اعرض اليوم الحالي (الطرف الأيمن) عند الفتح
+      requestAnimationFrame(() => { days.scrollLeft = days.scrollWidth; });
 
       const foot = document.createElement("div"); foot.className = "habit-foot";
       const check = document.createElement("button");
