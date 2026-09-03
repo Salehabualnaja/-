@@ -2699,9 +2699,10 @@
         main.append(gp);
       }
 
-      // قائمة الثلاث نقاط: المفضلة · تعديل · حذف
+      // قائمة الثلاث نقاط: المفضلة · تنبيه · تعديل · حذف
       const menu = buildKebabMenu([
         { icon: g.favorite ? "★" : "☆", label: g.favorite ? "إزالة من المفضلة" : "إضافة للمفضلة", onClick: () => { g.favorite = !g.favorite; save(); refreshViews(); } },
+        { icon: "🔔", label: "تنبيه وتذكير", onClick: () => openReminder("project:" + g.id) },
         { icon: "✏️", label: "تعديل", onClick: () => openItem(g) },
         { icon: "🗑️", label: "حذف", danger: true, onClick: () => { const d = planDomain(g); state.plans = state.plans.filter(x => x.id !== g.id); touchDomain(d); save(); refreshViews(); } }
       ]);
@@ -2910,6 +2911,7 @@
       head.append(pctEl);
       head.append(buildKebabMenu([
         { icon: "➕", label: "إضافة مشروع", onClick: () => openItem(null, prog.id) },
+        { icon: "🔔", label: "تنبيه وتذكير", onClick: () => openReminder("program:" + prog.id) },
         { icon: "✏️", label: "تعديل البرنامج", onClick: () => openProgram(prog) },
         { icon: "🗑️", label: "حذف البرنامج", danger: true, onClick: () => deleteProgram(prog) }
       ]));
@@ -4495,7 +4497,7 @@
       }
     }
 
-    function openReminder() {
+    function openReminder(preTarget) {
       if (!state.programs.length && !state.plans.length) {
         alert("أضِف برنامجاً أو مشروعاً أولاً حتى تتمكّن من ربط التذكير به.");
         return;
@@ -4503,6 +4505,7 @@
       fillRemTarget();
       remRecur.value = "daily"; remTime.value = "09:00";
       remWeekday.value = "6"; remMonthday.value = "1"; remDate.value = "";
+      if (preTarget && [...remTarget.options].some(o => o.value === preTarget)) remTarget.value = preTarget;
       updateRemFields();
       reminderDlg.showModal();
     }
