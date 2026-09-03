@@ -801,6 +801,12 @@
     .rem-detail h4 { margin: 0 0 8px; font-size: 14px; font-weight: 800; }
     .rem-detail .rem-chip { margin-bottom: 6px; }
     .rem-foot { font-size: 11.5px; color: var(--muted); margin-top: 10px; text-align: center; }
+    /* حقول الوقت المنفصلة (ساعة/دقيقة) */
+    .time-split { display: flex; align-items: flex-start; gap: 8px; direction: ltr; justify-content: flex-start; }
+    .ts-col { display: flex; flex-direction: column; align-items: center; gap: 3px; }
+    .time-sel { border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 9px 12px; font-size: 16px; font-family: inherit; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; min-width: 66px; }
+    .ts-lbl { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+    .ts-colon { font-size: 18px; font-weight: 800; color: var(--muted); padding-top: 8px; }
 
     /* تاريخ آخر تحديث للمجال */
     .dc-updated { font-size: 9.5px; color: var(--muted); margin-top: 1px; }
@@ -1171,7 +1177,11 @@
         <div class="inline">
           <div>
             <label>الوقت</label>
-            <input id="remTime" type="text" inputmode="numeric" class="numfield" placeholder="HH:MM" maxlength="5" />
+            <div class="time-split">
+              <div class="ts-col"><select id="remHour" class="time-sel" title="الساعة"></select><span class="ts-lbl">ساعة</span></div>
+              <span class="ts-colon">:</span>
+              <div class="ts-col"><select id="remMin" class="time-sel" title="الدقيقة"></select><span class="ts-lbl">دقيقة</span></div>
+            </div>
           </div>
           <div id="remWeekdayWrap">
             <label>اليوم</label>
@@ -4467,7 +4477,13 @@
     const reminderDlg = document.getElementById("reminderDlg");
     const remTarget = document.getElementById("remTarget");
     const remRecur = document.getElementById("remRecur");
-    const remTime = document.getElementById("remTime");
+    const remHour = document.getElementById("remHour");
+    const remMin = document.getElementById("remMin");
+    const pad2 = (n) => String(n).padStart(2, "0");
+    (function fillTimeSelects() {
+      for (let h = 0; h < 24; h++) { const o = document.createElement("option"); o.value = h; o.textContent = pad2(h); remHour.append(o); }
+      for (let m = 0; m < 60; m++) { const o = document.createElement("option"); o.value = m; o.textContent = pad2(m); remMin.append(o); }
+    })();
     const remWeekday = document.getElementById("remWeekday");
     const remMonthday = document.getElementById("remMonthday");
     const remDate = document.getElementById("remDate");
@@ -4512,7 +4528,7 @@
         return;
       }
       fillRemTarget();
-      remRecur.value = "daily"; remTime.value = "09:00";
+      remRecur.value = "daily"; remHour.value = "9"; remMin.value = "0";
       remWeekday.value = "6"; remMonthday.value = "1"; remDate.value = "";
       if (preTarget && [...remTarget.options].some(o => o.value === preTarget)) remTarget.value = preTarget;
       updateRemFields();
@@ -4525,7 +4541,7 @@
       if (!refType || !refId) return;
       const rem = {
         id: uid(), refType: refType, refId: refId,
-        recurrence: remRecur.value, time: (remTime.value || "09:00"),
+        recurrence: remRecur.value, time: pad2(parseInt(remHour.value, 10) || 0) + ":" + pad2(parseInt(remMin.value, 10) || 0),
         weekday: parseInt(remWeekday.value, 10), monthday: parseInt(remMonthday.value, 10) || 1,
         date: remDate.value || "", enabled: true, nextAt: 0, lastFired: null
       };
