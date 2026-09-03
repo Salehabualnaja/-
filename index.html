@@ -493,6 +493,37 @@
     .arch-notes { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
     .arch-open { display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 800; color: var(--accent-ink); background: var(--accent-soft); border-radius: 8px; padding: 4px 11px; text-decoration: none; }
     .arch-open:active { transform: scale(.97); }
+    /* جولة في البرامج */
+    .tour-head { margin-bottom: 10px; }
+    .tour-title { font-weight: 900; font-size: 17px; color: var(--accent-ink); }
+    .tour-sub { font-size: 12.5px; color: var(--muted); font-weight: 600; margin-top: 4px; line-height: 1.6; }
+    .tour-progress { font-size: 12px; font-weight: 800; color: var(--muted); margin: 4px 2px 10px; }
+    .tour-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+    .tour-card-head .tc-name { font-weight: 800; font-size: 15px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+    .tour-card-head .tc-name .ph-star { color: var(--dial-gold); font-size: 13px; }
+    .tour-card-head .tc-meta { font-size: 11.5px; color: var(--muted); font-weight: 700; margin-top: 4px; }
+    .tour-card .pp-track { margin: 10px 0 4px; }
+    .tc-empty { font-size: 12.5px; color: var(--muted); text-align: center; padding: 10px; }
+    .tc-projects { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+    .tp-row { display: flex; align-items: center; gap: 10px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 9px 11px; }
+    .tp-row.done { opacity: .62; }
+    .tp-info { flex: 1; min-width: 0; }
+    .tp-name { font-weight: 800; font-size: 13.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .tp-sub { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .tp-row .tp-ctrl { flex: none; margin: 0; }
+    .tp-edit { flex: none; border: 1px solid var(--border-strong); background: var(--panel); border-radius: 10px; padding: 7px 11px; font-size: 14px; cursor: pointer; font-family: inherit; }
+    .tour-acts { display: flex; gap: 8px; margin-top: 12px; }
+    .tour-btn { flex: 1; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 11px; padding: 9px 4px; font-size: 12.5px; font-weight: 800; cursor: pointer; font-family: inherit; transition: background .15s, transform .1s; }
+    .tour-btn:active { transform: scale(.97); }
+    .tour-btn.week { background: var(--accent-soft); color: var(--accent-ink); border-color: transparent; }
+    .tour-btn.month { background: var(--accent); color: #fff; border-color: transparent; }
+    .tour-snoozed { margin-top: 4px; }
+    .ts-row { display: flex; align-items: center; gap: 10px; padding: 9px 2px; border-top: 1px solid var(--border); }
+    .ts-row:first-of-type { border-top: none; }
+    .ts-body { flex: 1; min-width: 0; }
+    .ts-name { font-weight: 800; font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ts-when { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 2px; }
+    .ts-back { flex: none; border: none; background: var(--accent-soft); color: var(--accent-ink); border-radius: 9px; padding: 7px 12px; font-size: 12px; font-weight: 800; cursor: pointer; font-family: inherit; }
     .report-card h4 { margin: 0 0 14px; font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
     .rrow { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 13px; }
     .rrow:last-child { margin-bottom: 0; }
@@ -1505,7 +1536,7 @@
       if (!p.freeTimer || typeof p.freeTimer !== "object") p.freeTimer = { id: "free", name: "مؤقت حر", type: "hours", sessions: [] };
       if (!Array.isArray(p.freeTimer.sessions)) p.freeTimer.sessions = [];
       if (!Array.isArray(p.programs)) p.programs = [];
-      for (const pr of p.programs) { if (typeof pr.favorite !== "boolean") pr.favorite = false; }
+      for (const pr of p.programs) { if (typeof pr.favorite !== "boolean") pr.favorite = false; if (typeof pr.snoozeUntil !== "number") pr.snoozeUntil = 0; }
       if (!Array.isArray(p.plans)) p.plans = [];
 
       // ترحيل النموذج القديم (أهداف داخل مشاريع) إلى: مشاريع قابلة للقياس مرتبطة ببرامج
@@ -2354,69 +2385,121 @@
     }
     function fuOpen(b) { if (b.kind === "plan") openItem(b.ref); else goFollowupHabits(); }
     let _fuScroll = 0;
+    // ═══ جولة في البرامج: استعراض سريع + تحديث + تأجيل ═══
     function renderFollowup() {
-      els.dayLabel.textContent = "المتابعة — أيّ المشاريع أولى بالبدء؟";
+      els.dayLabel.textContent = "جولة في البرامج — استعرض · حدّث · أجّل";
       const wrap = els.followupList;
-      // امنع سباق حدث blur عند إزالة حقل مُركَّز أثناء إعادة الرسم
       if (document.activeElement && wrap.contains(document.activeElement)) document.activeElement.blur();
       wrap.replaceChildren();
       const now = Date.now();
 
-      // الفلتر الزمني (أفق التارجت) — تصميم مقسّم ناعم
-      const cap = document.createElement("div"); cap.className = "fu-filter-cap"; cap.textContent = "🎯 التارجت الزمني";
-      wrap.append(cap);
-      const filter = document.createElement("div"); filter.className = "tabs fu-filter";
-      for (const h of FU_HORIZONS) {
-        const chip = document.createElement("button");
-        if (followupHorizon === h.k) chip.className = "active";
-        chip.textContent = h.t;
-        chip.onclick = () => { followupHorizon = h.k; try { localStorage.setItem(FU_HORIZON_KEY, h.k); } catch (_) {} renderFollowup(); };
-        filter.append(chip);
+      const head = document.createElement("div"); head.className = "tour-head";
+      head.innerHTML = "<div class='tour-title'>🎯 جولة في البرامج</div>"
+        + "<div class='tour-sub'>استعرض برامجك ومشاريعها بسرعة: حدّث حالتها، أو أجّل مراجعتها لوقت لاحق.</div>";
+      wrap.append(head);
+
+      const allProgs = state.programs.slice();
+      if (!allProgs.length) {
+        const e = document.createElement("div"); e.className = "empty";
+        e.textContent = "لا برامج بعد. أضِف برنامجاً من صفحة المشاريع لتبدأ الجولة.";
+        wrap.append(e); return;
       }
-      wrap.append(filter);
+      const active = allProgs.filter(pr => !(pr.snoozeUntil > now));
+      const snoozed = allProgs.filter(pr => pr.snoozeUntil > now);
+      active.sort((a, b) => programUpdatedAt(a) - programUpdatedAt(b)); // الأحوج للمراجعة أولاً
 
-      const hEnd = horizonEnd(now, followupHorizon);
-      const hLabel = horizonLabel(followupHorizon, now);
-      const tk = planTrack(now, hEnd);
-      if (tk.den <= 0) {
-        const empty = document.createElement("div"); empty.className = "track-card";
-        empty.innerHTML = '<div class="tk-head"><span class="tk-title">🎯 المتابعة</span></div>'
-          + '<div class="tk-empty">أضِف برامج ومشاريع بأهداف ومواعيد، وستساعدك هذه الصفحة على معرفة أيّها أولى بالبدء.</div>';
-        wrap.append(empty); return;
+      if (!active.length) {
+        const done = document.createElement("div"); done.className = "track-card";
+        done.innerHTML = "<div class='tk-allgood'>🎉 أكملت الجولة — كل البرامج مؤجّلة لوقتها</div>";
+        wrap.append(done);
+      } else {
+        const prog = document.createElement("div"); prog.className = "tour-progress";
+        prog.textContent = "المتبقّي في الجولة: " + toArDigits(active.length) + " من " + toArDigits(allProgs.length) + " برنامج";
+        wrap.append(prog);
+        for (const pr of active) wrap.append(buildTourCard(pr, now));
       }
-      wrap.append(fuStatusCard(tk, now, hEnd, hLabel));
-
-      const behind = behindItems(now, hEnd);
-      if (!behind.length) {
-        const good = document.createElement("div"); good.className = "track-card";
-        good.innerHTML = '<div class="tk-allgood">🎉 كل مشاريعك ضمن الجدول الزمني — لا متأخرات الآن</div>';
-        wrap.append(good); return;
+      if (snoozed.length) wrap.append(buildSnoozedSection(snoozed, now));
+    }
+    function tourProgText(pl) {
+      const pct = Math.round(goalProgress(pl) * 100);
+      const unit = pl.type === "hours" ? "س" : "ن";
+      return fmtNum(goalCurrent(pl)) + (pl.target > 0 ? " / " + fmtNum(pl.target) + " " + unit : " " + unit) + " · " + toArDigits(pct) + "٪";
+    }
+    function buildTourProjectRow(pl, pr) {
+      const row = document.createElement("div"); row.className = "tp-row" + (isComplete(pl) ? " done" : "");
+      const info = document.createElement("div"); info.className = "tp-info";
+      info.innerHTML = "<div class='tp-name'>" + escapeHtml(pl.name) + "</div><div class='tp-sub'>" + escapeHtml(tourProgText(pl)) + "</div>";
+      row.append(info);
+      if (pl.type === "points" && pl.target > 0) {
+        const setCur = (v) => {
+          let n = parseFloat(v); if (!isFinite(n) || n < 0) n = 0; n = Math.min(n, pl.target * 4);
+          pl.current = n; pl.done = goalCurrent(pl) >= pl.target; delete pl._prevCurrent;
+          pl.ptsAt = Date.now(); touchDomain(planDomain(pl)); save();
+          // تحديث محلي دون إعادة ترتيب الجولة
+          val.value = fmtNum(pl.current || 0);
+          info.querySelector(".tp-sub").textContent = tourProgText(pl);
+          row.classList.toggle("done", isComplete(pl));
+          const card = row.closest(".tour-card");
+          if (card && pr) {
+            const p = programPct(pr.id);
+            const fill = card.querySelector(".pp-fill"); if (fill) fill.style.width = p + "%";
+            const meta = card.querySelector(".tc-meta");
+            if (meta) meta.innerHTML = (pr.domainId ? domainIcon(pr.domainId) + " " + escapeHtml(domainName(pr.domainId)) : "بلا مجال") + " · " + toArDigits(p) + "٪ · 🕒 " + fmtUpdatedShort(programUpdatedAt(pr));
+          }
+        };
+        const gp = document.createElement("div"); gp.className = "gprogress tp-ctrl";
+        const minus = document.createElement("button"); minus.className = "gp-btn"; minus.textContent = "−"; minus.onclick = () => setCur((pl.current || 0) - 1);
+        const val = document.createElement("input"); val.className = "gp-val numfield"; val.type = "text"; val.inputMode = "decimal"; val.value = fmtNum(pl.current || 0);
+        val.onchange = () => setCur(val.value);
+        val.addEventListener("keydown", e => { if (e.key === "Enter") { setCur(val.value); val.blur(); } });
+        const plus = document.createElement("button"); plus.className = "gp-btn"; plus.textContent = "+"; plus.onclick = () => setCur((pl.current || 0) + 1);
+        gp.append(minus, val, plus);
+        row.append(gp);
+      } else {
+        const edit = document.createElement("button"); edit.className = "tp-edit"; edit.textContent = "✏️"; edit.title = "تحديث"; edit.onclick = () => openItem(pl);
+        row.append(edit);
       }
-
-      // أنجز اليوم — رقم واضح لما يمكن إنجازه من المتأخرات لتحقيق الهدف اليومي
-      wrap.append(buildTodayPlanCard(behind));
-
-      // كاروسيل أهمّ المتأخرات — كرت ينسحب يميناً/يساراً لتصفّحها وتعديل التقدّم
-      const CAR_MAX = 12;
-      wrap.append(buildBehindCarousel(behind.slice(0, CAR_MAX)));
-
-      // قائمة كل المتأخرات (خفيفة) — للاطّلاع على الجميع والضغط للفتح
-      const listCard = document.createElement("div"); listCard.className = "track-card";
-      const title = document.createElement("div"); title.className = "tk-need-title";
-      title.textContent = "🗂️ كل المتأخرات حسب الأولوية (" + toArDigits(behind.length) + ")";
-      listCard.append(title);
-      const listBox = document.createElement("div"); listBox.className = "tk-need-list scroll";
-      behind.forEach((b, idx) => {
-        const item = document.createElement("div"); item.className = "tk-need-item"; item.onclick = () => fuOpen(b);
-        item.innerHTML = '<span class="fu-rank">' + toArDigits(idx + 1) + '</span>'
-          + '<span class="tn-ic">' + (b.kind === "plan" ? "📌" : "🔥") + '</span>'
-          + '<div class="tn-body"><div class="tn-name">' + escapeHtml(b.ref.name || "") + '</div>'
-          + '<div class="tn-dom">' + (b.domain ? domainIcon(b.domain) + " " + escapeHtml(domainName(b.domain)) : "بلا مجال") + ' · متأخّر ' + toArDigits(Math.round(b.deficit * 100)) + '٪</div></div>'
-          + '<span class="tn-amt">' + fuAmount(b) + '</span>';
-        listBox.append(item);
-      });
-      listCard.append(listBox);
-      wrap.append(listCard);
+      return row;
+    }
+    function buildTourCard(pr, now) {
+      const card = document.createElement("div"); card.className = "tour-card";
+      const pct = programPct(pr.id);
+      const hd = document.createElement("div"); hd.className = "tour-card-head";
+      hd.innerHTML = "<div class='tc-name'>📁 " + escapeHtml(pr.name) + (pr.favorite ? " <span class='ph-star'>★</span>" : "") + "</div>"
+        + "<div class='tc-meta'>" + (pr.domainId ? domainIcon(pr.domainId) + " " + escapeHtml(domainName(pr.domainId)) : "بلا مجال")
+        + " · " + toArDigits(pct) + "٪ · 🕒 " + fmtUpdatedShort(programUpdatedAt(pr)) + "</div>";
+      card.append(hd);
+      const track = document.createElement("div"); track.className = "pp-track"; track.innerHTML = "<div class='pp-fill' style='width:" + pct + "%'></div>";
+      card.append(track);
+      const projects = programProjects(pr.id);
+      if (!projects.length) {
+        const e = document.createElement("div"); e.className = "tc-empty"; e.textContent = "لا مشاريع في هذا البرنامج بعد."; card.append(e);
+      } else {
+        const box = document.createElement("div"); box.className = "tc-projects";
+        for (const pl of projects) box.append(buildTourProjectRow(pl, pr));
+        card.append(box);
+      }
+      const acts = document.createElement("div"); acts.className = "tour-acts";
+      const mk = (label, cls, days) => { const b = document.createElement("button"); b.className = "tour-btn " + cls; b.textContent = label; b.onclick = () => snoozeProgram(pr, days); return b; };
+      acts.append(mk("⏳ لاحقاً", "later", 1), mk("📅 بعد أسبوع", "week", 7), mk("🗓️ بعد شهر", "month", 30));
+      card.append(acts);
+      return card;
+    }
+    function snoozeProgram(pr, days) { pr.snoozeUntil = Date.now() + days * DAY_MS; save(); renderFollowup(); }
+    function buildSnoozedSection(snoozed, now) {
+      const card = document.createElement("div"); card.className = "track-card tour-snoozed";
+      const title = document.createElement("div"); title.className = "tk-need-title"; title.textContent = "⏳ مؤجّلة (" + toArDigits(snoozed.length) + ")";
+      card.append(title);
+      snoozed.sort((a, b) => a.snoozeUntil - b.snoozeUntil);
+      for (const pr of snoozed) {
+        const dLeft = Math.max(1, Math.ceil((pr.snoozeUntil - now) / DAY_MS));
+        const row = document.createElement("div"); row.className = "ts-row";
+        row.innerHTML = "<div class='ts-body'><div class='ts-name'>📁 " + escapeHtml(pr.name) + "</div><div class='ts-when'>يعود بعد " + toArDigits(dLeft) + " يوم</div></div>";
+        const back = document.createElement("button"); back.className = "ts-back"; back.textContent = "استئناف الآن";
+        back.onclick = () => { pr.snoozeUntil = 0; save(); renderFollowup(); };
+        row.append(back); card.append(row);
+      }
+      return card;
     }
 
     // حصّة اليوم المقترحة من عنصر متأخّر (توزيع العجز على ~7 أيام)
