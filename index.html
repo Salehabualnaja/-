@@ -481,6 +481,18 @@
 
     /* التقارير */
     .report-card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 14px; box-shadow: var(--shadow); }
+    /* الأرشيف */
+    .arch-group { margin-bottom: 16px; }
+    .arch-group-head { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 13px; color: var(--accent-ink); padding: 6px 4px 8px; }
+    .arch-group-head .ag-count { color: var(--muted); font-size: 11px; font-weight: 700; }
+    .arch-card { display: flex; gap: 10px; align-items: flex-start; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; padding: 11px 12px; margin-bottom: 8px; box-shadow: var(--shadow); }
+    .arch-ic { font-size: 18px; flex: none; line-height: 1.4; }
+    .arch-body { flex: 1; min-width: 0; }
+    .arch-title { font-weight: 800; font-size: 14px; color: var(--text); word-break: break-word; }
+    .arch-sub { font-size: 11.5px; color: var(--muted); font-weight: 700; margin-top: 3px; }
+    .arch-notes { font-size: 12px; color: var(--muted); margin-top: 5px; line-height: 1.55; white-space: pre-wrap; word-break: break-word; }
+    .arch-open { display: inline-block; margin-top: 8px; font-size: 12px; font-weight: 800; color: var(--accent-ink); background: var(--accent-soft); border-radius: 8px; padding: 4px 11px; text-decoration: none; }
+    .arch-open:active { transform: scale(.97); }
     .report-card h4 { margin: 0 0 14px; font-size: 11px; color: var(--muted); font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; }
     .rrow { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; font-size: 13px; }
     .rrow:last-child { margin-bottom: 0; }
@@ -901,7 +913,8 @@
 
     <!-- شريط تبويبات فرعي لصفحة الإحصاءات -->
     <div class="tabs" id="statsTabs" hidden>
-      <button data-stab="plan" class="active">الأداء والخطة</button>
+      <button data-stab="plan" class="active">الخطة</button>
+      <button data-stab="followup">المتابعة</button>
       <button data-stab="timer">المؤقتات</button>
       <button data-stab="habits">العادات</button>
     </div>
@@ -935,8 +948,20 @@
       <div id="followupList"></div>
     </section>
 
+    <!-- ═══ الأرشيف: خطط ومواد وروابط ومراجع ═══ -->
+    <section id="archiveSection" hidden>
+      <button class="add-goal-btn" id="archiveAddBtn">➕ إضافة إلى الأرشيف</button>
+      <div class="tabs" id="archViewTabs">
+        <button data-aview="all" class="active">الكل</button>
+        <button data-aview="link">🔗 روابط</button>
+        <button data-aview="material">📄 مواد</button>
+        <button data-aview="plan">🗺️ خطط</button>
+        <button data-aview="ref">📝 مراجع</button>
+      </div>
+      <div id="archiveList"></div>
+    </section>
+
     <section id="projectsSection" hidden>
-      <div class="stats-card" id="projStats" hidden></div>
       <button class="add-goal-btn" id="projectsAddBtn">➕ إضافة برنامج أو مشروع</button>
       <div class="tabs" id="projViewTabs">
         <button data-pview="favorites" class="active">⭐ المفضلة</button>
@@ -1104,8 +1129,8 @@
   <!-- الشريط السفلي للتنقل: ثلاث صفحات -->
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" data-mode="stats"><span class="bi">📊</span><span class="bl">الإحصاءات</span></button>
-    <button class="navbtn" data-mode="followup"><span class="bi">🎯</span><span class="bl">المتابعة</span></button>
     <button class="navbtn" data-mode="projects"><span class="bi">📁</span><span class="bl">المشاريع</span></button>
+    <button class="navbtn" data-mode="archive"><span class="bi">🗄️</span><span class="bl">الأرشيف</span></button>
   </nav>
 
   <!-- ورقة إجراء الإضافة -->
@@ -1293,6 +1318,44 @@
     </form>
   </dialog>
 
+  <!-- عنصر أرشيف: خطة / مادة / رابط / مرجع -->
+  <dialog id="archiveDlg">
+    <form method="dialog" class="dlg">
+      <h3 id="archiveDlgTitle">🗄️ إضافة إلى الأرشيف</h3>
+      <div class="rows">
+        <div>
+          <label>العنوان</label>
+          <input id="archTitle" type="text" placeholder="مثال: خطة القراءة الفصلية" autocomplete="off" />
+        </div>
+        <div>
+          <label>النوع</label>
+          <select id="archType">
+            <option value="link">🔗 رابط</option>
+            <option value="material">📄 مادة</option>
+            <option value="plan">🗺️ خطة</option>
+            <option value="ref">📝 مرجع</option>
+          </select>
+        </div>
+        <div>
+          <label>الرابط (اختياري)</label>
+          <input id="archUrl" type="text" placeholder="https://…" autocomplete="off" inputmode="url" />
+        </div>
+        <div>
+          <label>المجال (اختياري)</label>
+          <select id="archDomain"></select>
+        </div>
+        <div>
+          <label>ملاحظات (اختياري)</label>
+          <textarea id="archNotes" class="set-input" rows="3" placeholder="تفاصيل أو مراجع…"></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="ok" value="save" id="archSave">حفظ</button>
+        <button class="cancel" value="cancel" formnovalidate>إلغاء</button>
+      </div>
+    </form>
+  </dialog>
+
   <!-- مشروع جديد / تعديل (بثلاثة أنواع: عادة/ساعات/نقاط) -->
   <dialog id="itemDlg">
     <div class="dlg">
@@ -1380,9 +1443,12 @@
     function readUI(key, allowed, def) { try { const v = localStorage.getItem(key); return allowed.indexOf(v) >= 0 ? v : def; } catch (e) { return def; } }
     function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
     let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
-    let appMode = readUI(UI_MODE_KEY, ["stats", "projects", "settings", "reminders", "followup"], "stats");
+    let appMode = readUI(UI_MODE_KEY, ["stats", "projects", "settings", "reminders", "archive"], "stats");
     const STATS_TAB_KEY = "ptt.ui.statstab";
-    let statsTab = readUI(STATS_TAB_KEY, ["plan", "timer", "habits"], "plan");
+    let statsTab = readUI(STATS_TAB_KEY, ["plan", "timer", "habits", "followup"], "plan");
+    const ARCH_VIEW_KEY = "ptt.ui.archview";
+    let archiveView = readUI(ARCH_VIEW_KEY, ["all", "link", "material", "plan", "ref"], "all");
+    let editingArchId = null;
     const PROJ_VIEW_KEY = "ptt.ui.projview";
     let projectsView = readUI(PROJ_VIEW_KEY, ["favorites", "domain"], "favorites");
     const REM_VIEW_KEY = "ptt.ui.remview";
@@ -1490,6 +1556,16 @@
       if (!p.domainUpdated || typeof p.domainUpdated !== "object") p.domainUpdated = {};
       // التذكيرات
       if (!Array.isArray(p.reminders)) p.reminders = [];
+      // الأرشيف: خطط ومواد وروابط ومراجع
+      if (!Array.isArray(p.archive)) p.archive = [];
+      for (const a of p.archive) {
+        if (typeof a.title !== "string") a.title = "";
+        if (typeof a.type !== "string") a.type = "ref";
+        if (typeof a.url !== "string") a.url = "";
+        if (typeof a.notes !== "string") a.notes = "";
+        if (typeof a.domainId !== "string") a.domainId = "";
+        if (typeof a.created !== "number") a.created = Date.now();
+      }
       // وزن كل مجال في الخطة (افتراضي = 1)
       if (!p.domainWeights || typeof p.domainWeights !== "object") p.domainWeights = {};
       for (const d of DOMAINS) {
@@ -1686,7 +1762,6 @@
       timerSection: document.getElementById("timerSection"),
       projectsSection: document.getElementById("projectsSection"),
       projectsList: document.getElementById("projectsList"),
-      projStats: document.getElementById("projStats"),
       remindersSection: document.getElementById("remindersSection"),
       remindersList: document.getElementById("remindersList"),
       habitsSection: document.getElementById("habitsSection"),
@@ -1694,6 +1769,8 @@
       habitStats: document.getElementById("habitStats"),
       followupSection: document.getElementById("followupSection"),
       followupList: document.getElementById("followupList"),
+      archiveSection: document.getElementById("archiveSection"),
+      archiveList: document.getElementById("archiveList"),
       settingsSection: document.getElementById("settingsSection"),
       domainSection: document.getElementById("domainSection"),
       statsTabs: document.getElementById("statsTabs"),
@@ -1731,7 +1808,8 @@
       els.planSection.hidden = !(isStats && statsTab === "plan");
       els.timerSection.hidden = !(isStats && statsTab === "timer");
       els.habitsSection.hidden = !(isStats && statsTab === "habits");
-      els.followupSection.hidden = appMode !== "followup";
+      els.followupSection.hidden = !(isStats && statsTab === "followup");
+      els.archiveSection.hidden = appMode !== "archive";
       els.projectsSection.hidden = appMode !== "projects";
       els.remindersSection.hidden = appMode !== "reminders";
       els.settingsSection.hidden = appMode !== "settings";
@@ -1742,9 +1820,11 @@
       if (isStats) {
         if (statsTab === "plan") renderPlan();
         else if (statsTab === "timer") renderTimer();
+        else if (statsTab === "followup") renderFollowup();
         else { els.dayLabel.textContent = "العادات — تابِع استمراريتك اليومية 🔥"; renderHabits(); }
-      } else if (appMode === "followup") {
-        renderFollowup();
+      } else if (appMode === "archive") {
+        els.dayLabel.textContent = "الأرشيف — خططك وموادك وروابطك ومراجعك";
+        renderArchive();
       } else if (appMode === "projects") {
         els.dayLabel.textContent = "المشاريع — برامجك ومشاريعك مصنّفة";
         renderProjects();
@@ -1765,8 +1845,9 @@
       if (appMode === "stats") {
         if (statsTab === "plan") renderPlan();
         else if (statsTab === "timer") renderTimer();
+        else if (statsTab === "followup") renderFollowup();
         else renderHabits();
-      } else if (appMode === "followup") renderFollowup();
+      } else if (appMode === "archive") renderArchive();
       else if (appMode === "projects") renderProjects();
       else if (appMode === "reminders") renderReminders();
       else if (appMode === "settings") renderSettings();
@@ -2671,36 +2752,58 @@
       const l = document.createElement("div"); l.className = "st-lbl"; l.textContent = lbl;
       t.append(n, l); return t;
     }
-    function renderProjStats() {
-      const progN = state.programs.length, projN = state.plans.length;
-      if (!progN && !projN) { els.projStats.hidden = true; return; }
-      els.projStats.hidden = false;
-      const doneN = state.plans.filter(isComplete).length;
-      const favN = state.plans.filter(p => p.favorite).length;
-      const domCounts = {};
-      for (const pl of state.plans) { const d = planDomain(pl) || ""; domCounts[d] = (domCounts[d] || 0) + 1; }
-      els.projStats.replaceChildren();
-      const row = document.createElement("div"); row.className = "stats-row";
-      row.append(statTile(progN, "برنامج"), statTile(projN, "مشروع"), statTile(doneN, "مكتمل"), statTile(favN, "مفضّل"));
-      els.projStats.append(row);
-      const doms = document.createElement("div"); doms.className = "stats-doms"; let any = false;
-      // نسبة كل مجال (وزن مرجّح) وأيقونة وعدد ونسبة الاكتمال من خطة 2030
-      const mkChip = (icon, name, count, pct) => {
-        const chip = document.createElement("span"); chip.className = "stat-dom";
-        chip.innerHTML = '<span class="sd-ic">' + icon + '</span><span class="sd-name">' + escapeHtml(name) + '</span>'
-          + '<span class="sd-cnt">' + toArDigits(count) + '</span>'
-          + (pct === null ? '' : '<span class="sd-pct">' + toArDigits(pct) + '٪</span>');
-        if (pct !== null) chip.style.background = "linear-gradient(to left, var(--accent-soft) " + pct + "%, var(--panel-2) " + pct + "%)";
-        return chip;
-      };
-      for (const d of DOMAINS) {
-        const c = domCounts[d.id]; if (!c) continue; any = true;
-        const pct = Math.round(domainProgress(d.id, false) * 100);
-        doms.append(mkChip(d.icon, d.name, c, pct));
+    // ═══ الأرشيف: خطط ومواد وروابط ومراجع ═══
+    const ARCH_TYPES = { link: { icon: "🔗", name: "روابط", one: "رابط" }, material: { icon: "📄", name: "مواد", one: "مادة" }, plan: { icon: "🗺️", name: "خطط", one: "خطة" }, ref: { icon: "📝", name: "مراجع", one: "مرجع" } };
+    function renderArchive() {
+      document.querySelectorAll("#archViewTabs button").forEach(b => b.classList.toggle("active", b.dataset.aview === archiveView));
+      const wrap = els.archiveList; wrap.replaceChildren();
+      let list = state.archive.slice();
+      if (archiveView !== "all") list = list.filter(a => a.type === archiveView);
+      if (!list.length) {
+        const e = document.createElement("div"); e.className = "empty";
+        e.textContent = state.archive.length ? "لا عناصر في هذا التصنيف." : "الأرشيف فارغ. احفظ خططك وموادك وروابطك ومراجعك هنا.";
+        wrap.append(e); return;
       }
-      if (domCounts[""]) { doms.append(mkChip("📌", "بلا مجال", domCounts[""], null)); any = true; }
-      if (any) els.projStats.append(doms);
+      const order = ["plan", "material", "link", "ref"];
+      const groups = archiveView === "all"
+        ? order.map(t => ({ t, items: list.filter(a => a.type === t) })).filter(g => g.items.length)
+        : [{ t: archiveView, items: list }];
+      for (const g of groups) {
+        const meta = ARCH_TYPES[g.t] || ARCH_TYPES.ref;
+        const sec = document.createElement("div"); sec.className = "arch-group";
+        const head = document.createElement("div"); head.className = "arch-group-head";
+        head.innerHTML = "<span>" + meta.icon + " " + meta.name + "</span><span class='ag-count'>" + toArDigits(g.items.length) + "</span>";
+        sec.append(head);
+        g.items.sort((a, b) => b.created - a.created);
+        for (const a of g.items) sec.append(archiveCard(a));
+        wrap.append(sec);
+      }
     }
+    function archiveCard(a) {
+      const meta = ARCH_TYPES[a.type] || ARCH_TYPES.ref;
+      const card = document.createElement("div"); card.className = "arch-card";
+      const ic = document.createElement("span"); ic.className = "arch-ic"; ic.textContent = meta.icon;
+      const body = document.createElement("div"); body.className = "arch-body";
+      const title = document.createElement("div"); title.className = "arch-title"; title.textContent = a.title || meta.one;
+      body.append(title);
+      const sub = document.createElement("div"); sub.className = "arch-sub";
+      let subHtml = "";
+      if (a.domainId && DOMAINS.some(d => d.id === a.domainId)) subHtml += domainIcon(a.domainId) + " " + escapeHtml(domainName(a.domainId));
+      if (a.url) subHtml += (subHtml ? " · " : "") + "🔗 " + escapeHtml(shortUrl(a.url));
+      if (subHtml) { sub.innerHTML = subHtml; body.append(sub); }
+      if (a.notes) { const n = document.createElement("div"); n.className = "arch-notes"; n.textContent = a.notes; body.append(n); }
+      if (a.url) {
+        const link = document.createElement("a"); link.className = "arch-open"; link.href = a.url; link.target = "_blank"; link.rel = "noopener noreferrer"; link.textContent = "فتح ↗";
+        body.append(link);
+      }
+      const menu = buildKebabMenu([
+        { icon: "✏️", label: "تعديل", onClick: () => openArchive(a) },
+        { icon: "🗑️", label: "حذف", danger: true, onClick: () => { state.archive = state.archive.filter(x => x.id !== a.id); save(); renderArchive(); } }
+      ]);
+      card.append(ic, body, menu);
+      return card;
+    }
+    function shortUrl(u) { try { const h = new URL(u).hostname.replace(/^www\./, ""); return h || u; } catch (_) { return u.length > 40 ? u.slice(0, 40) + "…" : u; } }
 
     function ungroupedBlock(plans) {
       const block = document.createElement("div"); block.className = "prog-block";
@@ -2727,7 +2830,6 @@
     }
 
     function renderProjects() {
-      renderProjStats();
       document.querySelectorAll("#projViewTabs button").forEach(b => b.classList.toggle("active", b.dataset.pview === projectsView));
 
       // تبويب المفضلة
@@ -3670,6 +3772,51 @@
     });
     const projectsAddBtnEl = document.getElementById("projectsAddBtn");
     if (projectsAddBtnEl) projectsAddBtnEl.onclick = () => addSheet.showModal();
+
+    // ---------- الأرشيف: نافذة الإضافة/التعديل ----------
+    const archiveDlg = document.getElementById("archiveDlg");
+    const archiveDlgTitle = document.getElementById("archiveDlgTitle");
+    const archTitle = document.getElementById("archTitle");
+    const archType = document.getElementById("archType");
+    const archUrl = document.getElementById("archUrl");
+    const archNotes = document.getElementById("archNotes");
+    const archDomain = document.getElementById("archDomain");
+    (function fillArchDomains() {
+      const none = document.createElement("option"); none.value = ""; none.textContent = "— بلا مجال —"; archDomain.append(none);
+      for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; archDomain.append(o); }
+    })();
+    function openArchive(a) {
+      editingArchId = a ? a.id : null;
+      archiveDlgTitle.textContent = a ? "✏️ تعديل عنصر الأرشيف" : "🗄️ إضافة إلى الأرشيف";
+      archTitle.value = a ? (a.title || "") : "";
+      archType.value = a ? (a.type || "ref") : (archiveView !== "all" ? archiveView : "link");
+      archUrl.value = a ? (a.url || "") : "";
+      archNotes.value = a ? (a.notes || "") : "";
+      archDomain.value = a ? (a.domainId || "") : "";
+      archiveDlg.showModal(); archTitle.focus();
+    }
+    archiveDlg.addEventListener("close", () => {
+      if (archiveDlg.returnValue !== "save") return;
+      const title = archTitle.value.trim();
+      let url = archUrl.value.trim();
+      if (url && !/^https?:\/\//i.test(url) && /\./.test(url)) url = "https://" + url;
+      if (!title && !url) return;
+      const type = archType.value || "ref";
+      const domainId = archDomain.value || "";
+      const notes = archNotes.value.trim();
+      if (editingArchId) {
+        const a = state.archive.find(x => x.id === editingArchId);
+        if (a) { a.title = title || a.title; a.type = type; a.url = url; a.notes = notes; a.domainId = domainId; }
+      } else {
+        state.archive.push({ id: uid(), title: title || "بدون عنوان", type, url, notes, domainId, created: Date.now() });
+      }
+      save(); renderArchive();
+    });
+    const archiveAddBtnEl = document.getElementById("archiveAddBtn");
+    if (archiveAddBtnEl) archiveAddBtnEl.onclick = () => openArchive(null);
+    document.querySelectorAll("#archViewTabs button").forEach(btn => {
+      btn.onclick = () => { archiveView = btn.dataset.aview; try { localStorage.setItem(ARCH_VIEW_KEY, archiveView); } catch (_) {} renderArchive(); };
+    });
 
     // ---------- نافذة المشروع/العادة الموحّدة (3 أنواع) ----------
     const itemDlg = document.getElementById("itemDlg");
