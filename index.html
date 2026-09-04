@@ -497,8 +497,21 @@
     .tour-head { margin-bottom: 10px; }
     .tour-title { font-weight: 900; font-size: 17px; color: var(--accent-ink); }
     .tour-sub { font-size: 12.5px; color: var(--muted); font-weight: 600; margin-top: 4px; line-height: 1.6; }
-    .tour-progress { font-size: 12px; font-weight: 800; color: var(--muted); margin: 4px 2px 10px; }
+    .tour-progress { display: flex; align-items: center; justify-content: space-between; font-size: 12px; font-weight: 800; color: var(--muted); margin: 4px 2px 10px; }
+    .tour-progress b { color: var(--accent-ink); }
+    .tour-progress .tp-done { color: var(--run); }
     .tour-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+    .tour-card.focus { border-color: var(--border-strong); box-shadow: 0 6px 20px rgba(0,0,0,.06); }
+    .tc-sec-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 800; color: var(--accent-ink); margin: 14px 0 8px; padding-top: 12px; border-top: 1px solid var(--border); }
+    .tc-sec-label .tc-sec-count { font-size: 10.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .tc-proj-grp { margin-bottom: 10px; }
+    .tc-proj-grp:last-child { margin-bottom: 0; }
+    .tc-tasks { display: flex; flex-direction: column; gap: 5px; margin: 6px 6px 0; padding-inline-start: 10px; border-inline-start: 2px solid var(--accent-soft); }
+    .tt-row { display: flex; align-items: center; gap: 8px; padding: 4px 0; }
+    .tt-check { flex: none; width: 20px; height: 20px; border-radius: 6px; border: 1.5px solid var(--border-strong); background: transparent; display: grid; place-items: center; font-size: 11px; font-weight: 800; color: #fff; cursor: pointer; transition: background .15s, border-color .15s; }
+    .tt-check.on { background: var(--run); border-color: var(--run); }
+    .tt-text { flex: 1; min-width: 0; font-size: 12.5px; font-weight: 600; color: var(--text); line-height: 1.4; word-break: break-word; }
+    .tt-row.done .tt-text { text-decoration: line-through; color: var(--muted); }
     .tour-card-head .tc-name { font-weight: 800; font-size: 15px; color: var(--text); display: flex; align-items: center; gap: 6px; }
     .tour-card-head .tc-name .ph-star { color: var(--dial-gold); font-size: 13px; }
     .tour-card-head .tc-meta { font-size: 11.5px; color: var(--muted); font-weight: 700; margin-top: 4px; }
@@ -2396,7 +2409,7 @@
 
       const head = document.createElement("div"); head.className = "tour-head";
       head.innerHTML = "<div class='tour-title'>🎯 جولة في البرامج</div>"
-        + "<div class='tour-sub'>استعرض برامجك ومشاريعها بسرعة: حدّث حالتها، أو أجّل مراجعتها لوقت لاحق.</div>";
+        + "<div class='tour-sub'>ركّز على برنامج واحد: راجع مشاريعه ومهامه، حدّث ما يلزم، ثم أجّله لتنتقل للتالي.</div>";
       wrap.append(head);
 
       const allProgs = state.programs.slice();
@@ -2414,12 +2427,22 @@
         done.innerHTML = "<div class='tk-allgood'>🎉 أكملت الجولة — كل البرامج مؤجّلة لوقتها</div>";
         wrap.append(done);
       } else {
-        const prog = document.createElement("div"); prog.className = "tour-progress";
-        prog.textContent = "المتبقّي في الجولة: " + toArDigits(active.length) + " من " + toArDigits(allProgs.length) + " برنامج";
-        wrap.append(prog);
-        for (const pr of active) wrap.append(buildTourCard(pr, now));
+        const reviewed = allProgs.length - active.length;
+        const bar = document.createElement("div"); bar.className = "tour-progress";
+        bar.innerHTML = "<span>المتبقّي في الجولة: <b>" + toArDigits(active.length) + "</b> من " + toArDigits(allProgs.length) + "</span>"
+          + (reviewed ? "<span class='tp-done'>✓ راجعت " + toArDigits(reviewed) + "</span>" : "");
+        wrap.append(bar);
+        wrap.append(buildTourCard(active[0], now)); // برنامج واحد للتركيز
       }
       if (snoozed.length) wrap.append(buildSnoozedSection(snoozed, now));
+    }
+    function buildTourTaskRow(c) {
+      const row = document.createElement("div"); row.className = "tt-row" + (c.done ? " done" : "");
+      const check = document.createElement("button"); check.className = "tt-check" + (c.done ? " on" : ""); check.textContent = c.done ? "✓" : ""; check.title = "تبديل الإنجاز";
+      check.onclick = () => { c.done = !c.done; save(); check.classList.toggle("on", c.done); check.textContent = c.done ? "✓" : ""; row.classList.toggle("done", c.done); };
+      const txt = document.createElement("div"); txt.className = "tt-text"; txt.textContent = c.text;
+      row.append(check, txt);
+      return row;
     }
     function tourProgText(pl) {
       const pct = Math.round(goalProgress(pl) * 100);
@@ -2463,7 +2486,7 @@
       return row;
     }
     function buildTourCard(pr, now) {
-      const card = document.createElement("div"); card.className = "tour-card";
+      const card = document.createElement("div"); card.className = "tour-card focus";
       const pct = programPct(pr.id);
       const hd = document.createElement("div"); hd.className = "tour-card-head";
       hd.innerHTML = "<div class='tc-name'>📁 " + escapeHtml(pr.name) + (pr.favorite ? " <span class='ph-star'>★</span>" : "") + "</div>"
@@ -2472,14 +2495,31 @@
       card.append(hd);
       const track = document.createElement("div"); track.className = "pp-track"; track.innerHTML = "<div class='pp-fill' style='width:" + pct + "%'></div>";
       card.append(track);
+
       const projects = programProjects(pr.id);
+      const linkedTasks = state.challenges.filter(c => c.projectId && projects.some(p => p.id === c.projectId));
+      const secLbl = document.createElement("div"); secLbl.className = "tc-sec-label";
+      secLbl.innerHTML = "<span>🗂️ المشاريع والمهام</span><span class='tc-sec-count'>" + toArDigits(projects.length) + " مشروع · " + toArDigits(linkedTasks.length) + " مهمة</span>";
+      card.append(secLbl);
+
       if (!projects.length) {
         const e = document.createElement("div"); e.className = "tc-empty"; e.textContent = "لا مشاريع في هذا البرنامج بعد."; card.append(e);
       } else {
         const box = document.createElement("div"); box.className = "tc-projects";
-        for (const pl of projects) box.append(buildTourProjectRow(pl, pr));
+        for (const pl of projects) {
+          const grp = document.createElement("div"); grp.className = "tc-proj-grp";
+          grp.append(buildTourProjectRow(pl, pr));
+          const tasks = state.challenges.filter(c => c.projectId === pl.id).sort((a, b) => (a.done - b.done) || (b.created - a.created));
+          if (tasks.length) {
+            const tl = document.createElement("div"); tl.className = "tc-tasks";
+            for (const c of tasks) tl.append(buildTourTaskRow(c));
+            grp.append(tl);
+          }
+          box.append(grp);
+        }
         card.append(box);
       }
+
       const acts = document.createElement("div"); acts.className = "tour-acts";
       const mk = (label, cls, days) => { const b = document.createElement("button"); b.className = "tour-btn " + cls; b.textContent = label; b.onclick = () => snoozeProgram(pr, days); return b; };
       acts.append(mk("⏳ لاحقاً", "later", 1), mk("📅 بعد أسبوع", "week", 7), mk("🗓️ بعد شهر", "month", 30));
