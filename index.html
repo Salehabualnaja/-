@@ -927,7 +927,7 @@
     .habit-top .hb-dom { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 4px; }
     .habit-streak { display: flex; align-items: center; gap: 5px; font-weight: 900; color: var(--accent-ink); background: var(--accent-soft); border-radius: 10px; padding: 6px 11px; font-size: 15px; white-space: nowrap; flex: none; font-variant-numeric: tabular-nums; }
     .habit-streak.zero { color: var(--muted); background: var(--panel-2); }
-    .habit-days { display: flex; gap: 6px; margin-top: 13px; overflow-x: auto; direction: ltr; padding-bottom: 6px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+    .habit-days { display: flex; gap: 6px; margin-top: 13px; overflow-x: auto; direction: rtl; padding-bottom: 6px; -webkit-overflow-scrolling: touch; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
     .habit-days::-webkit-scrollbar { height: 5px; }
     .habit-days::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 999px; }
     .hday { flex: none; width: 46px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
@@ -4401,8 +4401,8 @@
         cell.append(dot, lbl, dnum); days.append(cell);
       }
       card.append(days);
-      // اعرض اليوم الحالي (الطرف الأيمن) عند الفتح
-      requestAnimationFrame(() => { days.scrollLeft = days.scrollWidth; });
+      // الأيام من اليمين (الأقدم) إلى اليسار (اليوم)؛ مرّر لإظهار اليوم في الطرف الأيسر
+      requestAnimationFrame(() => { days.scrollLeft = -(days.scrollWidth - days.clientWidth); });
 
       const foot = document.createElement("div"); foot.className = "habit-foot";
       const check = document.createElement("button");
