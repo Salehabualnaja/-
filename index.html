@@ -803,7 +803,7 @@
     .cal-nav button:active { transform: scale(.92); }
     .cal-nav .rem-cal-title { margin: 0; }
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-    .cal-head { font-size: 10px; font-weight: 800; color: var(--muted); text-align: center; padding: 2px 0 4px; }
+    .cal-head { font-size: 8.5px; font-weight: 800; color: var(--muted); text-align: center; padding: 2px 0 4px; white-space: nowrap; overflow: hidden; }
     .cal-cell { min-height: 42px; border-radius: 9px; border: 1.5px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; background: var(--panel-2); font-size: 13px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
     .cal-cell.empty { background: transparent; cursor: default; }
     .cal-cell.today { border-color: var(--accent); }
@@ -4705,7 +4705,7 @@
     }
 
     // ---------- تقويم التذكيرات ----------
-    const WD_SHORT_SAT = ["سبت", "أحد", "إثن", "ثلا", "أرب", "خمي", "جمع"]; // ترتيب السبت→الجمعة
+    const WD_SHORT_SAT = ["السبت", "الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة"]; // ترتيب السبت→الجمعة (أسماء كاملة)
     const WD_ORDER = [6, 0, 1, 2, 3, 4, 5]; // getDay() بترتيب العرض
     function remClampMonthday(rem) { return Math.min(28, Math.max(1, rem.monthday || 1)); }
     function remOccursOn(rem, date) {
