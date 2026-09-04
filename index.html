@@ -2045,10 +2045,10 @@
     function horizonLabel(key, now) {
       if (key === "week") return "نهاية الأسبوع";
       if (key === "month") return "نهاية الشهر";
-      if (key === "quarter") return "٣ أشهر";
+      if (key === "quarter") return "3 أشهر";
       if (key === "year") return "نهاية " + toArDigits(new Date(now).getFullYear());
       if (key === "hijri") return "نهاية " + toArDigits(hijriYearOf(now)) + "هـ";
-      return "٢٠٣٠";
+      return "2030";
     }
     function planStartMs(g) {
       if (g.startDate) { const t = dateInputToDayStart(g.startDate); if (isFinite(t)) return t; }
@@ -2185,7 +2185,7 @@
       }
 
       if (perfType === "composite") {
-        // مؤشّر مركّب: يوحّد الساعات والعادات والنقاط في رقم واحد (٠–١٠٠+) وفق معادلة قابلة للتعديل
+        // مؤشّر مركّب: يوحّد الساعات والعادات والنقاط في رقم واحد (0–100+) وفق معادلة قابلة للتعديل
         const cfg = compositeCfg();
         const goal = goalMs();
         const totalHabits = state.habits.filter(h => !perfDomain || habitDomain(h) === perfDomain).length;
@@ -2205,7 +2205,7 @@
         }
         const avgLast = (n, off) => { let s = 0, c = 0; for (let k = 0; k < n; k++) { const idx = arr.length - 1 - (off || 0) - k; if (idx >= 0) { s += arr[idx].v; c++; } } return c ? s / c : 0; };
         const cur = avgLast(rangeN, 0), prv = avgLast(rangeN, rangeN);
-        card.append(mkMetric("🎯 مؤشّر الأداء · " + PERIOD_LABEL[perfPeriod], toArDigits(Math.round(cur)) + " / ١٠٠", perfDelta(cur, prv)));
+        card.append(mkMetric("🎯 مؤشّر الأداء · " + PERIOD_LABEL[perfPeriod], toArDigits(Math.round(cur)) + " / 100", perfDelta(cur, prv)));
 
         const rangeArr = arr.slice(-rangeN);
         const avgHf = rangeArr.reduce((s, x) => s + x.hf, 0) / rangeN;
@@ -2258,7 +2258,7 @@
       wrap.append(card);
 
       const cut = arr.slice(-chartN);
-      const chartTitle = (isHours ? "ساعات — " : "العادات — ") + (bucketMode === "week" ? "١٢ أسبوعاً" : "آخر " + toArDigits(chartN) + " يوم");
+      const chartTitle = (isHours ? "ساعات — " : "العادات — ") + (bucketMode === "week" ? "12 أسبوعاً" : "آخر " + toArDigits(chartN) + " يوم");
       const goalPer = (isHours && bucketMode === "day") ? goal : 0;
       wrap.append(columnChartCard(chartTitle, buildBuckets(cut.map(x => x.ds), cut.map(x => x.v), bucketMode), goalPer, (goalPer > 0 ? (b => b.ms >= goalPer) : null), fmtV));
 
@@ -2318,7 +2318,7 @@
       grid.append(pfField("هدف النقاط", cfg.pointsTarget, v => { state.settings.composite.pointsTarget = v; }));
       body.append(grid);
       const note = document.createElement("div"); note.className = "pf-note";
-      note.textContent = "كل مكوّن يُطبَّع نسبةً إلى هدفه: الساعات نسبةً إلى الهدف اليومي (" + toArDigits(state.settings.dailyGoalHours) + " ساعة)، العادات نسبةً إلى عدد العادات، والنقاط نسبةً إلى هدف النقاط (رصيد حالي — بلا سجلّ زمني). القيمة القصوى المرجعية = ١٠٠.";
+      note.textContent = "كل مكوّن يُطبَّع نسبةً إلى هدفه: الساعات نسبةً إلى الهدف اليومي (" + toArDigits(state.settings.dailyGoalHours) + " ساعة)، العادات نسبةً إلى عدد العادات، والنقاط نسبةً إلى هدف النقاط (رصيد حالي — بلا سجلّ زمني). القيمة القصوى المرجعية = 100.";
       body.append(note);
       d.append(body);
       return d;
