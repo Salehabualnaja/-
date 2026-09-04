@@ -783,7 +783,7 @@
     .ch-empty { text-align: center; color: var(--muted); font-size: 13.5px; padding: 36px 12px; line-height: 1.7; }
 
     /* ═══ تقويم التذكيرات ═══ */
-    .rem-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-top: 12px; box-shadow: var(--shadow); }
+    .rem-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin: 12px auto 0; max-width: 460px; box-shadow: var(--shadow); }
     .rem-cal-title { font-weight: 800; font-size: 15px; text-align: center; margin-bottom: 10px; }
     .rem-day-timeline { max-height: 60vh; overflow-y: auto; overscroll-behavior: contain; }
     .hour-row { display: flex; gap: 10px; align-items: flex-start; padding: 6px 0; border-top: 1px dashed var(--border); }
@@ -803,8 +803,8 @@
     .cal-nav button:active { transform: scale(.92); }
     .cal-nav .rem-cal-title { margin: 0; }
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
-    .cal-head { font-size: 10px; font-weight: 800; color: var(--muted); text-align: center; padding: 3px 0; }
-    .cal-cell { aspect-ratio: 1; border-radius: 9px; border: 1.5px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; cursor: pointer; background: var(--panel-2); font-size: 12.5px; font-weight: 700; color: var(--text); }
+    .cal-head { font-size: 10px; font-weight: 800; color: var(--muted); text-align: center; padding: 2px 0 4px; }
+    .cal-cell { min-height: 42px; border-radius: 9px; border: 1.5px solid transparent; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; background: var(--panel-2); font-size: 13px; font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
     .cal-cell.empty { background: transparent; cursor: default; }
     .cal-cell.today { border-color: var(--accent); }
     .cal-cell.has:not(.sel) { background: var(--accent-soft); color: var(--accent-ink); }
@@ -814,7 +814,7 @@
     .cal-cell.sel .dot { background: #fff; }
 
     .year-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-    .month-cell { border-radius: 11px; background: var(--panel-2); padding: 14px 8px; text-align: center; cursor: pointer; border: 1.5px solid transparent; }
+    .month-cell { border-radius: 11px; background: var(--panel-2); padding: 11px 6px; text-align: center; cursor: pointer; border: 1.5px solid transparent; }
     .month-cell.cur { border-color: var(--accent); }
     .month-cell.sel { background: var(--accent); color: #fff; }
     .month-cell .mc-name { font-weight: 800; font-size: 13px; }
