@@ -934,6 +934,7 @@
     .hday .hd-dot { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-size: 13px; background: var(--panel-2); border: 1.5px solid var(--border); color: var(--muted); cursor: pointer; }
     .hday .hd-dot.on { background: var(--run); border-color: var(--run); color: #fff; }
     .hday .hd-dot.today { border-color: var(--accent); border-width: 2px; }
+    .hday .hd-dot.future { opacity: .4; cursor: default; border-style: dashed; }
     .hday .hd-lbl { font-size: 8.5px; font-style: italic; color: var(--muted); font-weight: 700; white-space: nowrap; }
     .hday .hd-date { font-size: 8px; color: var(--muted); font-weight: 700; font-variant-numeric: tabular-nums; opacity: .8; }
     .hday .hd-dot.today + .hd-lbl { color: var(--accent-ink); }
@@ -4382,27 +4383,30 @@
       top.append(nameWrap, st, menu);
       card.append(top);
 
-      // خانات الأيام حسب المدة المستهدَفة — قابلة للتمرير أفقياً
+      // خانات الأيام: تبدأ من يوم البدء (اليوم عند الإنشاء) وتمتدّ للمدة المستهدَفة نحو المستقبل
+      // الترتيب من اليمين (البداية/اليوم) إلى اليسار (الأيام القادمة)
       const total = h.targetDays > 0 ? h.targetDays : 30;
       const days = document.createElement("div"); days.className = "habit-days";
+      const start = dayStartOf(h.created || Date.now());
       const today = dayStartOf(Date.now());
-      for (let i = total - 1; i >= 0; i--) {
-        const dayMs = today - i * DAY_MS;
-        const d = new Date(dayMs);
-        const cell = document.createElement("div"); cell.className = "hday";
+      for (let i = 0; i < total; i++) {
+        const d = new Date(start); d.setDate(d.getDate() + i);
+        const dayMs = d.getTime(), ds = dayStartOf(dayMs);
+        const isToday = ds === today, isFuture = ds > today, on = habitDoneOn(h, dayMs);
+        const cell = document.createElement("div"); cell.className = "hday" + (isToday ? " is-today" : "");
         const dot = document.createElement("button");
-        const on = habitDoneOn(h, dayMs), isToday = i === 0;
-        dot.className = "hd-dot" + (on ? " on" : "") + (isToday ? " today" : "");
+        dot.className = "hd-dot" + (on ? " on" : "") + (isToday ? " today" : "") + (isFuture ? " future" : "");
         dot.textContent = on ? "✓" : "";
         dot.title = fmtDayLong(dayMs);
-        dot.onclick = () => { const k = habitKey(dayMs); if (!h.log) h.log = {}; if (h.log[k]) delete h.log[k]; else h.log[k] = true; touchDomain(habitDomain(h)); save(); refreshViews(); };
+        if (isFuture) { dot.disabled = true; }
+        else dot.onclick = () => { const k = habitKey(dayMs); if (!h.log) h.log = {}; if (h.log[k]) delete h.log[k]; else h.log[k] = true; touchDomain(habitDomain(h)); save(); refreshViews(); };
         const lbl = document.createElement("div"); lbl.className = "hd-lbl"; lbl.textContent = AR_WD[d.getDay()];
         const dnum = document.createElement("div"); dnum.className = "hd-date"; dnum.textContent = toArDigits(d.getDate()) + "/" + toArDigits(d.getMonth() + 1);
         cell.append(dot, lbl, dnum); days.append(cell);
       }
       card.append(days);
-      // الأيام من اليمين (الأقدم) إلى اليسار (اليوم)؛ مرّر لإظهار اليوم في الطرف الأيسر
-      requestAnimationFrame(() => { days.scrollLeft = -(days.scrollWidth - days.clientWidth); });
+      // أظهر اليوم عند الطرف الأيمن (والأيام القادمة إلى يساره)
+      requestAnimationFrame(() => { const t = days.querySelector(".is-today"); if (t) { const cr = days.getBoundingClientRect(), tr = t.getBoundingClientRect(); days.scrollLeft += (tr.right - cr.right); } });
 
       const foot = document.createElement("div"); foot.className = "habit-foot";
       const check = document.createElement("button");
