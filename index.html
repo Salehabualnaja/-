@@ -794,6 +794,20 @@
     .ch-del { flex: 0 0 auto; border: none; background: none; cursor: pointer; font-size: 14px; opacity: .65; padding: 3px; }
     .ch-del:active { opacity: 1; }
     .ch-empty { text-align: center; color: var(--muted); font-size: 13.5px; padding: 36px 12px; line-height: 1.7; }
+    /* سجلّ المهام المنجَزة */
+    #doneTasksDlg { width: 460px; max-width: 94vw; max-height: 88dvh; overflow: hidden; padding: 0; }
+    .dt-dlg { display: flex; flex-direction: column; max-height: inherit; padding: 0; }
+    .dt-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .dt-head h3 { margin: 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+    .dt-head .dt-count { font-size: 13px; font-weight: 900; color: #fff; background: var(--accent); border-radius: 999px; padding: 2px 10px; }
+    .dt-list { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); min-height: 40dvh; }
+    .dt-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 0; border-bottom: 1px solid var(--border); }
+    .dt-row:last-child { border-bottom: none; }
+    .dt-check { flex: none; width: 22px; height: 22px; border-radius: 50%; background: var(--run); color: #fff; display: grid; place-items: center; font-size: 12px; font-weight: 800; margin-top: 1px; }
+    .dt-body { flex: 1; min-width: 0; }
+    .dt-text { font-size: 13.5px; font-weight: 700; color: var(--text); line-height: 1.45; word-break: break-word; }
+    .dt-meta { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 3px; }
+    .dt-note { font-size: 12px; color: var(--muted); font-weight: 700; text-align: center; padding: 12px 4px 2px; }
 
     /* ═══ تقويم التذكيرات ═══ */
     .rem-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin: 12px auto 0; max-width: 460px; box-shadow: var(--shadow); }
@@ -1288,6 +1302,17 @@
     </div>
   </dialog>
 
+  <!-- سجلّ المهام المنجَزة -->
+  <dialog id="doneTasksDlg">
+    <div class="dlg dt-dlg">
+      <div class="dt-head">
+        <h3>🏆 المهام المنجَزة <span class="dt-count" id="doneTasksCount">0</span></h3>
+        <button class="ch-x" id="dtX" aria-label="إغلاق" title="إغلاق">✕</button>
+      </div>
+      <div class="dt-list" id="doneTasksList"></div>
+    </div>
+  </dialog>
+
   <!-- تعديل اسم المشروع -->
   <dialog id="editDlg">
     <form method="dialog" class="dlg">
@@ -1606,6 +1631,12 @@
       // إحصاء التحديات المنجزة = المنجَز الحالي + المنجَز الذي حُذف (لا يعتمد على ضغطات الزر)
       if (!p.challengeStats || typeof p.challengeStats !== "object") p.challengeStats = {};
       if (typeof p.challengeStats.deletedDone !== "number") p.challengeStats.deletedDone = 0;
+      // سجلّ المهام المنجَزة (يبقى حتى بعد حذف المهمة) — ترحيل المنجَز الحالي عند أول تشغيل
+      if (!Array.isArray(p.challengeStats.log)) {
+        p.challengeStats.log = [];
+        const domOf = (c) => { if (c.projectId) { const pl = p.plans.find(x => x.id === c.projectId); if (pl) { if (pl.programId) { const pr = p.programs.find(y => y.id === pl.programId); if (pr) return pr.domainId || ""; } return pl.domainId || ""; } } return c.domainId || ""; };
+        for (const c of p.challenges) if (c.done) p.challengeStats.log.push({ id: c.id, text: c.text, domain: domOf(c), at: c.doneAt || c.created || Date.now() });
+      }
       // العادات اليومية: { id, name, domainId, created, log: { "YYYY-MM-DD": true } }
       if (!Array.isArray(p.habits)) p.habits = [];
       for (const h of p.habits) {
@@ -4177,9 +4208,33 @@
     const chCount = document.getElementById("chCount");
     const chClear = document.getElementById("chClear");
     const chAchNum = document.getElementById("chAchNum");
-    // العدد المنجَز = المهام المنجزة حالياً + المنجَز الذي حُذف (لا يعتمد على ضغطات الزر)
+    // سجلّ المهام المنجَزة: يُسجَّل عند الإنجاز ويبقى حتى بعد الحذف
+    function chLog() { if (!state.challengeStats.log) state.challengeStats.log = []; return state.challengeStats.log; }
+    function logDoneTask(c) { const L = chLog(); const e = L.find(x => x.id === c.id); if (e) { e.text = c.text; e.domain = challengeDomain(c); } else L.push({ id: c.id, text: c.text, domain: challengeDomain(c), at: c.doneAt || Date.now() }); }
+    function unlogDoneTask(c) { if (state.challengeStats.log) state.challengeStats.log = state.challengeStats.log.filter(e => e.id !== c.id); }
+    // العدد المنجَز = ما في السجلّ + المنجَز القديم المحذوف (بلا تفاصيل)
     function completedChallengeCount() {
-      return state.challenges.filter(c => c.done).length + ((state.challengeStats && state.challengeStats.deletedDone) || 0);
+      return chLog().length + ((state.challengeStats && state.challengeStats.deletedDone) || 0);
+    }
+    function fmtDoneWhen(at) { if (!at) return ""; const d = new Date(at); return AR_DAYS[d.getDay()] + " " + toArDigits(d.getDate()) + "/" + toArDigits(d.getMonth() + 1); }
+    function openDoneTasks() {
+      const list = document.getElementById("doneTasksList"); list.replaceChildren();
+      const log = chLog().slice().sort((a, b) => (b.at || 0) - (a.at || 0));
+      const legacy = (state.challengeStats && state.challengeStats.deletedDone) || 0;
+      const cnt = document.getElementById("doneTasksCount"); if (cnt) cnt.textContent = toArDigits(completedChallengeCount());
+      if (!log.length && !legacy) {
+        const e = document.createElement("div"); e.className = "ch-empty"; e.textContent = "لا مهام منجَزة بعد. أنجِز مهمة وستُسجَّل هنا."; list.append(e);
+      } else {
+        for (const e of log) {
+          const row = document.createElement("div"); row.className = "dt-row";
+          const dom = (e.domain && DOMAINS.some(d => d.id === e.domain)) ? (domainIcon(e.domain) + " " + domainName(e.domain)) : "";
+          row.innerHTML = "<span class='dt-check'>✓</span><div class='dt-body'><div class='dt-text'>" + escapeHtml(e.text || "مهمة") + "</div>"
+            + "<div class='dt-meta'>" + (dom ? escapeHtml(dom) + " · " : "") + fmtDoneWhen(e.at) + "</div></div>";
+          list.append(row);
+        }
+        if (legacy > 0) { const n = document.createElement("div"); n.className = "dt-note"; n.textContent = "و" + toArDigits(legacy) + " مهمة منجَزة سابقاً (بلا تفاصيل محفوظة)."; list.append(n); }
+      }
+      document.getElementById("doneTasksDlg").showModal();
     }
 
     (function fillChDomains() {
@@ -4245,7 +4300,7 @@
       const row = document.createElement("div"); row.className = "ch-task" + (c.done ? " done" : "");
       const check = document.createElement("button"); check.className = "ch-check" + (c.done ? " on" : "");
       check.textContent = c.done ? "✓" : ""; check.title = "تبديل الإنجاز";
-      check.onclick = () => { c.done = !c.done; save(); renderChallenges(); };
+      check.onclick = () => { c.done = !c.done; if (c.done) { c.doneAt = Date.now(); logDoneTask(c); } else unlogDoneTask(c); save(); renderChallenges(); };
       const txt = document.createElement("button"); txt.className = "ct-text"; txt.title = "اضغط لعرض التفاصيل والتعديل";
       const tline = document.createElement("div"); tline.textContent = c.text; txt.append(tline);
       if (!hideProj && c.projectId) { const p = state.plans.find(x => x.id === c.projectId); if (p) { const sub = document.createElement("div"); sub.className = "ct-proj"; sub.textContent = "📄 " + p.name; txt.append(sub); } }
@@ -4253,7 +4308,7 @@
       const del = document.createElement("button"); del.className = "ch-del"; del.textContent = "🗑️"; del.title = "حذف";
       del.onclick = () => {
         if (editingChId === c.id) exitChEdit();
-        if (c.done) state.challengeStats.deletedDone = ((state.challengeStats && state.challengeStats.deletedDone) || 0) + 1;
+        // المهمة المنجَزة تبقى مسجَّلة في سجلّ الإنجازات حتى بعد حذفها
         state.challenges = state.challenges.filter(x => x.id !== c.id); save(); renderChallenges();
       };
       row.append(check, txt, del);
@@ -4365,7 +4420,7 @@
       const domainId = proj ? planDomain(proj) : (chDomain.value || ""); // المشروع يشتقّ المجال
       if (editingChId) {
         const c = state.challenges.find(x => x.id === editingChId);
-        if (c) { c.text = t; c.projectId = projectId; c.domainId = domainId; }
+        if (c) { c.text = t; c.projectId = projectId; c.domainId = domainId; if (c.done) logDoneTask(c); }
         save(); exitChEdit(); renderChallenges(); return;
       }
       state.challenges.push({ id: uid(), text: t, projectId: projectId, domainId: domainId, done: false, created: Date.now() });
@@ -4375,10 +4430,13 @@
     chCancelEdit.onclick = exitChEdit;
     chInput.addEventListener("keydown", e => { if (e.key === "Enter") addChallenge(); if (e.key === "Escape" && editingChId) exitChEdit(); });
     chClear.onclick = () => {
-      const removed = state.challenges.filter(c => c.done).length;
-      state.challengeStats.deletedDone = ((state.challengeStats && state.challengeStats.deletedDone) || 0) + removed;
+      // المهام المنجَزة تبقى في سجلّ الإنجازات
       state.challenges = state.challenges.filter(c => !c.done); save(); renderChallenges();
     };
+    // فتح سجلّ المهام المنجَزة عند الضغط على شارة الكأس
+    const chAchieveMini = document.querySelector(".ch-achieve-mini");
+    if (chAchieveMini) { chAchieveMini.style.cursor = "pointer"; chAchieveMini.title = "عرض المهام المنجَزة"; chAchieveMini.onclick = openDoneTasks; }
+    const dtXBtn = document.getElementById("dtX"); if (dtXBtn) dtXBtn.onclick = () => document.getElementById("doneTasksDlg").close();
     document.getElementById("chX").onclick = () => challengeDlg.close();
     const fabChallenge = document.getElementById("fabChallenge");
     // تفاعل الشعلة: نبضة/انفجار عند اللمس
