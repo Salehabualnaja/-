@@ -1479,6 +1479,10 @@
           <label>مدة الاستمرار المستهدفة (أيام)</label>
           <input id="itemHabitDays" type="text" inputmode="numeric" class="numfield numfield-lg" min="0" step="1" placeholder="21" />
           <p class="set-desc" style="margin:8px 0 0">نسبة إنجاز العادة = عدد أيام الاستمرار المتتالية ÷ المدة المستهدفة.</p>
+          <div style="margin-top:12px">
+            <label>تاريخ البداية</label>
+            <input id="itemHabitStart" type="date" />
+          </div>
         </div>
         <div class="inline" id="itemDatesRow">
           <div>
@@ -1645,6 +1649,7 @@
         if (typeof h.domainId !== "string") h.domainId = "";
         if (typeof h.created !== "number") h.created = Date.now();
         if (typeof h.targetDays !== "number") h.targetDays = 0;
+        if (typeof h.startDate !== "string") h.startDate = "";
         if (typeof h.favorite !== "boolean") h.favorite = false;
         if (!h.log || typeof h.log !== "object") h.log = {};
       }
@@ -4012,6 +4017,7 @@
     document.getElementById("pkClose").onclick = () => programPickerDlg.close();
     itemProgramBtn.onclick = () => { if (state.programs.length) programPickerDlg.showModal(); };
     const itemHabitDays = document.getElementById("itemHabitDays");
+    const itemHabitStart = document.getElementById("itemHabitStart");
     const itemTHours = document.getElementById("itemTHours");
     const itemTPoints = document.getElementById("itemTPoints");
     const itemTHabit = document.getElementById("itemTHabit");
@@ -4094,6 +4100,7 @@
         itemName.value = item.name || "";
         fillProgramSelect(item.programId || "");
         itemHabitDays.value = item.targetDays ? item.targetDays : "";
+        itemHabitStart.value = item.startDate || (item.created ? toDateInput(item.created) : "");
         // حقول جاهزة عند التحويل إلى مشروع
         itemStart.value = ""; itemEnd.value = ""; itemTarget.value = ""; itemCurrent.value = ""; setNiFav(!!item.favorite);
         itemTHours.hidden = false; itemTPoints.hidden = false; itemTHabit.hidden = false;
@@ -4105,7 +4112,7 @@
         fillProgramSelect(item.programId || "");
         itemTarget.value = item.target ? item.target : "";
         itemCurrent.value = item.current ? item.current : "";
-        itemHabitDays.value = ""; // جاهز عند التحويل إلى عادة
+        itemHabitDays.value = ""; itemHabitStart.value = toDateInput(Date.now()); // جاهز عند التحويل إلى عادة
         setNiFav(!!item.favorite);
         itemTHours.hidden = false; itemTPoints.hidden = false; itemTHabit.hidden = false;
       } else {
@@ -4113,7 +4120,7 @@
         itemDlgTitleEl.textContent = "📄 مشروع جديد"; itemSave.textContent = "إضافة";
         itemName.value = ""; itemStart.value = ""; itemEnd.value = "";
         fillProgramSelect(presetProgramId || "");
-        itemHabitDays.value = ""; itemTarget.value = ""; itemCurrent.value = ""; setNiFav(false);
+        itemHabitDays.value = ""; itemHabitStart.value = toDateInput(Date.now()); itemTarget.value = ""; itemCurrent.value = ""; setNiFav(false);
         itemTHours.hidden = false; itemTPoints.hidden = false; itemTHabit.hidden = false;
       }
       setNiType(type);
@@ -4128,18 +4135,19 @@
 
       if (niType === "habit") {
         let days = parseInt(itemHabitDays.value, 10); if (!isFinite(days) || days < 0) days = 0;
+        const startDate = itemHabitStart.value || "";
         if (editingHabitId) {
           const h = state.habits.find(x => x.id === editingHabitId);
-          if (h) { const old = habitDomain(h); h.name = t; h.programId = programId; h.targetDays = days; touchDomain(old); touchDomain(habitDomain(h)); }
+          if (h) { const old = habitDomain(h); h.name = t; h.programId = programId; h.targetDays = days; h.startDate = startDate; touchDomain(old); touchDomain(habitDomain(h)); }
         } else if (editingGoalId) {
           // تحويل مشروع → عادة
           const g = state.plans.find(x => x.id === editingGoalId);
           const oldDomain = g ? planDomain(g) : "";
           state.plans = state.plans.filter(x => x.id !== editingGoalId);
-          const nh = { id: uid(), name: t, programId: programId, domainId: "", targetDays: days, favorite: g ? !!g.favorite : false, created: (g && g.created) || Date.now(), log: {} };
+          const nh = { id: uid(), name: t, programId: programId, domainId: "", targetDays: days, startDate: startDate, favorite: g ? !!g.favorite : false, created: (g && g.created) || Date.now(), log: {} };
           state.habits.push(nh); touchDomain(oldDomain); touchDomain(habitDomain(nh));
         } else {
-          const nh = { id: uid(), name: t, programId: programId, domainId: "", targetDays: days, favorite: false, created: Date.now(), log: {} };
+          const nh = { id: uid(), name: t, programId: programId, domainId: "", targetDays: days, startDate: startDate, favorite: false, created: Date.now(), log: {} };
           state.habits.push(nh); touchDomain(habitDomain(nh));
         }
         save(); itemDlg.close(); refreshViews(); return;
@@ -4485,7 +4493,9 @@
       // الترتيب من اليمين (البداية/اليوم) إلى اليسار (الأيام القادمة)
       const total = h.targetDays > 0 ? h.targetDays : 30;
       const days = document.createElement("div"); days.className = "habit-days";
-      const start = dayStartOf(h.created || Date.now());
+      let anchor = h.created || Date.now();
+      if (h.startDate) { const p = h.startDate.split("-"); if (p.length === 3) anchor = new Date(+p[0], +p[1] - 1, +p[2], DAY_START_HOUR, 0, 0, 0).getTime(); }
+      const start = dayStartOf(anchor);
       const today = dayStartOf(Date.now());
       for (let i = 0; i < total; i++) {
         const d = new Date(start); d.setDate(d.getDate() + i);
