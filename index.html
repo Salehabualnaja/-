@@ -614,6 +614,9 @@
     .pk-prog:first-of-type { margin-top: 3px; }
     .pk-prog.plain { color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); box-shadow: none; }
     .pk-prog ~ .pk-opt { padding-inline-start: 22px; }
+    .pk-prog-opt { width: 100%; justify-content: space-between; border: none; cursor: pointer; font-family: inherit; text-align: start; }
+    .pk-prog-opt .pk-prog-hint { font-size: 10px; font-weight: 800; opacity: .85; background: rgba(255,255,255,.22); border-radius: 999px; padding: 2px 8px; }
+    .pk-prog-opt.sel { box-shadow: 0 0 0 2px var(--accent-ink) inset, 0 2px 7px rgba(180,83,9,.22); }
     .pk-opt { display: flex; align-items: center; gap: 10px; width: 100%; border: none; background: none; font-family: inherit; font-size: 14px; font-weight: 600; color: var(--text); text-align: start; padding: 11px 14px; border-radius: 11px; cursor: pointer; transition: background .12s; }
     .pk-opt:hover { background: var(--panel-2); }
     .pk-opt.sel { background: var(--accent-soft); color: var(--accent-ink); font-weight: 800; }
@@ -730,7 +733,7 @@
     .ch-achieve .ach-lbl { font-size: 12px; font-weight: 700; color: var(--muted); }
 
     /* نافذة التحدي الواسعة والمنظّمة */
-    #challengeDlg { width: 560px; max-width: 96vw; max-height: 92dvh; overflow: hidden; padding: 0; }
+    #challengeDlg { width: 720px; max-width: 98vw; max-height: 96dvh; overflow: hidden; padding: 0; }
     .ch-dlg { display: flex; flex-direction: column; max-height: inherit; padding: 0; }
     .ch-head { padding: 12px 16px 10px; border-bottom: 1px solid var(--border); }
     .ch-head-top { display: flex; align-items: center; justify-content: space-between; margin: 0 0 9px; }
@@ -762,7 +765,7 @@
     .ch-task .ch-edit:active { opacity: 1; }
     .ch-toolbar { display: flex; align-items: center; justify-content: space-between; margin-top: 9px; }
     .ch-toolbar #chCount { font-size: 12.5px; font-weight: 800; color: var(--text); }
-    .ch-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 8px 16px calc(14px + env(safe-area-inset-bottom)); min-height: 58dvh; }
+    .ch-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 8px 16px calc(14px + env(safe-area-inset-bottom)); min-height: 66dvh; }
 
     /* ── التحديات: كتل متداخلة واضحة (مجال ← برنامج ← مشروع) ── */
     .ch-group { margin-bottom: 14px; border: 1px solid var(--border); border-radius: 14px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
@@ -780,6 +783,7 @@
     .ch-prog { font-size: 12.5px; font-weight: 800; color: color-mix(in srgb, var(--accent-ink) 85%, var(--text)); padding: 8px 12px; border-bottom: 1px solid var(--border); }
     .ch-prog-box.plain .ch-prog { color: var(--muted); }
     .ch-prog-body { padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+    .ch-prog-direct { display: flex; flex-direction: column; gap: 5px; }
     /* كتلة المشروع */
     .ch-proj-box { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 8px; }
     .ch-proj-head { font-size: 11.5px; font-weight: 800; color: var(--accent-ink); margin-bottom: 6px; padding-inline-start: 2px; display: flex; align-items: center; gap: 5px; }
@@ -1631,6 +1635,7 @@
       for (const c of p.challenges) {
         if (typeof c.domainId !== "string") c.domainId = "";
         if (typeof c.projectId !== "string") c.projectId = "";
+        if (typeof c.programId !== "string") c.programId = "";
       }
       // إحصاء التحديات المنجزة = المنجَز الحالي + المنجَز الذي حُذف (لا يعتمد على ضغطات الزر)
       if (!p.challengeStats || typeof p.challengeStats !== "object") p.challengeStats = {};
@@ -1638,7 +1643,7 @@
       // سجلّ المهام المنجَزة (يبقى حتى بعد حذف المهمة) — ترحيل المنجَز الحالي عند أول تشغيل
       if (!Array.isArray(p.challengeStats.log)) {
         p.challengeStats.log = [];
-        const domOf = (c) => { if (c.projectId) { const pl = p.plans.find(x => x.id === c.projectId); if (pl) { if (pl.programId) { const pr = p.programs.find(y => y.id === pl.programId); if (pr) return pr.domainId || ""; } return pl.domainId || ""; } } return c.domainId || ""; };
+        const domOf = (c) => { if (c.projectId) { const pl = p.plans.find(x => x.id === c.projectId); if (pl) { if (pl.programId) { const pr = p.programs.find(y => y.id === pl.programId); if (pr) return pr.domainId || ""; } return pl.domainId || ""; } } if (c.programId) { const pr = p.programs.find(y => y.id === c.programId); if (pr) return pr.domainId || ""; } return c.domainId || ""; };
         for (const c of p.challenges) if (c.done) p.challengeStats.log.push({ id: c.id, text: c.text, domain: domOf(c), at: c.doneAt || c.created || Date.now() });
       }
       // العادات اليومية: { id, name, domainId, created, log: { "YYYY-MM-DD": true } }
@@ -2533,15 +2538,24 @@
       card.append(track);
 
       const projects = programProjects(pr.id);
+      const progTasks = state.challenges.filter(c => !c.projectId && c.programId === pr.id).sort((a, b) => (a.done - b.done) || (b.created - a.created));
       const linkedTasks = state.challenges.filter(c => c.projectId && projects.some(p => p.id === c.projectId));
       const secLbl = document.createElement("div"); secLbl.className = "tc-sec-label";
-      secLbl.innerHTML = "<span>🗂️ المشاريع والمهام</span><span class='tc-sec-count'>" + toArDigits(projects.length) + " مشروع · " + toArDigits(linkedTasks.length) + " مهمة</span>";
+      secLbl.innerHTML = "<span>🗂️ المشاريع والمهام</span><span class='tc-sec-count'>" + toArDigits(projects.length) + " مشروع · " + toArDigits(linkedTasks.length + progTasks.length) + " مهمة</span>";
       card.append(secLbl);
 
-      if (!projects.length) {
-        const e = document.createElement("div"); e.className = "tc-empty"; e.textContent = "لا مشاريع في هذا البرنامج بعد."; card.append(e);
+      if (!projects.length && !progTasks.length) {
+        const e = document.createElement("div"); e.className = "tc-empty"; e.textContent = "لا مشاريع أو مهام في هذا البرنامج بعد."; card.append(e);
       } else {
         const box = document.createElement("div"); box.className = "tc-projects";
+        // مهام على مستوى البرنامج
+        if (progTasks.length) {
+          const grp = document.createElement("div"); grp.className = "tc-proj-grp";
+          const lbl = document.createElement("div"); lbl.className = "ch-proj-head"; lbl.textContent = "📁 مهام البرنامج"; grp.append(lbl);
+          const tl = document.createElement("div"); tl.className = "tc-tasks";
+          for (const c of progTasks) tl.append(buildTourTaskRow(c));
+          grp.append(tl); box.append(grp);
+        }
         for (const pl of projects) {
           const grp = document.createElement("div"); grp.className = "tc-proj-grp";
           grp.append(buildTourProjectRow(pl, pr));
@@ -4252,28 +4266,33 @@
     // مجال التحدي: من المشروع إن وُجد، وإلا المجال المختار يدوياً
     function challengeDomain(c) {
       if (c.projectId) { const p = state.plans.find(x => x.id === c.projectId); if (p) return planDomain(p); }
+      if (c.programId) { const pr = state.programs.find(x => x.id === c.programId); if (pr) return pr.domainId || ""; }
       return c.domainId || "";
     }
-    // ضبط مشروع التحدي المختار (يحدّث الزر ويشتقّ المجال والتمييز)
-    function setChProject(id) {
-      const pl = id ? state.plans.find(p => p.id === id) : null;
-      chProject.value = pl ? pl.id : "";
-      chProjectLabel.textContent = pl ? pl.name : "📌 بدون مشروع";
-      if (pl) { const d = planDomain(pl); if (d && DOMAINS.some(x => x.id === d)) chDomain.value = d; }
-      chpkList.querySelectorAll(".pk-opt").forEach(o => o.classList.toggle("sel", o.dataset.id === chProject.value));
+    // ضبط هدف التحدي: "" أو "prog:<id>" (برنامج كامل) أو <planId> (مشروع)
+    function setChTarget(val) {
+      val = val || "";
+      chProject.value = val;
+      let label = "📌 بدون مشروع", dom = "";
+      if (val.indexOf("prog:") === 0) { const pr = state.programs.find(p => p.id === val.slice(5)); if (pr) { label = "📁 " + pr.name + " (كل البرنامج)"; dom = pr.domainId || ""; } }
+      else if (val) { const pl = state.plans.find(p => p.id === val); if (pl) { label = pl.name; dom = planDomain(pl); } }
+      chProjectLabel.textContent = label;
+      if (dom && DOMAINS.some(x => x.id === dom)) chDomain.value = dom;
+      chpkList.querySelectorAll(".pk-opt, .pk-prog-opt").forEach(o => o.classList.toggle("sel", o.dataset.id === chProject.value));
     }
     // منتقي مشروع التحدي — مشاريع المجال المختار فقط، منظّمة ببارات حسب البرنامج
     function fillChProjects(selected) {
       chpkList.replaceChildren();
       const dom = chDomain.value;
       const none = document.createElement("button"); none.type = "button"; none.className = "pk-opt"; none.dataset.id = "";
-      none.innerHTML = '<span class="pk-nm">📌 بدون مشروع</span><span class="pk-check">✓</span>';
-      none.onclick = () => { setChProject(""); chProjectPickerDlg.close(); };
+      none.innerHTML = '<span class="pk-nm">📌 بدون مشروع (المجال فقط)</span><span class="pk-check">✓</span>';
+      none.onclick = () => { setChTarget(""); chProjectPickerDlg.close(); };
       chpkList.append(none);
       const plans = state.plans.filter(pl => planDomain(pl) === dom);
-      if (!plans.length) {
-        const e = document.createElement("div"); e.className = "pk-empty"; e.textContent = "لا مشاريع في هذا المجال."; chpkList.append(e);
-        setChProject(""); return;
+      const domProgs = state.programs.filter(pr => (pr.domainId || "") === dom);
+      if (!plans.length && !domProgs.length) {
+        const e = document.createElement("div"); e.className = "pk-empty"; e.textContent = "لا برامج أو مشاريع في هذا المجال."; chpkList.append(e);
+        setChTarget(""); return;
       }
       // تجميع مشاريع المجال حسب البرنامج
       const byProg = new Map();
@@ -4282,25 +4301,30 @@
         if (!byProg.has(pid)) byProg.set(pid, []);
         byProg.get(pid).push(pl);
       }
-      const order = state.programs.filter(pr => (pr.domainId || "") === dom && byProg.has(pr.id)).map(pr => pr.id);
+      // ترتيب البرامج: كل برامج المجال (حتى بلا مشاريع) ثم «بلا برنامج»
+      const order = domProgs.map(pr => pr.id);
       if (byProg.has("")) order.push("");
       const addOpt = (pl) => {
         const o = document.createElement("button"); o.type = "button"; o.className = "pk-opt"; o.dataset.id = pl.id;
         o.innerHTML = '<span class="pk-nm">' + escapeHtml(pl.name) + '</span><span class="pk-check">✓</span>';
-        o.onclick = () => { setChProject(pl.id); chProjectPickerDlg.close(); };
+        o.onclick = () => { setChTarget(pl.id); chProjectPickerDlg.close(); };
         chpkList.append(o);
       };
       for (const pid of order) {
-        const list = byProg.get(pid).slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"));
-        const bar = document.createElement("div");
-        if (pid) { const pr = programOf(list[0]) || state.programs.find(p => p.id === pid); bar.className = "pk-prog"; bar.textContent = "📁 " + (pr ? pr.name : "برنامج"); }
-        else { bar.className = "pk-prog plain"; bar.textContent = "📌 بلا برنامج"; }
-        chpkList.append(bar);
+        const list = (byProg.get(pid) || []).slice().sort((a, b) => (a.name || "").localeCompare(b.name || "", "ar"));
+        if (pid) {
+          const pr = state.programs.find(p => p.id === pid);
+          const bar = document.createElement("button"); bar.type = "button"; bar.className = "pk-prog pk-prog-opt"; bar.dataset.id = "prog:" + pid;
+          bar.innerHTML = "<span>📁 " + escapeHtml(pr ? pr.name : "برنامج") + "</span><span class='pk-prog-hint'>كل البرنامج ✓</span>";
+          bar.onclick = () => { setChTarget("prog:" + pid); chProjectPickerDlg.close(); };
+          chpkList.append(bar);
+        } else { const bar = document.createElement("div"); bar.className = "pk-prog plain"; bar.textContent = "📌 بلا برنامج"; chpkList.append(bar); }
         for (const pl of list) addOpt(pl);
       }
-      setChProject((selected && plans.some(pl => pl.id === selected)) ? selected : "");
+      const ok = !selected ? false : (selected.indexOf("prog:") === 0 ? state.programs.some(p => p.id === selected.slice(5)) : state.plans.some(pl => pl.id === selected));
+      setChTarget(ok ? selected : "");
     }
-    // تغيير المجال يدوياً يُلغي اختيار المشروع ويحدّث قائمة المشاريع للمجال الجديد
+    // تغيير المجال يدوياً يُلغي الهدف ويحدّث القائمة للمجال الجديد
     chDomain.addEventListener("change", () => fillChProjects(""));
 
     let editingChId = null;
@@ -4327,7 +4351,7 @@
       chInput.value = c.text;
       const dom = challengeDomain(c);
       chDomain.value = (dom && DOMAINS.some(d => d.id === dom)) ? dom : "career";
-      fillChProjects(c.projectId || "");
+      fillChProjects(c.projectId ? c.projectId : (c.programId ? "prog:" + c.programId : ""));
       chAdd.textContent = "💾 حفظ";
       chCancelEdit.hidden = false;
       chAddWrap.classList.add("editing");
@@ -4379,42 +4403,49 @@
     // داخل المجال: كتلة لكل برنامج، وبداخلها كتلة لكل مشروع، والمهام العامة أولاً
     function renderChallengeDomain(body, items, sortCh) {
       const projOf = (c) => (c.projectId ? state.plans.find(p => p.id === c.projectId) : null) || null;
-      // مهام عامة (بلا مشروع) — تُعرض مباشرةً تحت المجال
-      const general = items.filter(c => !projOf(c));
+      const hasProg = (c) => c.programId && state.programs.some(p => p.id === c.programId);
+      const progOf2 = (c) => { const pl = projOf(c); if (pl) return programOf(pl); if (hasProg(c)) return state.programs.find(p => p.id === c.programId); return null; };
+      // مهام عامة (بلا مشروع وبلا برنامج) — تُعرض مباشرةً تحت المجال
+      const general = items.filter(c => !projOf(c) && !hasProg(c));
       if (general.length) {
         const gb = document.createElement("div"); gb.className = "ch-general";
         for (const c of sortCh(general)) gb.append(chTaskRow(c));
         body.append(gb);
       }
-      // مهام مرتبطة بمشاريع → تجميع حسب البرنامج ثم المشروع
-      const withProj = items.filter(c => projOf(c));
-      if (!withProj.length) return;
-      const byProg = new Map(); // progId -> Map(projId -> ch[])
-      for (const c of withProj) {
-        const pl = projOf(c); const pr = programOf(pl);
-        const pk = pr ? pr.id : "";
-        if (!byProg.has(pk)) byProg.set(pk, new Map());
-        const pm = byProg.get(pk);
-        if (!pm.has(pl.id)) pm.set(pl.id, []);
-        pm.get(pl.id).push(c);
+      // مهام لها برنامج (عبر مشروع أو مباشرةً)
+      const withProg = items.filter(c => projOf(c) || hasProg(c));
+      if (!withProg.length) return;
+      const byProg = new Map(); // progId -> { projMap: Map(projId->ch[]), direct: ch[] }
+      for (const c of withProg) {
+        const pr = progOf2(c); const pk = pr ? pr.id : "";
+        if (!byProg.has(pk)) byProg.set(pk, { projMap: new Map(), direct: [] });
+        const bucket = byProg.get(pk); const pl = projOf(c);
+        if (pl) { if (!bucket.projMap.has(pl.id)) bucket.projMap.set(pl.id, []); bucket.projMap.get(pl.id).push(c); }
+        else bucket.direct.push(c);
       }
       const progOrder = state.programs.filter(pr => byProg.has(pr.id)).map(pr => pr.id);
       if (byProg.has("")) progOrder.push("");
       for (const pk of progOrder) {
-        const projMap = byProg.get(pk);
+        const bucket = byProg.get(pk);
         const pbox = document.createElement("div"); pbox.className = "ch-prog-box" + (pk ? "" : " plain");
         const ph = document.createElement("div"); ph.className = "ch-prog";
         if (pk) { const pr = state.programs.find(p => p.id === pk); ph.textContent = "📁 " + (pr ? pr.name : "برنامج"); }
         else ph.textContent = "📌 بلا برنامج";
         pbox.append(ph);
         const pbody = document.createElement("div"); pbody.className = "ch-prog-body";
-        const projIds = state.plans.filter(pl => projMap.has(pl.id)).map(pl => pl.id);
+        // مهام على مستوى البرنامج (بلا مشروع)
+        if (bucket.direct.length) {
+          const dbox = document.createElement("div"); dbox.className = "ch-prog-direct";
+          for (const c of sortCh(bucket.direct)) dbox.append(chTaskRow(c, true));
+          pbody.append(dbox);
+        }
+        const projIds = state.plans.filter(pl => bucket.projMap.has(pl.id)).map(pl => pl.id);
         for (const pid of projIds) {
           const pl = state.plans.find(p => p.id === pid);
           const jbox = document.createElement("div"); jbox.className = "ch-proj-box";
           const jh = document.createElement("div"); jh.className = "ch-proj-head"; jh.textContent = "📄 " + (pl ? pl.name : "مشروع");
           jbox.append(jh);
-          for (const c of sortCh(projMap.get(pid))) jbox.append(chTaskRow(c, true));
+          for (const c of sortCh(bucket.projMap.get(pid))) jbox.append(chTaskRow(c, true));
           pbody.append(jbox);
         }
         pbox.append(pbody);
@@ -4423,15 +4454,18 @@
     }
     function addChallenge() {
       const t = chInput.value.trim(); if (!t) return;
-      const projectId = chProject.value || "";
+      const val = chProject.value || "";
+      let projectId = "", programId = "";
+      if (val.indexOf("prog:") === 0) programId = val.slice(5); else if (val) projectId = val;
       const proj = projectId ? state.plans.find(x => x.id === projectId) : null;
-      const domainId = proj ? planDomain(proj) : (chDomain.value || ""); // المشروع يشتقّ المجال
+      const prog = programId ? state.programs.find(x => x.id === programId) : null;
+      const domainId = proj ? planDomain(proj) : (prog ? (prog.domainId || "") : (chDomain.value || ""));
       if (editingChId) {
         const c = state.challenges.find(x => x.id === editingChId);
-        if (c) { c.text = t; c.projectId = projectId; c.domainId = domainId; if (c.done) logDoneTask(c); }
+        if (c) { c.text = t; c.projectId = projectId; c.programId = programId; c.domainId = domainId; if (c.done) logDoneTask(c); }
         save(); exitChEdit(); renderChallenges(); return;
       }
-      state.challenges.push({ id: uid(), text: t, projectId: projectId, domainId: domainId, done: false, created: Date.now() });
+      state.challenges.push({ id: uid(), text: t, projectId: projectId, programId: programId, domainId: domainId, done: false, created: Date.now() });
       save(); chInput.value = ""; fillChProjects(""); renderChallenges(); chInput.focus();
     }
     chAdd.onclick = addChallenge;
