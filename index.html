@@ -826,7 +826,9 @@
     .rem-chip { display: flex; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; }
     .rem-chip.off { opacity: .5; }
     .rem-chip .rc-time { font-size: 11px; font-weight: 800; color: var(--accent-ink); background: var(--accent-soft); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
-    .rem-chip .rc-name { flex: 1; font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rem-chip .rc-body { flex: 1; min-width: 0; }
+    .rem-chip .rc-name { font-size: 13px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .rem-chip .rc-note { font-size: 11px; color: var(--muted); font-weight: 600; margin-top: 2px; line-height: 1.5; word-break: break-word; }
     .rem-chip .rc-btn { border: none; background: none; cursor: pointer; font-size: 15px; padding: 2px; line-height: 1; }
 
     .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
@@ -1266,6 +1268,10 @@
             <input id="remDate" type="date" />
           </div>
         </div>
+        <div>
+          <label>ملاحظات (اختياري)</label>
+          <textarea id="remNote" class="set-input" rows="2" placeholder="تفاصيل التذكير…"></textarea>
+        </div>
       </div>
       <div class="actions">
         <button class="ok" value="save" id="remSave">حفظ التذكير</button>
@@ -1662,6 +1668,7 @@
       if (!p.domainUpdated || typeof p.domainUpdated !== "object") p.domainUpdated = {};
       // التذكيرات
       if (!Array.isArray(p.reminders)) p.reminders = [];
+      for (const r of p.reminders) { if (typeof r.note !== "string") r.note = ""; }
       // الأرشيف: خطط ومواد وروابط ومراجع
       if (!Array.isArray(p.archive)) p.archive = [];
       for (const a of p.archive) {
@@ -4725,6 +4732,7 @@
     const remWeekday = document.getElementById("remWeekday");
     const remMonthday = document.getElementById("remMonthday");
     const remDate = document.getElementById("remDate");
+    const remNote = document.getElementById("remNote");
     const remWeekdayWrap = document.getElementById("remWeekdayWrap");
     const remMonthdayWrap = document.getElementById("remMonthdayWrap");
     const remDateWrap = document.getElementById("remDateWrap");
@@ -4767,7 +4775,7 @@
       }
       fillRemTarget();
       remRecur.value = "daily"; remHour.value = "9"; remMin.value = "0";
-      remWeekday.value = "6"; remMonthday.value = "1"; remDate.value = "";
+      remWeekday.value = "6"; remMonthday.value = "1"; remDate.value = ""; remNote.value = "";
       if (preTarget && [...remTarget.options].some(o => o.value === preTarget)) remTarget.value = preTarget;
       updateRemFields();
       reminderDlg.showModal();
@@ -4781,7 +4789,7 @@
         id: uid(), refType: refType, refId: refId,
         recurrence: remRecur.value, time: pad2(parseInt(remHour.value, 10) || 0) + ":" + pad2(parseInt(remMin.value, 10) || 0),
         weekday: parseInt(remWeekday.value, 10), monthday: parseInt(remMonthday.value, 10) || 1,
-        date: remDate.value || "", enabled: true, nextAt: 0, lastFired: null
+        date: remDate.value || "", note: (remNote.value || "").trim(), enabled: true, nextAt: 0, lastFired: null
       };
       rem.nextAt = computeNextAt(rem);
       state.reminders.push(rem); save();
@@ -4832,7 +4840,7 @@
         if (!("serviceWorker" in navigator) || !("Notification" in window)) return;
         if (!("showTrigger" in Notification.prototype) || typeof TimestampTrigger === "undefined") return;
         const reg = await navigator.serviceWorker.ready; const nm = reminderName(rem); if (!nm) return;
-        await reg.showNotification("🔔 تذكير: " + nm, { body: "حان وقت المتابعة", tag: "remtrig-" + rem.id, showTrigger: new TimestampTrigger(rem.nextAt) });
+        await reg.showNotification("🔔 تذكير: " + nm, { body: rem.note ? rem.note : "حان وقت المتابعة", tag: "remtrig-" + rem.id, showTrigger: new TimestampTrigger(rem.nextAt) });
       } catch (_) {}
     }
     function checkReminders() {
@@ -4843,7 +4851,7 @@
         if (!rem.nextAt) { rem.nextAt = computeNextAt(rem); changed = true; }
         if (now >= rem.nextAt) {
           const nm = reminderName(rem);
-          if (nm) fireNotification("🔔 تذكير: " + nm, "حان وقت متابعة هذا " + (rem.refType === "program" ? "البرنامج" : "المشروع"));
+          if (nm) fireNotification("🔔 تذكير: " + nm, rem.note ? rem.note : ("حان وقت متابعة هذا " + (rem.refType === "program" ? "البرنامج" : "المشروع")));
           rem.lastFired = now; rem.nextAt = computeNextAt(rem); changed = true;
         }
       }
@@ -4873,12 +4881,15 @@
       const nm = reminderName(rem) || "(عنصر محذوف)";
       const chip = document.createElement("div"); chip.className = "rem-chip" + (rem.enabled ? "" : " off");
       const time = document.createElement("span"); time.className = "rc-time"; time.textContent = showBadge ? remDetail(rem) : fmtRemTime(rem.time);
-      const name = document.createElement("span"); name.className = "rc-name"; name.textContent = nm;
+      const body = document.createElement("div"); body.className = "rc-body";
+      const name = document.createElement("div"); name.className = "rc-name"; name.textContent = nm;
+      body.append(name);
+      if (rem.note) { const note = document.createElement("div"); note.className = "rc-note"; note.textContent = rem.note; body.append(note); }
       const tg = document.createElement("button"); tg.className = "rc-btn"; tg.textContent = rem.enabled ? "🔔" : "🔕"; tg.title = "تفعيل/تعطيل";
       tg.onclick = (e) => { e.stopPropagation(); rem.enabled = !rem.enabled; if (rem.enabled) { rem.nextAt = computeNextAt(rem); scheduleTrigger(rem); } save(); renderReminders(); };
       const del = document.createElement("button"); del.className = "rc-btn"; del.textContent = "🗑️"; del.title = "حذف";
       del.onclick = (e) => { e.stopPropagation(); state.reminders = state.reminders.filter(x => x.id !== rem.id); save(); renderReminders(); };
-      chip.append(time, name, tg, del);
+      chip.append(time, body, tg, del);
       return chip;
     }
     function remsByTime(list) {
