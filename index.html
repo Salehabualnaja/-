@@ -942,8 +942,12 @@
     .back-btn:active { transform: scale(.97); }
     /* تصنيف حسب المجال في صفحة المشاريع */
     .dom-section { margin-bottom: 22px; }
-    .dom-section-head { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 15px; color: var(--accent-ink); padding: 6px 4px 12px; border-bottom: 2px solid var(--accent-soft); margin-bottom: 12px; }
+    .dom-section-head { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 15px; color: var(--accent-ink); padding: 6px 4px 12px; border-bottom: 2px solid var(--accent-soft); margin-bottom: 12px; cursor: pointer; }
     .dom-section-head .dsh-pct { font-size: 13px; color: var(--accent); font-variant-numeric: tabular-nums; }
+    .dom-section-head .dsh-chev { display: inline-block; font-size: 12px; color: var(--muted); transition: transform .2s; }
+    .dom-section.collapsed .dsh-chev { transform: rotate(-90deg); }
+    .dom-section.collapsed .dom-section-head { margin-bottom: 0; padding-bottom: 8px; }
+    .dom-section.collapsed > .prog-block { display: none; }
     /* بطاقة إحصاءات البرامج والمشاريع */
     .stats-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 12px; box-shadow: var(--shadow); }
     .stats-card[hidden] { display: none; }
@@ -1238,7 +1242,7 @@
   <!-- الشريط السفلي للتنقل: ثلاث صفحات -->
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" data-mode="stats"><span class="bi">📊</span><span class="bl">الإحصاءات</span></button>
-    <button class="navbtn" data-mode="projects"><span class="bi">📁</span><span class="bl">المشاريع</span></button>
+    <button class="navbtn" data-mode="projects"><span class="bi">📁</span><span class="bl">الإدخال</span></button>
     <button class="navbtn" data-mode="archive"><span class="bi">🗄️</span><span class="bl">الأرشيف</span></button>
   </nav>
 
@@ -2000,7 +2004,7 @@
         els.dayLabel.textContent = "الأرشيف — خططك وموادك وروابطك ومراجعك";
         renderArchive();
       } else if (appMode === "projects") {
-        els.dayLabel.textContent = "المشاريع — برامجك ومشاريعك مصنّفة";
+        els.dayLabel.textContent = "الإدخال — برامجك ومشاريعك مصنّفة";
         renderProjects();
       } else if (appMode === "reminders") {
         els.dayLabel.textContent = "التذكيرات — يومية · أسبوعية · شهرية · سنوية";
@@ -3106,26 +3110,28 @@
 
       // حسب المجالات الثمانية (ترتيب يدوي قابل للسحب)
       frag.append(makeReorderHint());
+      const mkDomHead = (sec, key, inner) => {
+        const head = document.createElement("div"); head.className = "dom-section-head";
+        head.innerHTML = "<span class='dsh-nm'><span class='dsh-chev'>▾</span> " + inner + "</span>";
+        head.onclick = () => { if (expandedDomains.has(key)) expandedDomains.delete(key); else expandedDomains.add(key); sec.classList.toggle("collapsed"); };
+        return head;
+      };
       for (const d of DOMAINS) {
         const progs = state.programs.filter(pr => (pr.domainId || "") === d.id);
         // عادات المجال غير المرتبطة ببرنامج (المرتبطة تظهر داخل كتلة برنامجها)
         const domHabits = state.habits.filter(h => habitDomain(h) === d.id && !habitProgramOf(h));
         if (!progs.length && !domHabits.length) continue;
-        const sec = document.createElement("div"); sec.className = "dom-section";
-        const head = document.createElement("div"); head.className = "dom-section-head";
+        const sec = document.createElement("div"); sec.className = "dom-section" + (expandedDomains.has(d.id) ? "" : " collapsed");
         const pct = Math.round(domainProgress(d.id, false) * 100);
-        head.innerHTML = "<span>" + d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪</span>";
-        sec.append(head);
+        sec.append(mkDomHead(sec, d.id, d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪"));
         for (const prog of progs) sec.append(buildProgramBlock(prog, true, true));
         if (domHabits.length) sec.append(habitsBlock("عادات " + d.name, domHabits));
         frag.append(sec);
       }
       const noDomProgs = state.programs.filter(pr => !pr.domainId || !DOMAINS.some(d => d.id === pr.domainId));
       if (noDomProgs.length) {
-        const sec = document.createElement("div"); sec.className = "dom-section";
-        const head = document.createElement("div"); head.className = "dom-section-head";
-        head.innerHTML = "<span>📌 برامج بلا مجال</span>";
-        sec.append(head);
+        const sec = document.createElement("div"); sec.className = "dom-section" + (expandedDomains.has("__nodom__") ? "" : " collapsed");
+        sec.append(mkDomHead(sec, "__nodom__", "📌 برامج بلا مجال"));
         for (const prog of noDomProgs) sec.append(buildProgramBlock(prog, false, true));
         frag.append(sec);
       }
@@ -3137,6 +3143,7 @@
       wireProjectReordering();
     }
 
+    const expandedDomains = new Set();
     const expandedPrograms = new Set();
     function buildProgramBlock(prog, hideDomainBadge, manual) {
       const block = document.createElement("div"); block.className = "prog-block";
