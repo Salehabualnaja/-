@@ -2303,7 +2303,6 @@
         wrap.append(card);
         if (buckets.length) wrap.append(columnChartCard("النقاط حسب " + (perfDomain ? "المشروع" : "المجال"), buckets, 0, null, v => toArDigits(Math.round(v)) + " ن"));
         else { const e = document.createElement("div"); e.className = "perf-empty"; e.textContent = "لا مشاريع نقاط في هذا النطاق."; wrap.append(e); }
-        wrap.append(buildProgramsPerf());
         return;
       }
 
@@ -2346,7 +2345,6 @@
         const buckets = compositeBuckets(cut, bucketMode);
         const chartTitle = "مؤشّر الأداء — " + (bucketMode === "week" ? "متوسّط أسبوعي" : "آخر " + toArDigits(chartN) + " يوم");
         wrap.append(columnChartCard(chartTitle, buckets, 100, b => b.ms >= 100, v => toArDigits(Math.round(v))));
-        wrap.append(buildProgramsPerf());
         return;
       }
 
@@ -2384,8 +2382,6 @@
       const chartTitle = (isHours ? "ساعات — " : "العادات — ") + (bucketMode === "week" ? "12 أسبوعاً" : "آخر " + toArDigits(chartN) + " يوم");
       const goalPer = (isHours && bucketMode === "day") ? goal : 0;
       wrap.append(columnChartCard(chartTitle, buildBuckets(cut.map(x => x.ds), cut.map(x => x.v), bucketMode), goalPer, (goalPer > 0 ? (b => b.ms >= goalPer) : null), fmtV));
-
-      wrap.append(buildProgramsPerf());
     }
     function perfDelta(cur, prev) {
       const s = document.createElement("span"); s.className = "perf-delta";
