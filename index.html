@@ -412,6 +412,34 @@
     /* زر إضافة هدف بارز */
     .add-goal-btn { width: 100%; margin-bottom: 14px; border: 1.5px dashed var(--border-strong); background: var(--panel); color: var(--accent); font-family: inherit; font-weight: 800; font-size: 15px; padding: 14px 0; border-radius: var(--radius); cursor: pointer; box-shadow: var(--shadow); transition: border-color .15s, background .15s; }
     .add-goal-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+    /* زر فتح الجدولة */
+    .sched-open-btn { width: 100%; margin: -4px 0 14px; border: none; background: var(--accent-soft); color: var(--accent-ink); font-family: inherit; font-weight: 800; font-size: 13.5px; padding: 11px 0; border-radius: 12px; cursor: pointer; }
+    .sched-open-btn:active { transform: scale(.99); }
+    /* نافذة جدولة المشاريع */
+    #scheduleDlg { width: 720px; max-width: 98vw; max-height: 96dvh; overflow: hidden; padding: 0; }
+    .sch-dlg { display: flex; flex-direction: column; max-height: inherit; padding: 0; }
+    .sch-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .sch-head h3 { margin: 0; font-size: 16px; }
+    .sch-quick { padding: 12px 16px; background: var(--panel-2); border-bottom: 1px solid var(--border); }
+    .sch-quick-title { font-size: 12.5px; font-weight: 800; color: var(--accent-ink); margin-bottom: 8px; }
+    .sch-quick-row { display: flex; gap: 10px; }
+    .sch-quick-row > div { flex: 1; min-width: 0; }
+    .sch-quick-row label { display: block; font-size: 11px; font-weight: 700; color: var(--muted); margin-bottom: 4px; }
+    .sch-quick-row input, .sch-quick-row select { width: 100%; border: 1px solid var(--border-strong); background: var(--panel); color: var(--text); border-radius: 10px; padding: 8px 10px; font-size: 13px; font-family: inherit; font-weight: 700; box-sizing: border-box; }
+    .sch-quick-acts { display: flex; gap: 8px; margin-top: 10px; }
+    .sch-apply { flex: 1; border: 1px solid var(--border-strong); background: var(--panel); color: var(--accent-ink); border-radius: 10px; padding: 9px 4px; font-size: 12.5px; font-weight: 800; cursor: pointer; font-family: inherit; }
+    .sch-apply.alt { background: var(--accent); color: #fff; border-color: transparent; }
+    .sch-apply:active { transform: scale(.98); }
+    .sch-list { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 10px 16px calc(14px + env(safe-area-inset-bottom)); min-height: 50dvh; }
+    .sch-grp { margin-bottom: 14px; }
+    .sch-grp-head { font-size: 12.5px; font-weight: 800; color: var(--accent-ink); padding: 4px 2px 8px; }
+    .sch-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); }
+    .sch-row:first-of-type { border-top: none; }
+    .sch-nm { flex: 1; min-width: 0; }
+    .sch-nm-t { font-weight: 800; font-size: 13.5px; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sch-nm-s { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
+    .sch-fields { display: flex; gap: 6px; flex: none; }
+    .sch-date { border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 9px; padding: 6px 7px; font-size: 12px; font-family: inherit; width: 118px; max-width: 34vw; }
 
     /* قسم المفضلة */
     #favList { display: flex; flex-direction: column; gap: 8px; margin-bottom: 6px; }
@@ -1043,6 +1071,7 @@
 
     <section id="projectsSection" hidden>
       <button class="add-goal-btn" id="projectsAddBtn">➕ إضافة برنامج أو مشروع</button>
+      <button class="sched-open-btn" id="scheduleBtn">🗓️ جدولة المشاريع دفعةً واحدة</button>
       <div class="tabs" id="projViewTabs">
         <button data-pview="favorites" class="active">⭐ المفضلة</button>
         <button data-pview="domain">حسب المجالات</button>
@@ -1348,6 +1377,38 @@
         <button class="cancel" value="cancel" formnovalidate>إلغاء</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- جدولة المشاريع دفعةً واحدة -->
+  <dialog id="scheduleDlg">
+    <div class="dlg sch-dlg">
+      <div class="sch-head">
+        <h3>🗓️ جدولة المشاريع</h3>
+        <button class="ch-x" id="schX" aria-label="إغلاق" title="إغلاق">✕</button>
+      </div>
+      <div class="sch-quick">
+        <div class="sch-quick-title">⚡ تعبئة سريعة لعدّة مشاريع</div>
+        <div class="sch-quick-row">
+          <div><label>تبدأ من</label><input id="schQStart" type="date" /></div>
+          <div><label>المدة</label>
+            <select id="schQDur">
+              <option value="7">أسبوع</option>
+              <option value="14">أسبوعان</option>
+              <option value="30" selected>شهر</option>
+              <option value="90">٣ أشهر</option>
+              <option value="180">٦ أشهر</option>
+              <option value="365">سنة</option>
+              <option value="2030">حتى نهاية 2030</option>
+            </select>
+          </div>
+        </div>
+        <div class="sch-quick-acts">
+          <button class="sch-apply" id="schApplyNew">تطبيق على غير المجدولة</button>
+          <button class="sch-apply alt" id="schApplyAll">تطبيق على الكل</button>
+        </div>
+      </div>
+      <div class="sch-list" id="schList"></div>
+    </div>
   </dialog>
 
   <!-- تأكيد الحذف -->
@@ -3978,6 +4039,78 @@
     });
     const projectsAddBtnEl = document.getElementById("projectsAddBtn");
     if (projectsAddBtnEl) projectsAddBtnEl.onclick = () => addSheet.showModal();
+
+    // ---------- جدولة المشاريع دفعةً واحدة ----------
+    const scheduleDlg = document.getElementById("scheduleDlg");
+    const schList = document.getElementById("schList");
+    const schQStart = document.getElementById("schQStart");
+    const schQDur = document.getElementById("schQDur");
+    function parseDateInput(s) { if (!s) return null; const p = s.split("-"); if (p.length !== 3) return null; return new Date(+p[0], +p[1] - 1, +p[2]); }
+    function addDur(startStr, key) {
+      if (key === "2030") return "2030-12-31";
+      const base = parseDateInput(startStr) || new Date();
+      const d = new Date(base); d.setDate(d.getDate() + (parseInt(key, 10) || 0));
+      return toDateInput(d.getTime());
+    }
+    function schFillDur(pl) {
+      if (!pl.startDate && !pl.endDate) return "غير مجدول";
+      const s = pl.startDate ? pl.startDate : "؟", e = pl.endDate ? pl.endDate : "؟";
+      let extra = "";
+      if (pl.startDate && pl.endDate) { const a = parseDateInput(pl.startDate), b = parseDateInput(pl.endDate); if (a && b) { const days = Math.round((b - a) / DAY_MS); if (days >= 0) extra = " · " + toArDigits(days) + " يوم"; } }
+      return s + " ← " + e + extra;
+    }
+    function schRow(pl) {
+      const row = document.createElement("div"); row.className = "sch-row";
+      const nm = document.createElement("div"); nm.className = "sch-nm";
+      nm.innerHTML = "<div class='sch-nm-t'>" + escapeHtml(pl.name) + "</div><div class='sch-nm-s'>" + escapeHtml(schFillDur(pl)) + "</div>";
+      const fields = document.createElement("div"); fields.className = "sch-fields";
+      const sIn = document.createElement("input"); sIn.type = "date"; sIn.className = "sch-date"; sIn.value = pl.startDate || ""; sIn.title = "البداية";
+      const eIn = document.createElement("input"); eIn.type = "date"; eIn.className = "sch-date"; eIn.value = pl.endDate || ""; eIn.title = "النهاية";
+      const sync = () => { pl.startDate = sIn.value || ""; pl.endDate = eIn.value || ""; save(); nm.querySelector(".sch-nm-s").textContent = schFillDur(pl); };
+      sIn.onchange = sync; eIn.onchange = sync;
+      fields.append(sIn, eIn);
+      row.append(nm, fields);
+      return row;
+    }
+    function renderSchedule() {
+      schList.replaceChildren();
+      if (!state.plans.length) { const e = document.createElement("div"); e.className = "empty"; e.textContent = "لا مشاريع بعد."; schList.append(e); return; }
+      // مجموعات حسب البرنامج (بترتيب المجالات ثم البرامج)
+      const byProg = new Map();
+      for (const pl of state.plans) { const k = pl.programId || ""; if (!byProg.has(k)) byProg.set(k, []); byProg.get(k).push(pl); }
+      const order = state.programs.filter(pr => byProg.has(pr.id)).map(pr => pr.id);
+      if (byProg.has("")) order.push("");
+      for (const k of order) {
+        const grp = document.createElement("div"); grp.className = "sch-grp";
+        const pr = k ? state.programs.find(p => p.id === k) : null;
+        const h = document.createElement("div"); h.className = "sch-grp-head";
+        h.textContent = pr ? ("📁 " + pr.name) : "🗂️ مشاريع بلا برنامج";
+        grp.append(h);
+        for (const pl of byProg.get(k)) grp.append(schRow(pl));
+        schList.append(grp);
+      }
+    }
+    function openSchedule() {
+      if (!state.plans.length) { alert("لا توجد مشاريع لجدولتها بعد."); return; }
+      schQStart.value = toDateInput(Date.now());
+      renderSchedule();
+      scheduleDlg.showModal();
+    }
+    function applyQuick(onlyNew) {
+      const start = schQStart.value || toDateInput(Date.now());
+      const end = addDur(start, schQDur.value);
+      let n = 0;
+      for (const pl of state.plans) {
+        if (onlyNew && (pl.startDate || pl.endDate)) continue;
+        pl.startDate = start; pl.endDate = end; n++;
+      }
+      save(); renderSchedule();
+    }
+    const scheduleBtnEl = document.getElementById("scheduleBtn");
+    if (scheduleBtnEl) scheduleBtnEl.onclick = openSchedule;
+    document.getElementById("schX").onclick = () => { scheduleDlg.close(); refreshViews(); };
+    document.getElementById("schApplyNew").onclick = () => applyQuick(true);
+    document.getElementById("schApplyAll").onclick = () => applyQuick(false);
 
     // ---------- الأرشيف: نافذة الإضافة/التعديل ----------
     const archiveDlg = document.getElementById("archiveDlg");
