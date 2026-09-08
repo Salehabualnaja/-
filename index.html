@@ -4137,7 +4137,7 @@
         setNiFav(!!item.favorite);
         itemTHours.hidden = false; itemTPoints.hidden = false; itemTHabit.hidden = false;
       } else {
-        type = presetType || "hours";
+        type = presetType || "points"; // الوضع الافتراضي: نقاط
         itemDlgTitleEl.textContent = "📄 مشروع جديد"; itemSave.textContent = "إضافة";
         itemName.value = ""; itemStart.value = ""; itemEnd.value = "";
         fillProgramSelect(presetProgramId || "");
