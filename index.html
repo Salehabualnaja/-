@@ -1752,6 +1752,10 @@
         if (typeof w.w2030 !== "number") w.w2030 = 1;
         p.domainWeights[d.id] = w;
       }
+      // ترتيب يدوي للمجالات في صفحة الإدخال
+      if (!Array.isArray(p.domainOrder)) p.domainOrder = [];
+      p.domainOrder = p.domainOrder.filter(id => DOMAINS.some(d => d.id === id));
+      for (const d of DOMAINS) if (!p.domainOrder.includes(d.id)) p.domainOrder.push(d.id);
       return p;
     }
     function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} }
@@ -3117,12 +3121,13 @@
         head.onclick = () => { if (expandedDomains.has(key)) expandedDomains.delete(key); else expandedDomains.add(key); sec.classList.toggle("collapsed"); };
         return head;
       };
-      for (const d of DOMAINS) {
+      for (const d of domainsOrdered()) {
         const progs = state.programs.filter(pr => (pr.domainId || "") === d.id);
         // عادات المجال غير المرتبطة ببرنامج (المرتبطة تظهر داخل كتلة برنامجها)
         const domHabits = state.habits.filter(h => habitDomain(h) === d.id && !habitProgramOf(h));
         if (!progs.length && !domHabits.length) continue;
         const sec = document.createElement("div"); sec.className = "dom-section" + (expandedDomains.has(d.id) ? "" : " collapsed");
+        sec.dataset.dom = d.id;
         const pct = Math.round(domainProgress(d.id, false) * 100);
         sec.append(mkDomHead(sec, d.id, d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪"));
         for (const prog of progs) sec.append(buildProgramBlock(prog, true, true));
@@ -3340,6 +3345,28 @@
       positions.forEach((pos, k) => { if (reordered[k]) result[pos] = reordered[k]; });
       state.programs = result; save();
     }
+    // المجالات مرتّبة حسب ترتيب المستخدم اليدوي
+    function domainsOrdered() {
+      const map = new Map(DOMAINS.map(d => [d.id, d]));
+      const out = state.domainOrder.map(id => map.get(id)).filter(Boolean);
+      for (const d of DOMAINS) if (!out.includes(d)) out.push(d);
+      return out;
+    }
+    // إعادة ترتيب المجالات الظاهرة مع الحفاظ على مواضع المخفية بينها
+    function reorderDomains(orderedIds) {
+      orderedIds = orderedIds.filter(Boolean);
+      const base = domainsOrdered().map(d => d.id);
+      const reordered = orderedIds.slice();
+      const positions = [];
+      base.forEach((id, i) => { if (orderedIds.includes(id)) positions.push(i); });
+      const result = base.slice();
+      positions.forEach((pos, k) => { if (reordered[k]) result[pos] = reordered[k]; });
+      state.domainOrder = result;
+      save();
+    }
+    function wireDomains(container) {
+      makeReorderable(container, ".dom-section[data-dom]", ".dom-section-head", "dom", ids => reorderDomains(ids));
+    }
     function wirePrograms(container) {
       makeReorderable(container, ".prog-block[data-prog-id]", ".prog-head", "progId", ids => reorderProgramsSubset(ids));
     }
@@ -3355,8 +3382,10 @@
     }
     function wireProjectReordering() {
       const listEl = els.projectsList;
-      if (projectsView === "domain") listEl.querySelectorAll(".dom-section").forEach(sec => wirePrograms(sec));
-      else wirePrograms(listEl);
+      if (projectsView === "domain") {
+        wireDomains(listEl);
+        listEl.querySelectorAll(".dom-section").forEach(sec => wirePrograms(sec));
+      } else wirePrograms(listEl);
       wirePlanBoxes(listEl);
     }
 
