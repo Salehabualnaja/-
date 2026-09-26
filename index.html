@@ -862,29 +862,27 @@
     .chproj-wrap { margin-bottom: 14px; }
     .chproj-title { font-size: 13px; font-weight: 800; color: var(--text); margin: 2px 2px 9px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .chproj-title .chproj-hint { font-size: 10.5px; font-weight: 700; color: var(--muted); }
-    /* خانة المشروع الموحّدة: ملخّص (اسم · عدد · آخر إنجاز) + مهام قابلة للطيّ */
-    .chproj-item { border: 1px solid var(--border); border-radius: 12px; background: var(--panel); overflow: hidden; }
-    .chproj-item + .chproj-item, .chtask-block + .chproj-item { margin-top: 8px; }
-    .chproj-head { display: flex; align-items: center; gap: 8px; padding: 9px 11px; cursor: pointer; }
-    .chproj-head .cx-chev { flex: none; font-size: 11px; color: var(--muted); transition: transform .2s; }
-    .chproj-item.col .chproj-head .cx-chev { transform: rotate(-90deg); }
-    .chproj-ic { flex: none; font-size: 15px; line-height: 1.15; }
-    .chproj-nm2 { flex: 1; min-width: 0; font-size: 13px; font-weight: 800; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .chproj-badge { flex: none; font-size: 11px; font-weight: 900; color: var(--accent-ink); background: var(--accent-soft); border-radius: 999px; padding: 2px 9px; }
-    .chproj-add { flex: none; width: 28px; height: 28px; border: none; border-radius: 8px; background: var(--panel-2); color: var(--accent-ink); font-size: 12px; cursor: pointer; font-family: inherit; }
-    .chproj-add:active { transform: scale(.9); }
-    .chproj-metline { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 12px 8px; font-size: 10.5px; font-weight: 700; }
-    .chproj-metline .cpm-pend { color: var(--accent-ink); }
-    .chproj-metline .cpm-done { color: var(--run); }
-    .chproj-metline .cpm-none { color: var(--muted); }
-    .chproj-metline .cpm-ago { margin-inline-start: auto; color: var(--run); background: var(--run-soft); border-radius: 7px; padding: 2px 7px; }
-    .chproj-tasks { padding: 8px; border-top: 1px solid var(--border); background: var(--panel-2); display: flex; flex-direction: column; gap: 4px; }
-    .chproj-item.col .chproj-tasks { display: none; }
-    .chproj-tasks .ch-task { margin-bottom: 0; }
-    .chproj-empty { font-size: 11.5px; color: var(--muted); text-align: center; padding: 8px; font-weight: 700; }
-    .chtask-block { background: var(--panel); border: 1px dashed var(--border-strong); border-radius: 10px; padding: 8px; display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
-    .chtask-block .ch-task { margin-bottom: 0; }
-    .chtask-lbl { font-size: 11px; font-weight: 800; color: var(--muted); padding: 0 2px 2px; }
+    /* صناديق المشاريع المربّعة: اسم · العدد الكلي للمهام · آخر تحديث */
+    .chbox-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; justify-items: start; }
+    .chbox { width: 100%; max-width: 200px; aspect-ratio: 1 / 1; display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 4px; text-align: center; padding: 10px 8px; border-radius: 13px; border: 1px solid var(--border); background: var(--panel); cursor: pointer; font-family: inherit; overflow: hidden; transition: transform .1s, border-color .15s; }
+    .chbox:active { transform: scale(.96); }
+    .chbox:hover { border-color: color-mix(in srgb, var(--accent) 40%, var(--border)); }
+    .chbox-nm { display: flex; align-items: center; gap: 4px; justify-content: center; font-size: 11px; font-weight: 800; color: var(--text); line-height: 1.25; width: 100%; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .chbox-num { font-size: 24px; font-weight: 900; color: var(--accent-ink); line-height: 1; }
+    .chbox-num small { font-size: 9.5px; font-weight: 800; color: var(--muted); margin-inline-start: 2px; }
+    .chbox-upd { font-size: 9px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+    .chbox.special { background: var(--panel-2); border-style: dashed; }
+    /* نافذة مهام المشروع */
+    #projTasksDlg { width: 460px; max-width: 94vw; max-height: 90dvh; overflow: hidden; padding: 0; border: none; border-radius: 18px; }
+    .pt-dlg { display: flex; flex-direction: column; max-height: inherit; padding: 0; }
+    .pt-head { display: flex; align-items: center; justify-content: space-between; padding: 13px 16px; border-bottom: 1px solid var(--border); }
+    .pt-head-t h3 { margin: 0; font-size: 15px; }
+    .pt-head-t .pt-sub { font-size: 10.5px; font-weight: 700; color: var(--muted); }
+    .pt-add { display: flex; gap: 8px; padding: 12px 16px 6px; }
+    .pt-add input { flex: 1; min-width: 0; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 9px; padding: 8px 11px; font-size: 13px; font-family: inherit; }
+    .pt-add .ch-addbtn { flex: none; padding: 8px 16px; border: none; border-radius: 9px; background: var(--fab); color: #fff; font-weight: 800; font-size: 14px; cursor: pointer; font-family: inherit; }
+    .pt-list { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 8px 16px calc(14px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 5px; min-height: 30dvh; }
+    .pt-empty { font-size: 12.5px; color: var(--muted); text-align: center; padding: 24px 8px; font-weight: 700; }
     /* شجرة المشاريع القابلة للطيّ: مجال ← برنامج ← مشاريع */
     .chtree { display: flex; flex-direction: column; gap: 12px; }
     .chtree-dom { border: 1px solid var(--border); border-radius: 14px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
@@ -901,7 +899,6 @@
     .chtree-prog.plain .chtree-proghead { color: var(--muted); }
     .chtree-progbody { padding: 9px; }
     .chtree-prog.col .chtree-progbody { display: none; }
-    .chtree-progbody .chproj-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
 
     /* ═══ المؤقت اليومي (ثلاثة أبعاد + إجمالي) ═══ */
     #timerDlg { width: 480px; max-width: 96vw; max-height: 94dvh; overflow: hidden; padding: 0; border: none; border-radius: 20px; }
@@ -1174,7 +1171,7 @@
         </div>
       </div>
       <div class="chproj-wrap" id="chProjWrap">
-        <div class="chproj-title">📂 المهام حسب المشاريع <span class="chproj-hint">مجال ← برنامج ← مشروع · اضغط للفتح</span></div>
+        <div class="chproj-title">📂 المهام حسب المشاريع <span class="chproj-hint">اضغط الصندوق لعرض مهامه وإضافتها</span></div>
         <div id="chProjTree" class="chtree"></div>
       </div>
     </section>
@@ -1449,6 +1446,21 @@
         <button class="ch-x" id="dtX" aria-label="إغلاق" title="إغلاق">✕</button>
       </div>
       <div class="dt-list" id="doneTasksList"></div>
+    </div>
+  </dialog>
+
+  <!-- مهام مشروع/مجموعة (تُفتح من صندوق المشروع) -->
+  <dialog id="projTasksDlg">
+    <div class="dlg pt-dlg">
+      <div class="pt-head">
+        <div class="pt-head-t"><h3 id="ptTitle">📄 مشروع</h3><span class="pt-sub" id="ptSub"></span></div>
+        <button class="ch-x" id="ptX" aria-label="إغلاق" title="إغلاق">✕</button>
+      </div>
+      <div class="pt-add">
+        <input id="ptInput" type="text" placeholder="أضف مهمة…" autocomplete="off" />
+        <button class="ch-addbtn" id="ptAdd">➕</button>
+      </div>
+      <div class="pt-list" id="ptList"></div>
     </div>
   </dialog>
 
@@ -4475,7 +4487,7 @@
       const row = document.createElement("div"); row.className = "ch-task" + (c.done ? " done" : "");
       const check = document.createElement("button"); check.className = "ch-check" + (c.done ? " on" : "");
       check.textContent = c.done ? "✓" : ""; check.title = "تبديل الإنجاز";
-      check.onclick = () => { c.done = !c.done; if (c.done) { c.doneAt = Date.now(); logDoneTask(c); } else unlogDoneTask(c); save(); renderChallenges(); };
+      check.onclick = () => { c.done = !c.done; if (c.done) { c.doneAt = Date.now(); logDoneTask(c); } else unlogDoneTask(c); save(); refreshChallengeViews(); };
       const txt = document.createElement("button"); txt.className = "ct-text"; txt.title = "اضغط لعرض التفاصيل والتعديل";
       const tline = document.createElement("div"); tline.textContent = c.text; txt.append(tline);
       if (!hideProj && c.projectId) { const p = state.plans.find(x => x.id === c.projectId); if (p) { const sub = document.createElement("div"); sub.className = "ct-proj"; sub.textContent = "📄 " + p.name; txt.append(sub); } }
@@ -4484,12 +4496,13 @@
       del.onclick = () => {
         if (editingChId === c.id) exitChEdit();
         // المهمة المنجَزة تبقى مسجَّلة في سجلّ الإنجازات حتى بعد حذفها
-        state.challenges = state.challenges.filter(x => x.id !== c.id); save(); renderChallenges();
+        state.challenges = state.challenges.filter(x => x.id !== c.id); save(); refreshChallengeViews();
       };
       row.append(check, txt, del);
       return row;
     }
     function enterChEdit(c) {
+      if (projTasksDlg && projTasksDlg.open) projTasksDlg.close();
       editingChId = c.id;
       chInput.value = c.text;
       const dom = challengeDomain(c);
@@ -4511,40 +4524,31 @@
 
     // حالة الطيّ لشجرة صفحة المهام (مستقلة عن صفحة الإدخال)
     const chTreeDoms = new Set();   // معرّفات المجالات المفتوحة
-    const chTreeProgs = new Set();  // معرّفات البرامج المفتوحة ("__np__:<dom>" لكتلة بلا برنامج)
-    const chTreeProjs = new Set();  // معرّفات المشاريع المفتوحة
+    const chTreeProgs = new Set();  // معرّفات البرامج المفتوحة
     const chSortTasks = (arr) => arr.slice().sort((a, b) => (a.done - b.done) || (b.created - a.created));
-    // خانة المشروع: تُظهر ملخّصه (الاسم · عدد المهام · آخر إنجاز) وتُوسَّع لتضمّ مهامه
-    function buildChProjItem(p) {
-      const tasks = chSortTasks(state.challenges.filter(c => c.projectId === p.id));
-      const doneTasks = tasks.filter(c => c.done);
-      let lastDone = 0;
-      for (const c of doneTasks) { const t = c.doneAt || c.created || 0; if (t > lastDone) lastDone = t; }
-      const total = tasks.length, done = doneTasks.length, pending = total - done;
+    const chValidProj = (c) => c.projectId && state.plans.some(p => p.id === c.projectId);
+    const chValidProg = (c) => c.programId && state.programs.some(p => p.id === c.programId);
+    function chMaxTaskTs(tasks) { let t = 0; for (const c of tasks) { const x = c.doneAt || c.created || 0; if (x > t) t = x; } return t; }
+    // صندوق مربّع موحّد: الاسم · العدد الكلي للمهام · آخر تحديث
+    function buildChBox(icon, name, total, updatedTs, special, onOpen) {
+      const box = document.createElement("button"); box.type = "button"; box.className = "chbox" + (special ? " special" : "");
+      box.innerHTML =
+        "<div class='chbox-nm'>" + icon + " " + escapeHtml(name) + "</div>" +
+        "<div class='chbox-num'>" + toArDigits(total) + "<small>مهمة</small></div>" +
+        "<div class='chbox-upd'>🕒 " + (updatedTs ? fmtUpdatedShort(updatedTs) : "—") + "</div>";
+      box.title = name;
+      box.onclick = onOpen;
+      return box;
+    }
+    function buildProjBox(p) {
+      const tasks = state.challenges.filter(c => c.projectId === p.id);
       const dom = planDomain(p);
       const ic = (dom && DOMAINS.some(d => d.id === dom)) ? domainIcon(dom) : "📄";
-      const open = chTreeProjs.has(p.id);
-      const item = document.createElement("div"); item.className = "chproj-item" + (open ? "" : " col");
-      const head = document.createElement("div"); head.className = "chproj-head";
-      head.innerHTML =
-        "<span class='cx-chev'>▾</span><span class='chproj-ic'>" + ic + "</span>" +
-        "<span class='chproj-nm2'>" + escapeHtml(p.name) + "</span>" +
-        "<span class='chproj-badge'>" + toArDigits(total) + "</span>";
-      const addBtn = document.createElement("button"); addBtn.type = "button"; addBtn.className = "chproj-add"; addBtn.textContent = "➕"; addBtn.title = "إضافة مهمة لهذا المشروع";
-      addBtn.onclick = (e) => { e.stopPropagation(); exitChEdit(); setChTarget(p.id); chInput.focus(); chInput.scrollIntoView({ block: "center", behavior: "smooth" }); };
-      head.append(addBtn);
-      head.onclick = () => { if (chTreeProjs.has(p.id)) chTreeProjs.delete(p.id); else chTreeProjs.add(p.id); item.classList.toggle("col"); };
-      const meta = document.createElement("div"); meta.className = "chproj-metline";
-      meta.innerHTML =
-        (total ? (pending ? "<span class='cpm-pend'>" + toArDigits(pending) + " قيد التنفيذ</span>" : "<span class='cpm-done'>اكتملت ✓</span>") : "<span class='cpm-none'>لا مهام</span>") +
-        (lastDone ? "<span class='cpm-ago'>🏁 " + fmtAgo(lastDone) + "</span>" : "");
-      const body = document.createElement("div"); body.className = "chproj-tasks";
-      if (tasks.length) { for (const c of tasks) body.append(chTaskRow(c, true)); }
-      else { const e = document.createElement("div"); e.className = "chproj-empty"; e.textContent = "لا مهام بعد — اضغط ➕ للإضافة"; body.append(e); }
-      item.append(head, meta, body);
-      return item;
+      const updated = tasks.length ? chMaxTaskTs(tasks) : planUpdatedAt(p);
+      return buildChBox(ic, p.name, tasks.length, updated, false,
+        () => openProjTasks({ kind: "project", id: p.id, title: "📄 " + p.name }));
     }
-    // شجرة موحّدة قابلة للطيّ: مجال ← برنامج ← مشروع (وبداخل كلٍّ مهامه)
+    // شجرة قابلة للطيّ: مجال ← برنامج ← صناديق المشاريع المربّعة
     function renderChProjects() {
       const wrap = document.getElementById("chProjWrap");
       const tree = document.getElementById("chProjTree");
@@ -4556,45 +4560,44 @@
         e.textContent = "لا مشاريع أو مهام بعد.\nأضِف مشروعاً من صفحة الإدخال، أو اكتب مهمة في الأعلى.";
         tree.append(e); return;
       }
-      const validProg = (c) => c.programId && state.programs.some(p => p.id === c.programId);
-      const validProj = (c) => c.projectId && state.plans.some(p => p.id === c.projectId);
-      // كتلة مهام مباشرة (عامة أو على مستوى البرنامج) بلا خانة مشروع
-      const tasksBlock = (label, tasks) => {
-        const box = document.createElement("div"); box.className = "chtask-block";
-        const lb = document.createElement("div"); lb.className = "chtask-lbl"; lb.textContent = label;
-        box.append(lb);
-        for (const c of chSortTasks(tasks)) box.append(chTaskRow(c, true));
-        return box;
-      };
-      const addProgBlock = (parent, key, headHtml, plans, direct, plain) => {
+      const mkGrid = () => { const g = document.createElement("div"); g.className = "chbox-grid"; return g; };
+      const buildProg = (parent, key, name, plain, plans, direct) => {
         if (!plans.length && !direct.length) return;
-        const sec = document.createElement("div"); sec.className = "chtree-prog" + (plain ? " plain" : "") + (chTreeProgs.has(key) ? "" : " col");
-        const head = document.createElement("div"); head.className = "chtree-proghead";
-        head.innerHTML = "<span class='cx-chev'>▾</span>" + headHtml + "<span class='cx-count'>" + toArDigits(plans.length) + " مشروع</span>";
-        head.onclick = () => { if (chTreeProgs.has(key)) chTreeProgs.delete(key); else chTreeProgs.add(key); sec.classList.toggle("col"); };
-        const body = document.createElement("div"); body.className = "chtree-progbody";
-        if (direct.length) body.append(tasksBlock("🗒️ مهام البرنامج", direct));
-        for (const p of plans) body.append(buildChProjItem(p));
-        sec.append(head, body); parent.append(sec);
+        const psec = document.createElement("div"); psec.className = "chtree-prog" + (plain ? " plain" : "") + (chTreeProgs.has(key) ? "" : " col");
+        const ph = document.createElement("div"); ph.className = "chtree-proghead";
+        ph.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + name + "</span><span class='cx-count'>" + toArDigits(plans.length) + " مشروع</span>";
+        ph.onclick = () => { if (chTreeProgs.has(key)) chTreeProgs.delete(key); else chTreeProgs.add(key); psec.classList.toggle("col"); };
+        const pbody = document.createElement("div"); pbody.className = "chtree-progbody";
+        const grid = mkGrid();
+        if (direct.length) grid.append(buildChBox("📁", "مهام البرنامج", direct.length, chMaxTaskTs(direct), true,
+          () => openProjTasks({ kind: "progdirect", id: key.slice(5), title: "📁 مهام البرنامج — " + name.replace(/^📁\s*/, "") })));
+        for (const p of plans) grid.append(buildProjBox(p));
+        pbody.append(grid);
+        psec.append(ph, pbody); parent.append(psec);
       };
       const buildDom = (domKey, icon, name, plans, domTasks) => {
         if (!plans.length && !domTasks.length) return;
-        const general = domTasks.filter(c => !validProj(c) && !validProg(c));
+        const general = domTasks.filter(c => !chValidProj(c) && !chValidProg(c));
         const progList = state.programs.filter(pr =>
-          plans.some(p => p.programId === pr.id) || domTasks.some(c => c.programId === pr.id && !validProj(c)));
+          plans.some(p => p.programId === pr.id) || domTasks.some(c => c.programId === pr.id && !chValidProj(c)));
         const noProg = plans.filter(p => !programOf(p));
         const sec = document.createElement("div"); sec.className = "chtree-dom" + (chTreeDoms.has(domKey) ? "" : " col");
         const head = document.createElement("div"); head.className = "chtree-domhead";
         head.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + icon + " " + escapeHtml(name) + "</span><span class='cx-count'>" + toArDigits(plans.length) + " مشروع</span>";
         head.onclick = () => { if (chTreeDoms.has(domKey)) chTreeDoms.delete(domKey); else chTreeDoms.add(domKey); sec.classList.toggle("col"); };
         const body = document.createElement("div"); body.className = "chtree-dombody";
-        if (general.length) body.append(tasksBlock("🗒️ مهام عامة", general));
+        if (general.length) {
+          const g = mkGrid();
+          g.append(buildChBox("🗒️", "مهام عامة", general.length, chMaxTaskTs(general), true,
+            () => openProjTasks({ kind: "general", domainId: (domKey === "__nodom__" ? "" : domKey), title: "🗒️ مهام عامة — " + name })));
+          body.append(g);
+        }
         for (const pr of progList) {
           const pl = plans.filter(p => p.programId === pr.id);
-          const direct = domTasks.filter(c => c.programId === pr.id && !validProj(c));
-          addProgBlock(body, "prog:" + pr.id, "<span class='cx-nm'>📁 " + escapeHtml(pr.name) + "</span>", pl, direct, false);
+          const direct = domTasks.filter(c => c.programId === pr.id && !chValidProj(c));
+          buildProg(body, "prog:" + pr.id, "📁 " + escapeHtml(pr.name), false, pl, direct);
         }
-        if (noProg.length) addProgBlock(body, "__np__:" + domKey, "<span class='cx-nm'>📌 بلا برنامج</span>", noProg, [], true);
+        if (noProg.length) buildProg(body, "__np__:" + domKey, "📌 بلا برنامج", true, noProg, []);
         sec.append(head, body); tree.append(sec);
       };
       const domList = (typeof domainsOrdered === "function" ? domainsOrdered() : DOMAINS);
@@ -4606,6 +4609,53 @@
         state.plans.filter(p => !known.has(planDomain(p))),
         state.challenges.filter(c => !known.has(challengeDomain(c))));
     }
+
+    // ── نافذة مهام المشروع/المجموعة (تُفتح من الصندوق) ──
+    let ptTarget = null;
+    const projTasksDlg = document.getElementById("projTasksDlg");
+    const ptTitle = document.getElementById("ptTitle");
+    const ptSub = document.getElementById("ptSub");
+    const ptInput = document.getElementById("ptInput");
+    const ptListEl = document.getElementById("ptList");
+    function ptTasksFor() {
+      const t = ptTarget; if (!t) return [];
+      if (t.kind === "project") return state.challenges.filter(c => c.projectId === t.id);
+      if (t.kind === "progdirect") return state.challenges.filter(c => c.programId === t.id && !chValidProj(c));
+      const known = new Set(DOMAINS.map(d => d.id));
+      return state.challenges.filter(c => !chValidProj(c) && !chValidProg(c) && (t.domainId ? challengeDomain(c) === t.domainId : !known.has(challengeDomain(c))));
+    }
+    function renderProjTasks() {
+      if (!ptTarget) return;
+      ptTitle.textContent = ptTarget.title;
+      const tasks = chSortTasks(ptTasksFor());
+      const doneN = tasks.filter(c => c.done).length;
+      ptSub.textContent = tasks.length ? ("المنجَز " + toArDigits(doneN) + " من " + toArDigits(tasks.length)) : "لا مهام بعد";
+      ptListEl.replaceChildren();
+      if (!tasks.length) { const e = document.createElement("div"); e.className = "pt-empty"; e.textContent = "لا مهام بعد — أضِف أول مهمة في الأعلى."; ptListEl.append(e); return; }
+      for (const c of tasks) ptListEl.append(chTaskRow(c, true));
+    }
+    function openProjTasks(target) {
+      ptTarget = target;
+      renderProjTasks();
+      projTasksDlg.showModal();
+      setTimeout(() => { try { ptInput.focus(); } catch (_) {} }, 50);
+    }
+    function ptAddTask() {
+      const t = ptInput.value.trim(); if (!t || !ptTarget) return;
+      let projectId = "", programId = "", domainId = "";
+      if (ptTarget.kind === "project") { projectId = ptTarget.id; const pl = state.plans.find(p => p.id === projectId); domainId = pl ? planDomain(pl) : ""; }
+      else if (ptTarget.kind === "progdirect") { programId = ptTarget.id; const pr = state.programs.find(p => p.id === programId); domainId = pr ? (pr.domainId || "") : ""; }
+      else { domainId = ptTarget.domainId || ""; }
+      state.challenges.push({ id: uid(), text: t, projectId, programId, domainId, done: false, created: Date.now() });
+      save(); ptInput.value = ""; refreshChallengeViews(); ptInput.focus();
+    }
+    function refreshChallengeViews() {
+      renderChallenges();
+      if (projTasksDlg && projTasksDlg.open) renderProjTasks();
+    }
+    document.getElementById("ptAdd").onclick = ptAddTask;
+    document.getElementById("ptX").onclick = () => projTasksDlg.close();
+    ptInput.addEventListener("keydown", e => { if (e.key === "Enter") ptAddTask(); });
 
     function renderChallenges() {
       const list = state.challenges;
@@ -4633,17 +4683,17 @@
       if (editingChId) {
         const c = state.challenges.find(x => x.id === editingChId);
         if (c) { c.text = t; c.projectId = projectId; c.programId = programId; c.domainId = domainId; if (c.done) logDoneTask(c); }
-        save(); exitChEdit(); renderChallenges(); return;
+        save(); exitChEdit(); refreshChallengeViews(); return;
       }
       state.challenges.push({ id: uid(), text: t, projectId: projectId, programId: programId, domainId: domainId, done: false, created: Date.now() });
-      save(); chInput.value = ""; fillChProjects(""); renderChallenges(); chInput.focus();
+      save(); chInput.value = ""; fillChProjects(""); refreshChallengeViews(); chInput.focus();
     }
     chAdd.onclick = addChallenge;
     chCancelEdit.onclick = exitChEdit;
     chInput.addEventListener("keydown", e => { if (e.key === "Enter") addChallenge(); if (e.key === "Escape" && editingChId) exitChEdit(); });
     chClear.onclick = () => {
       // المهام المنجَزة تبقى في سجلّ الإنجازات
-      state.challenges = state.challenges.filter(c => !c.done); save(); renderChallenges();
+      state.challenges = state.challenges.filter(c => !c.done); save(); refreshChallengeViews();
     };
     // فتح سجلّ المهام المنجَزة عند الضغط على بطاقة الإنجاز
     const chAchieveCard = document.getElementById("chAchieveCard");
