@@ -876,6 +876,23 @@
     .chproj-sub.allpend { color: var(--accent-ink); }
     .chproj-foot { font-size: 10px; font-weight: 700; color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); border-radius: 9px; padding: 5px 7px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .chproj-foot.has { color: var(--run); background: var(--run-soft); border-color: transparent; }
+    /* شجرة المشاريع القابلة للطيّ: مجال ← برنامج ← مشاريع */
+    .chtree { display: flex; flex-direction: column; gap: 12px; }
+    .chtree-dom { border: 1px solid var(--border); border-radius: 14px; background: var(--panel); box-shadow: var(--shadow); overflow: hidden; }
+    .chtree-domhead { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 14px; color: var(--accent-ink); padding: 12px 13px; background: color-mix(in srgb, var(--accent) 11%, var(--panel)); cursor: pointer; }
+    .cx-chev { flex: none; font-size: 12px; color: var(--muted); transition: transform .2s; }
+    .chtree-dom.col .chtree-domhead .cx-chev, .chtree-prog.col .chtree-proghead .cx-chev { transform: rotate(-90deg); }
+    .cx-nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cx-count { margin-inline-start: auto; font-size: 10.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .chtree-dombody { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+    .chtree-dom.col .chtree-dombody { display: none; }
+    .chtree-prog { border: 1px solid var(--border); border-inline-start: 3px solid color-mix(in srgb, var(--accent) 45%, transparent); border-radius: 12px; background: var(--panel-2); overflow: hidden; }
+    .chtree-prog.plain { border-inline-start-color: var(--border-strong); }
+    .chtree-proghead { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 800; color: color-mix(in srgb, var(--accent-ink) 85%, var(--text)); padding: 9px 11px; cursor: pointer; }
+    .chtree-prog.plain .chtree-proghead { color: var(--muted); }
+    .chtree-progbody { padding: 9px; }
+    .chtree-prog.col .chtree-progbody { display: none; }
+    .chtree-progbody .chproj-grid { grid-template-columns: repeat(auto-fill, minmax(132px, 1fr)); }
 
     /* ═══ المؤقت اليومي (ثلاثة أبعاد + إجمالي) ═══ */
     #timerDlg { width: 480px; max-width: 96vw; max-height: 94dvh; overflow: hidden; padding: 0; border: none; border-radius: 20px; }
@@ -1148,8 +1165,8 @@
         </div>
       </div>
       <div class="chproj-wrap" id="chProjWrap" hidden>
-        <div class="chproj-title">📂 المشاريع <span class="chproj-hint">اضغط أيّ مشروع لإضافة مهمة إليه</span></div>
-        <div id="chProjGrid" class="chproj-grid"></div>
+        <div class="chproj-title">📂 المشاريع <span class="chproj-hint">مجال ← برنامج ← مشروع · اضغط للفتح</span></div>
+        <div id="chProjTree" class="chtree"></div>
       </div>
       <div id="chList"></div>
     </section>
@@ -1412,7 +1429,6 @@
           <div class="tmr-total-sub" id="tmrTotalSub">مجموع الأبعاد الثلاثة</div>
         </div>
         <div class="tmr-dims" id="tmrDims"></div>
-        <div class="tmr-note">شغّل بُعداً واحداً في كل مرّة؛ يتوقف الآخر تلقائياً ويُجمع الوقت في الإجمالي اليومي.</div>
       </div>
     </div>
   </dialog>
@@ -4486,48 +4502,73 @@
       chAddWrap.classList.remove("editing");
     }
 
-    // شبكة صناديق المشاريع أعلى صفحة المهام: الاسم · عدد المهام · آخر إنجاز
+    // حالة الطيّ لشجرة مشاريع صفحة المهام (مستقلة عن صفحة الإدخال)
+    const chTreeDoms = new Set();   // معرّفات المجالات المفتوحة
+    const chTreeProgs = new Set();  // معرّفات البرامج المفتوحة ("__np__:<dom>" لكتلة بلا برنامج)
+    // صندوق مشروع مربّع: الاسم · عدد المهام · آخر إنجاز
+    function buildChProjCard(p) {
+      const tasks = state.challenges.filter(c => c.projectId === p.id);
+      const doneTasks = tasks.filter(c => c.done);
+      let lastDone = 0;
+      for (const c of doneTasks) { const t = c.doneAt || c.created || 0; if (t > lastDone) lastDone = t; }
+      const total = tasks.length, done = doneTasks.length, pending = total - done;
+      const dom = planDomain(p);
+      const ic = (dom && DOMAINS.some(d => d.id === dom)) ? domainIcon(dom) : "📄";
+      const card = document.createElement("button"); card.type = "button"; card.className = "chproj-card";
+      let sub = "";
+      if (total) sub = pending
+        ? "<div class='chproj-sub" + (done ? "" : " allpend") + "'>" + toArDigits(pending) + " قيد التنفيذ</div>"
+        : "<div class='chproj-sub'>اكتملت ✓</div>";
+      const foot = lastDone
+        ? "<div class='chproj-foot has'>🏁 آخر إنجاز " + fmtAgo(lastDone) + "</div>"
+        : "<div class='chproj-foot'>لا مهمة منجَزة بعد</div>";
+      card.innerHTML =
+        "<div class='chproj-top'><span class='chproj-ic'>" + ic + "</span><span class='chproj-nm'>" + escapeHtml(p.name) + "</span></div>" +
+        "<div class='chproj-mid'><div class='chproj-count'>" + toArDigits(total) + "<small>مهمة</small></div>" + sub + "</div>" +
+        foot;
+      card.title = p.name + " — اضغط لإضافة مهمة إليه";
+      card.onclick = () => { exitChEdit(); setChTarget(p.id); chInput.focus(); chInput.scrollIntoView({ block: "center", behavior: "smooth" }); };
+      return card;
+    }
+    // شجرة قابلة للطيّ: مجال ← برنامج ← مشاريع (لأنّ عدد المشاريع كبير)
     function renderChProjects() {
       const wrap = document.getElementById("chProjWrap");
-      const grid = document.getElementById("chProjGrid");
-      if (!wrap || !grid) return;
-      const projects = state.plans.slice();
-      if (!projects.length) { wrap.hidden = true; grid.replaceChildren(); return; }
+      const tree = document.getElementById("chProjTree");
+      if (!wrap || !tree) return;
+      if (!state.plans.length) { wrap.hidden = true; tree.replaceChildren(); return; }
       wrap.hidden = false;
-      const info = projects.map(p => {
-        const tasks = state.challenges.filter(c => c.projectId === p.id);
-        const doneTasks = tasks.filter(c => c.done);
-        let lastDone = 0;
-        for (const c of doneTasks) { const t = c.doneAt || c.created || 0; if (t > lastDone) lastDone = t; }
-        return { p, total: tasks.length, done: doneTasks.length, pending: tasks.length - doneTasks.length, lastDone };
-      });
-      // الأحدث إنجازاً أولاً، ثم الأكثر مهاماً، ثم أبجدياً
-      info.sort((a, b) => (b.lastDone - a.lastDone) || (b.total - a.total) || (a.p.name || "").localeCompare(b.p.name || "", "ar"));
-      grid.replaceChildren();
-      for (const it of info) {
-        const dom = planDomain(it.p);
-        const ic = (dom && DOMAINS.some(d => d.id === dom)) ? domainIcon(dom) : "📄";
-        const card = document.createElement("button"); card.type = "button"; card.className = "chproj-card";
-        let sub = "";
-        if (it.total) sub = it.pending
-          ? "<div class='chproj-sub" + (it.done ? "" : " allpend") + "'>" + toArDigits(it.pending) + " قيد التنفيذ</div>"
-          : "<div class='chproj-sub'>اكتملت ✓</div>";
-        const foot = it.lastDone
-          ? "<div class='chproj-foot has'>🏁 آخر إنجاز " + fmtAgo(it.lastDone) + "</div>"
-          : "<div class='chproj-foot'>لا مهمة منجَزة بعد</div>";
-        card.innerHTML =
-          "<div class='chproj-top'><span class='chproj-ic'>" + ic + "</span><span class='chproj-nm'>" + escapeHtml(it.p.name) + "</span></div>" +
-          "<div class='chproj-mid'><div class='chproj-count'>" + toArDigits(it.total) + "<small>مهمة</small></div>" + sub + "</div>" +
-          foot;
-        card.title = it.p.name + " — اضغط لإضافة مهمة إليه";
-        card.onclick = () => {
-          exitChEdit();
-          setChTarget(it.p.id);
-          chInput.focus();
-          chInput.scrollIntoView({ block: "center", behavior: "smooth" });
-        };
-        grid.append(card);
-      }
+      tree.replaceChildren();
+      const mkGrid = (plans) => { const g = document.createElement("div"); g.className = "chproj-grid"; for (const p of plans) g.append(buildChProjCard(p)); return g; };
+      const addProgBlock = (parent, key, headHtml, plans, plain) => {
+        const sec = document.createElement("div"); sec.className = "chtree-prog" + (plain ? " plain" : "") + (chTreeProgs.has(key) ? "" : " col");
+        const head = document.createElement("div"); head.className = "chtree-proghead";
+        head.innerHTML = "<span class='cx-chev'>▾</span>" + headHtml + "<span class='cx-count'>" + toArDigits(plans.length) + " مشروع</span>";
+        head.onclick = () => { if (chTreeProgs.has(key)) chTreeProgs.delete(key); else chTreeProgs.add(key); sec.classList.toggle("col"); };
+        const body = document.createElement("div"); body.className = "chtree-progbody"; body.append(mkGrid(plans));
+        sec.append(head, body); parent.append(sec);
+      };
+      const buildDom = (domKey, icon, name, plans) => {
+        if (!plans.length) return;
+        const sec = document.createElement("div"); sec.className = "chtree-dom" + (chTreeDoms.has(domKey) ? "" : " col");
+        const head = document.createElement("div"); head.className = "chtree-domhead";
+        head.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + icon + " " + escapeHtml(name) + "</span><span class='cx-count'>" + toArDigits(plans.length) + " مشروع</span>";
+        head.onclick = () => { if (chTreeDoms.has(domKey)) chTreeDoms.delete(domKey); else chTreeDoms.add(domKey); sec.classList.toggle("col"); };
+        const body = document.createElement("div"); body.className = "chtree-dombody";
+        // تجميع مشاريع المجال حسب البرنامج
+        const progs = state.programs.filter(pr => plans.some(p => p.programId === pr.id));
+        for (const pr of progs) {
+          const pl = plans.filter(p => p.programId === pr.id);
+          if (pl.length) addProgBlock(body, "prog:" + pr.id, "<span class='cx-nm'>📁 " + escapeHtml(pr.name) + "</span>", pl, false);
+        }
+        const noProg = plans.filter(p => !programOf(p));
+        if (noProg.length) addProgBlock(body, "__np__:" + domKey, "<span class='cx-nm'>📌 بلا برنامج</span>", noProg, true);
+        sec.append(head, body); tree.append(sec);
+      };
+      const domList = (typeof domainsOrdered === "function" ? domainsOrdered() : DOMAINS);
+      const known = new Set(domList.map(d => d.id));
+      for (const d of domList) buildDom(d.id, d.icon, d.name, state.plans.filter(p => planDomain(p) === d.id));
+      // مشاريع بلا مجال معروف
+      buildDom("__nodom__", "📌", "بلا مجال", state.plans.filter(p => !known.has(planDomain(p))));
     }
 
     function renderChallenges() {
