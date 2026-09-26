@@ -842,6 +842,48 @@
     .dt-meta { font-size: 11px; color: var(--muted); font-weight: 700; margin-top: 3px; }
     .dt-note { font-size: 12px; color: var(--muted); font-weight: 700; text-align: center; padding: 12px 4px 2px; }
 
+    /* ═══ صفحة المهام والتحديات ═══ */
+    .chp-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; box-shadow: var(--shadow); padding: 14px; margin-bottom: 14px; display: flex; flex-direction: column; gap: 10px; }
+    .chp-achieve { display: flex; align-items: center; gap: 11px; width: 100%; padding: 11px 14px; border-radius: 13px; border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent); background: linear-gradient(135deg, var(--accent-soft), color-mix(in srgb, var(--accent) 14%, var(--panel))); cursor: pointer; font-family: inherit; text-align: start; }
+    .chp-achieve:active { transform: scale(.99); }
+    .chp-achieve .ach-icon { font-size: 24px; line-height: 1; filter: drop-shadow(0 2px 4px rgba(180,83,9,.3)); }
+    .chp-achieve .ach-body { display: flex; align-items: baseline; gap: 7px; }
+    .chp-achieve .ach-body b { font-size: 22px; font-weight: 900; color: var(--accent-ink); line-height: 1; }
+    .chp-achieve .ach-lbl { font-size: 12px; font-weight: 700; color: var(--muted); }
+    .chp-achieve .ach-go { margin-inline-start: auto; font-size: 12px; font-weight: 800; color: var(--accent-ink); white-space: nowrap; }
+    .chp-stats { display: flex; gap: 8px; }
+    .chp-stat { flex: 1; text-align: center; background: var(--panel-2); border: 1px solid var(--border); border-radius: 11px; padding: 8px 4px; }
+    .chp-stat b { display: block; font-size: 18px; font-weight: 900; color: var(--text); line-height: 1.2; }
+    .chp-stat.pend b { color: var(--accent-ink); }
+    .chp-stat.done b { color: var(--run); }
+    .chp-stat span { font-size: 10.5px; font-weight: 700; color: var(--muted); }
+    #challengesSection #chList .ch-group-head { top: 0; }
+
+    /* ═══ المؤقت اليومي (ثلاثة أبعاد + إجمالي) ═══ */
+    #timerDlg { width: 480px; max-width: 96vw; max-height: 94dvh; overflow: hidden; padding: 0; border: none; border-radius: 20px; }
+    .tmr-dlg { display: flex; flex-direction: column; max-height: inherit; padding: 0; }
+    .tmr-head { display: flex; align-items: center; justify-content: space-between; padding: 15px 18px; border-bottom: 1px solid var(--border); }
+    .tmr-head-t h3 { margin: 0; font-size: 17px; }
+    .tmr-date { font-size: 11.5px; font-weight: 700; color: var(--muted); }
+    .tmr-body { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; padding: 16px 18px calc(18px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 14px; }
+    .tmr-total { text-align: center; padding: 18px 14px; border-radius: 18px; color: #fff; background: linear-gradient(145deg, var(--accent), var(--accent-ink)); box-shadow: 0 8px 22px rgba(180,83,9,.32); }
+    .tmr-total-lbl { font-size: 12.5px; font-weight: 800; opacity: .92; }
+    .tmr-total-time { font-size: 44px; font-weight: 900; line-height: 1.05; margin: 4px 0 2px; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
+    .tmr-total-sub { font-size: 11px; font-weight: 700; opacity: .82; }
+    .tmr-dims { display: flex; flex-direction: column; gap: 11px; }
+    .tmr-dim { display: flex; align-items: center; gap: 12px; padding: 13px 14px; border-radius: 15px; border: 1.5px solid var(--border); background: var(--panel-2); transition: border-color .18s, background .18s; }
+    .tmr-dim.on { border-color: var(--run); background: var(--run-soft); }
+    .tmr-dim-ic { flex: none; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; font-size: 22px; background: var(--panel); border: 1px solid var(--border); }
+    .tmr-dim.on .tmr-dim-ic { background: var(--run); border-color: var(--run); }
+    .tmr-dim-mid { flex: 1; min-width: 0; }
+    .tmr-dim-nm { font-size: 14px; font-weight: 800; color: var(--text); }
+    .tmr-dim-time { font-size: 20px; font-weight: 900; color: var(--accent-ink); font-variant-numeric: tabular-nums; line-height: 1.2; margin-top: 1px; }
+    .tmr-dim.on .tmr-dim-time { color: var(--run); }
+    .tmr-dim-btn { flex: none; width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer; font-size: 21px; color: #fff; background: var(--run); display: grid; place-items: center; box-shadow: 0 5px 14px rgba(21,128,61,.34); font-family: inherit; transition: transform .1s; }
+    .tmr-dim-btn:active { transform: scale(.9); }
+    .tmr-dim.on .tmr-dim-btn { background: var(--danger); box-shadow: 0 5px 14px rgba(180,36,28,.34); }
+    .tmr-note { font-size: 11.5px; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.6; padding: 0 6px; }
+
     /* ═══ تقويم التذكيرات ═══ */
     .rem-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin: 12px auto 0; max-width: 460px; box-shadow: var(--shadow); }
     .rem-cal-title { font-weight: 800; font-size: 15px; text-align: center; margin-bottom: 10px; }
@@ -1061,17 +1103,33 @@
       <div id="followupList"></div>
     </section>
 
-    <!-- ═══ الأرشيف: خطط ومواد وروابط ومراجع ═══ -->
-    <section id="archiveSection" hidden>
-      <button class="add-goal-btn" id="archiveAddBtn">➕ إضافة إلى الأرشيف</button>
-      <div class="tabs" id="archViewTabs">
-        <button data-aview="all" class="active">الكل</button>
-        <button data-aview="link">🔗 روابط</button>
-        <button data-aview="material">📄 مواد</button>
-        <button data-aview="plan">🗺️ خطط</button>
-        <button data-aview="ref">📝 مراجع</button>
+    <!-- ═══ المهام والتحديات ═══ -->
+    <section id="challengesSection" hidden>
+      <div class="chp-panel">
+        <button class="chp-achieve" id="chAchieveCard" type="button" title="عرض المهام المنجَزة">
+          <span class="ach-icon">🏆</span>
+          <span class="ach-body"><b id="chAchNum">0</b><span class="ach-lbl">مهمة منجَزة</span></span>
+          <span class="ach-go">السجل ›</span>
+        </button>
+        <div class="chp-stats" id="chStats"></div>
+        <div class="ch-add" id="chAddWrap">
+          <div class="ch-add-row">
+            <input id="chInput" type="text" placeholder="اكتب مهمة أو تحدياً جديداً…" autocomplete="off" />
+            <button class="ch-addbtn" id="chAdd">➕ إضافة</button>
+            <button class="ch-canceledit" id="chCancelEdit" hidden title="إلغاء التعديل" aria-label="إلغاء التعديل">✕</button>
+          </div>
+          <div class="ch-add-row">
+            <select id="chDomain" class="ch-dom" title="المجال"></select>
+            <input type="hidden" id="chProject" />
+            <button type="button" id="chProjectBtn" class="picker-btn ch-proj" title="المشروع (اختياري)"><span id="chProjectLabel" class="pk-label">📌 بدون مشروع</span><span class="pk-caret">▾</span></button>
+          </div>
+        </div>
+        <div class="ch-toolbar">
+          <span id="chCount">المهام</span>
+          <button class="linkbtn" id="chClear">مسح المكتمل</button>
+        </div>
       </div>
-      <div id="archiveList"></div>
+      <div id="chList"></div>
     </section>
 
     <section id="projectsSection" hidden>
@@ -1237,14 +1295,14 @@
     </div>
   </dialog>
 
-  <!-- زر التحدي العائم (الشعلة المتحركة) -->
-  <button class="fab" id="fabChallenge" title="تحدي" aria-label="تحدي"><span class="flame">🔥</span></button>
+  <!-- زر المؤقت اليومي العائم -->
+  <button class="fab" id="fabTimer" title="المؤقت اليومي" aria-label="المؤقت اليومي"><span class="flame">⏱️</span></button>
 
   <!-- الشريط السفلي للتنقل: ثلاث صفحات -->
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" data-mode="stats"><span class="bi">📊</span><span class="bl">الإحصاءات</span></button>
     <button class="navbtn" data-mode="projects"><span class="bi">📁</span><span class="bl">الإدخال</span></button>
-    <button class="navbtn" data-mode="archive"><span class="bi">🗄️</span><span class="bl">الأرشيف</span></button>
+    <button class="navbtn" data-mode="challenges"><span class="bi">✅</span><span class="bl">المهام والتحديات</span></button>
   </nav>
 
   <!-- ورقة إجراء الإضافة -->
@@ -1315,34 +1373,25 @@
   </dialog>
 
   <!-- قائمة مهام التحدي -->
-  <dialog id="challengeDlg">
-    <div class="dlg ch-dlg">
-      <div class="ch-head">
-        <div class="ch-head-top">
-          <div class="ch-title-wrap">
-            <h3>🔥 تحدي</h3>
-            <span class="ch-achieve-mini"><span class="ach-icon">🏆</span><b id="chAchNum">0</b><span class="ach-lbl">منجَزة</span></span>
-          </div>
-          <button class="ch-x" id="chX" aria-label="إغلاق" title="إغلاق">✕</button>
+  <!-- المؤقت اليومي: ثلاثة أبعاد كبرى + إجمالي -->
+  <dialog id="timerDlg">
+    <div class="dlg tmr-dlg">
+      <div class="tmr-head">
+        <div class="tmr-head-t">
+          <h3>⏱️ المؤقت اليومي</h3>
+          <span class="tmr-date" id="tmrDate"></span>
         </div>
-        <div class="ch-add" id="chAddWrap">
-          <div class="ch-add-row">
-            <input id="chInput" type="text" placeholder="اكتب مهمة جديدة…" autocomplete="off" />
-            <button class="ch-addbtn" id="chAdd">➕ إضافة</button>
-            <button class="ch-canceledit" id="chCancelEdit" hidden title="إلغاء التعديل" aria-label="إلغاء التعديل">✕</button>
-          </div>
-          <div class="ch-add-row">
-            <select id="chDomain" class="ch-dom" title="المجال"></select>
-            <input type="hidden" id="chProject" />
-            <button type="button" id="chProjectBtn" class="picker-btn ch-proj" title="المشروع (اختياري)"><span id="chProjectLabel" class="pk-label">📌 بدون مشروع</span><span class="pk-caret">▾</span></button>
-          </div>
-        </div>
-        <div class="ch-toolbar">
-          <span id="chCount">المهام</span>
-          <button class="linkbtn" id="chClear">مسح المكتمل</button>
-        </div>
+        <button class="ch-x" id="tmrX" aria-label="إغلاق" title="إغلاق">✕</button>
       </div>
-      <div class="ch-body" id="chList"></div>
+      <div class="tmr-body">
+        <div class="tmr-total" id="tmrTotalCard">
+          <div class="tmr-total-lbl">الإجمالي اليومي</div>
+          <div class="tmr-total-time" id="tmrTotal">00:00:00</div>
+          <div class="tmr-total-sub" id="tmrTotalSub">مجموع الأبعاد الثلاثة</div>
+        </div>
+        <div class="tmr-dims" id="tmrDims"></div>
+        <div class="tmr-note">شغّل بُعداً واحداً في كل مرّة؛ يتوقف الآخر تلقائياً ويُجمع الوقت في الإجمالي اليومي.</div>
+      </div>
     </div>
   </dialog>
 
@@ -1483,44 +1532,6 @@
     </form>
   </dialog>
 
-  <!-- عنصر أرشيف: خطة / مادة / رابط / مرجع -->
-  <dialog id="archiveDlg">
-    <form method="dialog" class="dlg">
-      <h3 id="archiveDlgTitle">🗄️ إضافة إلى الأرشيف</h3>
-      <div class="rows">
-        <div>
-          <label>العنوان</label>
-          <input id="archTitle" type="text" placeholder="مثال: خطة القراءة الفصلية" autocomplete="off" />
-        </div>
-        <div>
-          <label>النوع</label>
-          <select id="archType">
-            <option value="link">🔗 رابط</option>
-            <option value="material">📄 مادة</option>
-            <option value="plan">🗺️ خطة</option>
-            <option value="ref">📝 مرجع</option>
-          </select>
-        </div>
-        <div>
-          <label>الرابط (اختياري)</label>
-          <input id="archUrl" type="text" placeholder="https://…" autocomplete="off" inputmode="url" />
-        </div>
-        <div>
-          <label>المجال (اختياري)</label>
-          <select id="archDomain"></select>
-        </div>
-        <div>
-          <label>ملاحظات (اختياري)</label>
-          <textarea id="archNotes" class="set-input" rows="3" placeholder="تفاصيل أو مراجع…"></textarea>
-        </div>
-      </div>
-      <div class="actions">
-        <button class="ok" value="save" id="archSave">حفظ</button>
-        <button class="cancel" value="cancel" formnovalidate>إلغاء</button>
-      </div>
-    </form>
-  </dialog>
-
   <!-- مشروع جديد / تعديل (بثلاثة أنواع: عادة/ساعات/نقاط) -->
   <dialog id="itemDlg">
     <div class="dlg">
@@ -1612,7 +1623,7 @@
     function readUI(key, allowed, def) { try { const v = localStorage.getItem(key); return allowed.indexOf(v) >= 0 ? v : def; } catch (e) { return def; } }
     function saveUI() { try { localStorage.setItem(UI_MODE_KEY, appMode); localStorage.setItem(UI_VIEW_KEY, currentView); } catch (e) {} }
     let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
-    let appMode = readUI(UI_MODE_KEY, ["stats", "projects", "settings", "reminders", "archive"], "stats");
+    let appMode = readUI(UI_MODE_KEY, ["stats", "projects", "settings", "reminders", "challenges"], "stats");
     const STATS_TAB_KEY = "ptt.ui.statstab";
     let statsTab = readUI(STATS_TAB_KEY, ["plan", "timer", "habits", "followup"], "plan");
     const ARCH_VIEW_KEY = "ptt.ui.archview";
@@ -1702,6 +1713,10 @@
         if (!Array.isArray(pl.sessions)) pl.sessions = [];
         if (typeof pl.created !== "number") pl.created = Date.now();
       }
+      // المؤقت اليومي: ثلاثة أبعاد + سجلّ يومي
+      if (!p.dayTimers || typeof p.dayTimers !== "object") p.dayTimers = {};
+      if (!p.dayTimers.running || typeof p.dayTimers.running !== "object") p.dayTimers.running = { dim: null, since: 0 };
+      if (!p.dayTimers.log || typeof p.dayTimers.log !== "object") p.dayTimers.log = {};
       // مهام التحدي السريعة
       if (!Array.isArray(p.challenges)) p.challenges = [];
       for (const c of p.challenges) {
@@ -1952,8 +1967,7 @@
       habitStats: document.getElementById("habitStats"),
       followupSection: document.getElementById("followupSection"),
       followupList: document.getElementById("followupList"),
-      archiveSection: document.getElementById("archiveSection"),
-      archiveList: document.getElementById("archiveList"),
+      challengesSection: document.getElementById("challengesSection"),
       settingsSection: document.getElementById("settingsSection"),
       domainSection: document.getElementById("domainSection"),
       statsTabs: document.getElementById("statsTabs"),
@@ -1992,7 +2006,7 @@
       els.timerSection.hidden = !(isStats && statsTab === "timer");
       els.habitsSection.hidden = !(isStats && statsTab === "habits");
       els.followupSection.hidden = !(isStats && statsTab === "followup");
-      els.archiveSection.hidden = appMode !== "archive";
+      els.challengesSection.hidden = appMode !== "challenges";
       els.projectsSection.hidden = appMode !== "projects";
       els.remindersSection.hidden = appMode !== "reminders";
       els.settingsSection.hidden = appMode !== "settings";
@@ -2005,9 +2019,9 @@
         else if (statsTab === "timer") renderTimer();
         else if (statsTab === "followup") renderFollowup();
         else { els.dayLabel.textContent = "العادات — تابِع استمراريتك اليومية 🔥"; renderHabits(); }
-      } else if (appMode === "archive") {
-        els.dayLabel.textContent = "الأرشيف — خططك وموادك وروابطك ومراجعك";
-        renderArchive();
+      } else if (appMode === "challenges") {
+        els.dayLabel.textContent = "المهام والتحديات — مصنّفة حسب المجال والبرنامج والمشروع";
+        renderChallenges();
       } else if (appMode === "projects") {
         els.dayLabel.textContent = "الإدخال — برامجك ومشاريعك مصنّفة";
         renderProjects();
@@ -2030,7 +2044,7 @@
         else if (statsTab === "timer") renderTimer();
         else if (statsTab === "followup") renderFollowup();
         else renderHabits();
-      } else if (appMode === "archive") renderArchive();
+      } else if (appMode === "challenges") renderChallenges();
       else if (appMode === "projects") renderProjects();
       else if (appMode === "reminders") renderReminders();
       else if (appMode === "settings") renderSettings();
@@ -3017,59 +3031,6 @@
       const l = document.createElement("div"); l.className = "st-lbl"; l.textContent = lbl;
       t.append(n, l); return t;
     }
-    // ═══ الأرشيف: خطط ومواد وروابط ومراجع ═══
-    const ARCH_TYPES = { link: { icon: "🔗", name: "روابط", one: "رابط" }, material: { icon: "📄", name: "مواد", one: "مادة" }, plan: { icon: "🗺️", name: "خطط", one: "خطة" }, ref: { icon: "📝", name: "مراجع", one: "مرجع" } };
-    function renderArchive() {
-      document.querySelectorAll("#archViewTabs button").forEach(b => b.classList.toggle("active", b.dataset.aview === archiveView));
-      const wrap = els.archiveList; wrap.replaceChildren();
-      let list = state.archive.slice();
-      if (archiveView !== "all") list = list.filter(a => a.type === archiveView);
-      if (!list.length) {
-        const e = document.createElement("div"); e.className = "empty";
-        e.textContent = state.archive.length ? "لا عناصر في هذا التصنيف." : "الأرشيف فارغ. احفظ خططك وموادك وروابطك ومراجعك هنا.";
-        wrap.append(e); return;
-      }
-      const order = ["plan", "material", "link", "ref"];
-      const groups = archiveView === "all"
-        ? order.map(t => ({ t, items: list.filter(a => a.type === t) })).filter(g => g.items.length)
-        : [{ t: archiveView, items: list }];
-      for (const g of groups) {
-        const meta = ARCH_TYPES[g.t] || ARCH_TYPES.ref;
-        const sec = document.createElement("div"); sec.className = "arch-group";
-        const head = document.createElement("div"); head.className = "arch-group-head";
-        head.innerHTML = "<span>" + meta.icon + " " + meta.name + "</span><span class='ag-count'>" + toArDigits(g.items.length) + "</span>";
-        sec.append(head);
-        g.items.sort((a, b) => b.created - a.created);
-        for (const a of g.items) sec.append(archiveCard(a));
-        wrap.append(sec);
-      }
-    }
-    function archiveCard(a) {
-      const meta = ARCH_TYPES[a.type] || ARCH_TYPES.ref;
-      const card = document.createElement("div"); card.className = "arch-card";
-      const ic = document.createElement("span"); ic.className = "arch-ic"; ic.textContent = meta.icon;
-      const body = document.createElement("div"); body.className = "arch-body";
-      const title = document.createElement("div"); title.className = "arch-title"; title.textContent = a.title || meta.one;
-      body.append(title);
-      const sub = document.createElement("div"); sub.className = "arch-sub";
-      let subHtml = "";
-      if (a.domainId && DOMAINS.some(d => d.id === a.domainId)) subHtml += domainIcon(a.domainId) + " " + escapeHtml(domainName(a.domainId));
-      if (a.url) subHtml += (subHtml ? " · " : "") + "🔗 " + escapeHtml(shortUrl(a.url));
-      if (subHtml) { sub.innerHTML = subHtml; body.append(sub); }
-      if (a.notes) { const n = document.createElement("div"); n.className = "arch-notes"; n.textContent = a.notes; body.append(n); }
-      if (a.url) {
-        const link = document.createElement("a"); link.className = "arch-open"; link.href = a.url; link.target = "_blank"; link.rel = "noopener noreferrer"; link.textContent = "فتح ↗";
-        body.append(link);
-      }
-      const menu = buildKebabMenu([
-        { icon: "✏️", label: "تعديل", onClick: () => openArchive(a) },
-        { icon: "🗑️", label: "حذف", danger: true, onClick: () => { state.archive = state.archive.filter(x => x.id !== a.id); save(); renderArchive(); } }
-      ]);
-      card.append(ic, body, menu);
-      return card;
-    }
-    function shortUrl(u) { try { const h = new URL(u).hostname.replace(/^www\./, ""); return h || u; } catch (_) { return u.length > 40 ? u.slice(0, 40) + "…" : u; } }
-
     function ungroupedBlock(plans) {
       const block = document.createElement("div"); block.className = "prog-block";
       const head = document.createElement("div"); head.className = "prog-head";
@@ -3650,6 +3611,7 @@
         const g = state.plans.find(p => p.id === el.dataset.gid);
         if (g) el.textContent = gtimerText(g);
       });
+      updateDayTimerDisplay();
       if (!(appMode === "stats" && statsTab === "timer") || currentView !== "today") return;
       const now = Date.now();
       const today = dayStartOf(now);
@@ -4154,51 +4116,6 @@
     document.getElementById("schApplyNew").onclick = () => applyQuick(true);
     document.getElementById("schApplyAll").onclick = () => applyQuick(false);
 
-    // ---------- الأرشيف: نافذة الإضافة/التعديل ----------
-    const archiveDlg = document.getElementById("archiveDlg");
-    const archiveDlgTitle = document.getElementById("archiveDlgTitle");
-    const archTitle = document.getElementById("archTitle");
-    const archType = document.getElementById("archType");
-    const archUrl = document.getElementById("archUrl");
-    const archNotes = document.getElementById("archNotes");
-    const archDomain = document.getElementById("archDomain");
-    (function fillArchDomains() {
-      const none = document.createElement("option"); none.value = ""; none.textContent = "— بلا مجال —"; archDomain.append(none);
-      for (const d of DOMAINS) { const o = document.createElement("option"); o.value = d.id; o.textContent = d.icon + " " + d.name; archDomain.append(o); }
-    })();
-    function openArchive(a) {
-      editingArchId = a ? a.id : null;
-      archiveDlgTitle.textContent = a ? "✏️ تعديل عنصر الأرشيف" : "🗄️ إضافة إلى الأرشيف";
-      archTitle.value = a ? (a.title || "") : "";
-      archType.value = a ? (a.type || "ref") : (archiveView !== "all" ? archiveView : "link");
-      archUrl.value = a ? (a.url || "") : "";
-      archNotes.value = a ? (a.notes || "") : "";
-      archDomain.value = a ? (a.domainId || "") : "";
-      archiveDlg.showModal(); archTitle.focus();
-    }
-    archiveDlg.addEventListener("close", () => {
-      if (archiveDlg.returnValue !== "save") return;
-      const title = archTitle.value.trim();
-      let url = archUrl.value.trim();
-      if (url && !/^https?:\/\//i.test(url) && /\./.test(url)) url = "https://" + url;
-      if (!title && !url) return;
-      const type = archType.value || "ref";
-      const domainId = archDomain.value || "";
-      const notes = archNotes.value.trim();
-      if (editingArchId) {
-        const a = state.archive.find(x => x.id === editingArchId);
-        if (a) { a.title = title || a.title; a.type = type; a.url = url; a.notes = notes; a.domainId = domainId; }
-      } else {
-        state.archive.push({ id: uid(), title: title || "بدون عنوان", type, url, notes, domainId, created: Date.now() });
-      }
-      save(); renderArchive();
-    });
-    const archiveAddBtnEl = document.getElementById("archiveAddBtn");
-    if (archiveAddBtnEl) archiveAddBtnEl.onclick = () => openArchive(null);
-    document.querySelectorAll("#archViewTabs button").forEach(btn => {
-      btn.onclick = () => { archiveView = btn.dataset.aview; try { localStorage.setItem(ARCH_VIEW_KEY, archiveView); } catch (_) {} renderArchive(); };
-    });
-
     // ---------- نافذة المشروع/العادة الموحّدة (3 أنواع) ----------
     const itemDlg = document.getElementById("itemDlg");
     const itemName = document.getElementById("itemName");
@@ -4394,8 +4311,7 @@
     itemCancel.onclick = () => itemDlg.close();
     itemName.addEventListener("keydown", e => { if (e.key === "Enter") itemSave.click(); });
 
-    // ---------- التحدي (قائمة مهام سريعة) ----------
-    const challengeDlg = document.getElementById("challengeDlg");
+    // ---------- المهام والتحديات (صفحة كاملة) ----------
     const chInput = document.getElementById("chInput");
     const chDomain = document.getElementById("chDomain");
     const chProject = document.getElementById("chProject");
@@ -4551,8 +4467,16 @@
     function renderChallenges() {
       const list = state.challenges;
       const doneN = list.filter(c => c.done).length;
+      const pendN = list.length - doneN;
       chCount.textContent = list.length ? ("المنجَز " + doneN + " من " + list.length) : "لا مهام بعد";
       chAchNum.textContent = completedChallengeCount();
+      const chStats = document.getElementById("chStats");
+      if (chStats) {
+        chStats.innerHTML =
+          "<div class='chp-stat'><b>" + toArDigits(list.length) + "</b><span>الكل</span></div>" +
+          "<div class='chp-stat pend'><b>" + toArDigits(pendN) + "</b><span>قيد التنفيذ</span></div>" +
+          "<div class='chp-stat done'><b>" + toArDigits(doneN) + "</b><span>مكتملة</span></div>";
+      }
       chList.replaceChildren();
       if (!list.length) {
         const e = document.createElement("div"); e.className = "ch-empty"; e.textContent = "لا مهام بعد.\nاكتب أول مهمة في الأعلى وحدّد مجالها.";
@@ -4657,26 +4581,99 @@
       // المهام المنجَزة تبقى في سجلّ الإنجازات
       state.challenges = state.challenges.filter(c => !c.done); save(); renderChallenges();
     };
-    // فتح سجلّ المهام المنجَزة عند الضغط على شارة الكأس
-    const chAchieveMini = document.querySelector(".ch-achieve-mini");
-    if (chAchieveMini) { chAchieveMini.style.cursor = "pointer"; chAchieveMini.title = "عرض المهام المنجَزة"; chAchieveMini.onclick = openDoneTasks; }
+    // فتح سجلّ المهام المنجَزة عند الضغط على بطاقة الإنجاز
+    const chAchieveCard = document.getElementById("chAchieveCard");
+    if (chAchieveCard) chAchieveCard.onclick = openDoneTasks;
     const dtXBtn = document.getElementById("dtX"); if (dtXBtn) dtXBtn.onclick = () => document.getElementById("doneTasksDlg").close();
-    document.getElementById("chX").onclick = () => challengeDlg.close();
-    const fabChallenge = document.getElementById("fabChallenge");
-    // تفاعل الشعلة: نبضة/انفجار عند اللمس
-    fabChallenge.addEventListener("pointerdown", () => {
-      fabChallenge.classList.remove("burst"); void fabChallenge.offsetWidth; fabChallenge.classList.add("burst");
+    // زر المؤقت اليومي العائم
+    const fabTimer = document.getElementById("fabTimer");
+    fabTimer.addEventListener("pointerdown", () => {
+      fabTimer.classList.remove("burst"); void fabTimer.offsetWidth; fabTimer.classList.add("burst");
     });
-    fabChallenge.addEventListener("animationend", (e) => { if (e.animationName === "fab-pop") fabChallenge.classList.remove("burst"); });
-    fabChallenge.onclick = () => { exitChEdit(); chDomain.value = "career"; fillChProjects(""); renderChallenges(); challengeDlg.showModal(); chInput.focus(); };
-    challengeDlg.addEventListener("close", exitChEdit);
-    // إخفاء الشعلة أثناء التمرير حتى لا تُغطّي الأرقام والنصوص، وإظهارها عند التوقّف
+    fabTimer.addEventListener("animationend", (e) => { if (e.animationName === "fab-pop") fabTimer.classList.remove("burst"); });
+    fabTimer.onclick = () => openDayTimer();
+    // إخفاء الزر العائم أثناء التمرير، وإظهاره عند التوقّف
     let _fabTuckTimer = null;
     window.addEventListener("scroll", () => {
-      fabChallenge.classList.add("tuck");
+      fabTimer.classList.add("tuck");
       if (_fabTuckTimer) clearTimeout(_fabTuckTimer);
-      _fabTuckTimer = setTimeout(() => fabChallenge.classList.remove("tuck"), 550);
+      _fabTuckTimer = setTimeout(() => fabTimer.classList.remove("tuck"), 550);
     }, { passive: true });
+
+    // ═══ المؤقت اليومي: ثلاثة أبعاد كبرى + إجمالي ═══
+    const TIMER_DIMS = [
+      { id: "absorb",   name: "استيعاب المنهج", icon: "📖" },
+      { id: "activate", name: "تفعيل المنهج",   icon: "⚡" },
+      { id: "enablers", name: "الممكّنات",       icon: "🧰" }
+    ];
+    const timerDlg = document.getElementById("timerDlg");
+    function timerDayKey(ms) { return toDateInput(dayStartOf(ms == null ? Date.now() : ms)); }
+    function timerDayRec(key) {
+      key = key || timerDayKey();
+      const log = state.dayTimers.log;
+      if (!log[key]) log[key] = { absorb: 0, activate: 0, enablers: 0 };
+      const r = log[key];
+      for (const d of TIMER_DIMS) if (typeof r[d.id] !== "number") r[d.id] = 0;
+      return r;
+    }
+    // الوقت المتراكم لبُعدٍ في يوم العمل الحالي (المحفوظ + الجاري إن كان يعمل)
+    function timerElapsedToday(dim) {
+      const rec = timerDayRec();
+      let ms = rec[dim] || 0;
+      const run = state.dayTimers.running;
+      if (run.dim === dim && run.since) {
+        const from = Math.max(run.since, dayStartOf(Date.now()));
+        ms += Math.max(0, Date.now() - from);
+      }
+      return ms;
+    }
+    function timerTotalToday() { let t = 0; for (const d of TIMER_DIMS) t += timerElapsedToday(d.id); return t; }
+    // إيداع الوقت الجاري في سجلّ اليوم الذي بدأ فيه، وإيقاف العدّاد
+    function timerCommitRunning() {
+      const run = state.dayTimers.running;
+      if (run.dim && run.since) {
+        const rec = timerDayRec(timerDayKey(run.since));
+        rec[run.dim] = (rec[run.dim] || 0) + Math.max(0, Date.now() - run.since);
+      }
+      run.dim = null; run.since = 0;
+    }
+    function timerToggle(dim) {
+      const run = state.dayTimers.running;
+      const wasRunning = run.dim === dim;
+      timerCommitRunning();               // يوقف أي بُعد يعمل (تشغيل حصري)
+      if (!wasRunning) { run.dim = dim; run.since = Date.now(); }
+      save(); renderDayTimer();
+    }
+    function openDayTimer() { renderDayTimer(); timerDlg.showModal(); }
+    function renderDayTimer() {
+      document.getElementById("tmrDate").textContent = fmtDayLong(Date.now());
+      const dims = document.getElementById("tmrDims");
+      dims.replaceChildren();
+      const run = state.dayTimers.running;
+      for (const d of TIMER_DIMS) {
+        const on = run.dim === d.id;
+        const row = document.createElement("div"); row.className = "tmr-dim" + (on ? " on" : ""); row.dataset.dim = d.id;
+        row.innerHTML =
+          "<div class='tmr-dim-ic'>" + d.icon + "</div>" +
+          "<div class='tmr-dim-mid'><div class='tmr-dim-nm'>" + d.name + "</div>" +
+          "<div class='tmr-dim-time' data-tdim='" + d.id + "'>" + fmtClock(timerElapsedToday(d.id)) + "</div></div>" +
+          "<button class='tmr-dim-btn' type='button' aria-label='" + (on ? "إيقاف" : "تشغيل") + "'>" + (on ? "⏸" : "▶") + "</button>";
+        row.querySelector(".tmr-dim-btn").onclick = () => timerToggle(d.id);
+        dims.append(row);
+      }
+      updateDayTimerDisplay();
+    }
+    function updateDayTimerDisplay() {
+      if (!timerDlg.open) return;
+      for (const d of TIMER_DIMS) {
+        const el = timerDlg.querySelector('.tmr-dim-time[data-tdim="' + d.id + '"]');
+        if (el) el.textContent = fmtClock(timerElapsedToday(d.id));
+      }
+      const tot = document.getElementById("tmrTotal");
+      if (tot) tot.textContent = fmtClock(timerTotalToday());
+    }
+    const tmrXBtn = document.getElementById("tmrX");
+    if (tmrXBtn) tmrXBtn.onclick = () => timerDlg.close();
 
     // ---------- العادات اليومية ----------
     document.getElementById("habitsAddBtn").onclick = () => openItem(null, null, "habit");
