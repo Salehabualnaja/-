@@ -4968,7 +4968,7 @@
       };
       rem.nextAt = computeNextAt(rem);
       state.reminders.push(rem); save();
-      ensureNotifyPermission().then(() => { scheduleTrigger(rem); });
+      ensureNotifyPermission().then(() => { scheduleTrigger(rem); registerBackgroundReminders(); });
       if (appMode === "reminders") renderReminders();
     });
 
@@ -5031,6 +5031,69 @@
         }
       }
       if (changed) save();
+      syncRemindersToSW();
+    }
+
+    // ═══ مزامنة التذكيرات مع الـ Service Worker للعمل في الخلفية (أفضل جهد) ═══
+    // ملاحظة: التطبيق بلا خادم، فلا يمكن ضمان وصول الإشعارات والتطبيق مغلق تماماً
+    // (يتطلب ذلك Web Push بخادم). المزامنة الدورية أدناه تعمل على أندرويد/كروم
+    // للتطبيق المثبّت فقط وبتوقيت تقريبي يحدده المتصفح، ولا تعمل على iOS.
+    function remindersForSW() {
+      const out = [];
+      for (const rem of state.reminders) {
+        if (!rem.enabled) continue;
+        const nm = reminderName(rem);
+        if (!nm) continue;
+        out.push({
+          id: rem.id, name: nm, note: rem.note || "",
+          recurrence: rem.recurrence, time: rem.time, weekday: rem.weekday,
+          monthday: rem.monthday, date: rem.date || "",
+          nextAt: rem.nextAt || computeNextAt(rem)
+        });
+      }
+      return out;
+    }
+    function idbOpenRem() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open("ptt-reminders", 1);
+        req.onupgradeneeded = () => { req.result.createObjectStore("rems"); };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function syncRemindersToSW() {
+      try {
+        if (!("indexedDB" in window)) return;
+        const db = await idbOpenRem();
+        await new Promise((res, rej) => {
+          const tx = db.transaction("rems", "readwrite");
+          tx.objectStore("rems").put({ list: remindersForSW(), savedAt: Date.now() }, "all");
+          tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+        });
+        db.close();
+        // أبلغ الـ SW ليعيد جدولة أقرب تذكير إن كان يدعم ذلك
+        if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: "rems-updated" });
+        }
+      } catch (_) {}
+    }
+    async function registerBackgroundReminders() {
+      try {
+        if (!("serviceWorker" in navigator)) return;
+        const reg = await navigator.serviceWorker.ready;
+        await syncRemindersToSW();
+        // مزامنة خلفية دورية (كروم/أندرويد للتطبيق المثبّت) — توقيت تقريبي
+        if (reg.periodicSync) {
+          try {
+            const st = await navigator.permissions.query({ name: "periodic-background-sync" });
+            if (st.state === "granted") {
+              await reg.periodicSync.register("ptt-reminders", { minInterval: 60 * 60 * 1000 });
+            }
+          } catch (_) {}
+        }
+        // مزامنة احتياطية عند عودة الاتصال
+        if (reg.sync) { try { await reg.sync.register("ptt-reminders"); } catch (_) {} }
+      } catch (_) {}
     }
 
     // ---------- تقويم التذكيرات ----------
@@ -5061,9 +5124,9 @@
       body.append(name);
       if (rem.note) { const note = document.createElement("div"); note.className = "rc-note"; note.textContent = rem.note; body.append(note); }
       const tg = document.createElement("button"); tg.className = "rc-btn"; tg.textContent = rem.enabled ? "🔔" : "🔕"; tg.title = "تفعيل/تعطيل";
-      tg.onclick = (e) => { e.stopPropagation(); rem.enabled = !rem.enabled; if (rem.enabled) { rem.nextAt = computeNextAt(rem); scheduleTrigger(rem); } save(); renderReminders(); };
+      tg.onclick = (e) => { e.stopPropagation(); rem.enabled = !rem.enabled; if (rem.enabled) { rem.nextAt = computeNextAt(rem); scheduleTrigger(rem); } save(); syncRemindersToSW(); renderReminders(); };
       const del = document.createElement("button"); del.className = "rc-btn"; del.textContent = "🗑️"; del.title = "حذف";
-      del.onclick = (e) => { e.stopPropagation(); state.reminders = state.reminders.filter(x => x.id !== rem.id); save(); renderReminders(); };
+      del.onclick = (e) => { e.stopPropagation(); state.reminders = state.reminders.filter(x => x.id !== rem.id); save(); syncRemindersToSW(); renderReminders(); };
       chip.append(time, body, tg, del);
       return chip;
     }
@@ -5253,7 +5316,9 @@
     // ---------- PWA: تسجيل الـ Service Worker وزر التثبيت ----------
     if ("serviceWorker" in navigator) {
       window.addEventListener("load", () => {
-        navigator.serviceWorker.register("./sw.js").catch(() => {});
+        navigator.serviceWorker.register("./sw.js")
+          .then(() => registerBackgroundReminders())
+          .catch(() => {});
       });
     }
     const installWrap = document.getElementById("installWrap");
