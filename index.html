@@ -4582,8 +4582,9 @@
           plans.some(p => p.programId === pr.id) || domTasks.some(c => c.programId === pr.id && !chValidProj(c)));
         const noProg = plans.filter(p => !programOf(p));
         const sec = document.createElement("div"); sec.className = "chtree-dom" + (chTreeDoms.has(domKey) ? "" : " col");
+        if (domKey !== "__nodom__") sec.dataset.dom = domKey;
         const head = document.createElement("div"); head.className = "chtree-domhead";
-        head.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + icon + " " + escapeHtml(name) + "</span><span class='cx-count'>" + toArDigits(plans.length) + " مشروع</span>";
+        head.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + icon + " " + escapeHtml(name) + "</span><span class='cx-count'>" + toArDigits(plans.length) + " مشروع · " + toArDigits(domTasks.length) + " مهمة</span>";
         head.onclick = () => { if (chTreeDoms.has(domKey)) chTreeDoms.delete(domKey); else chTreeDoms.add(domKey); sec.classList.toggle("col"); };
         const body = document.createElement("div"); body.className = "chtree-dombody";
         if (general.length) {
@@ -4608,6 +4609,8 @@
       buildDom("__nodom__", "📌", "بلا مجال",
         state.plans.filter(p => !known.has(planDomain(p))),
         state.challenges.filter(c => !known.has(challengeDomain(c))));
+      // المجالات داينمك: سحب بالضغط المطوّل لإعادة الترتيب (نفس ترتيب صفحة الإدخال)
+      if (typeof makeReorderable === "function") makeReorderable(tree, ".chtree-dom[data-dom]", ".chtree-domhead", "dom", ids => reorderDomains(ids));
     }
 
     // ── نافذة مهام المشروع/المجموعة (تُفتح من الصندوق) ──
