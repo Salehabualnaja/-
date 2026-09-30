@@ -1130,6 +1130,10 @@
 
     <!-- ═══ قسم الخطة (الصفحة الرئيسية) ═══ -->
     <section id="planSection">
+      <div class="tabs" id="statsScopeTabs">
+        <button data-sscope="all" class="active">كل المشاريع</button>
+        <button data-sscope="fav">⭐ المفضلة فقط</button>
+      </div>
       <div class="umbrella">
         <span class="orn">﴿</span>
         <span class="verse" id="umbrellaVerse">قُلْ إِنَّ صَلَاتِي وَنُسُكِي وَمَحْيَايَ وَمَمَاتِي لِلَّهِ رَبِّ الْعَالَمِينَ</span>
@@ -1698,6 +1702,9 @@
     let appMode = readUI(UI_MODE_KEY, ["stats", "projects", "settings", "reminders", "challenges"], "stats");
     const STATS_TAB_KEY = "ptt.ui.statstab";
     let statsTab = readUI(STATS_TAB_KEY, ["plan", "timer", "habits", "followup"], "plan");
+    const STATS_SCOPE_KEY = "ptt.ui.statsscope";
+    let statsScope = readUI(STATS_SCOPE_KEY, ["all", "fav"], "all"); // نطاق الإحصاءات: كل المشاريع أو المفضلة فقط
+    let _favScope = false; // يُفعَّل أثناء رسم لوحة الإحصاءات ليُقصر التجميع على المفضلة
     const ARCH_VIEW_KEY = "ptt.ui.archview";
     let archiveView = readUI(ARCH_VIEW_KEY, ["all", "link", "material", "plan", "ref"], "all");
     let editingArchId = null;
@@ -1943,7 +1950,7 @@
     }
     function isRunning(item) { return (item.sessions || []).some(s => !s.manual && s.end == null); }
     // العناصر القابلة للتوقيت: المشاريع من نوع ساعات
-    function hoursGoals() { return state.plans.filter(g => g.type === "hours"); }
+    function hoursGoals() { return state.plans.filter(g => g.type === "hours" && (!_favScope || g.favorite)); }
     function timerItems() { return hoursGoals(); }
     function sessionHoursTotal(item) {
       const now = Date.now(); let ms = 0;
@@ -2142,7 +2149,7 @@
     // مجال المشروع = مجال برنامجه (وإلا مجاله المُرحَّل)
     function programOf(pl) { return state.programs.find(pr => pr.id === pl.programId) || null; }
     function planDomain(pl) { const pr = programOf(pl); return pr ? (pr.domainId || "") : (pl.domainId || ""); }
-    function domainPlans(domainId) { return state.plans.filter(pl => planDomain(pl) === domainId); }
+    function domainPlans(domainId) { return state.plans.filter(pl => planDomain(pl) === domainId && (!_favScope || pl.favorite)); }
     // المُنجَز الفعلي: لمشاريع الساعات = يدوي + ساعات المؤقّت
     function goalCurrent(g) {
       const base = g.current || 0;
@@ -2206,7 +2213,7 @@
     }
     function habitProgramOf(h) { return state.programs.find(pr => pr.id === h.programId) || null; }
     function habitDomain(h) { const pr = habitProgramOf(h); return pr ? (pr.domainId || "") : (h.domainId || ""); }
-    function domainHabits(domainId) { return state.habits.filter(h => habitDomain(h) === domainId); }
+    function domainHabits(domainId) { return state.habits.filter(h => habitDomain(h) === domainId && (!_favScope || h.favorite)); }
     function programHabits(progId) { return state.habits.filter(h => (h.programId || "") === progId); }
 
     function domainProgress(domainId) {
@@ -2355,12 +2362,12 @@
     function perfDayValue(type, domId, dayStart, now) {
       if (type === "habits") {
         const key = toDateInput(dayStart); let c = 0;
-        for (const h of state.habits) if ((!domId || habitDomain(h) === domId) && h.log && h.log[key]) c++;
+        for (const h of state.habits) if ((!domId || habitDomain(h) === domId) && (!_favScope || h.favorite) && h.log && h.log[key]) c++;
         return c;
       }
       let ms = 0;
       for (const g of hoursGoals()) if (!domId || planDomain(g) === domId) ms += Math.max(0, projectMsInDay(g, dayStart, now));
-      if (!domId) ms += Math.max(0, projectMsInDay(state.freeTimer, dayStart, now));
+      if (!domId && !_favScope) ms += Math.max(0, projectMsInDay(state.freeTimer, dayStart, now));
       return ms;
     }
     const PERIOD_LABEL = { day: "اليوم", week: "الأسبوع", month: "الشهر", quarter: "الربع" };
@@ -2389,11 +2396,11 @@
         // النقاط: لا سجلّ زمني — نعرض الرصيد الحالي موزّعاً حسب المجال أو المشروع
         let buckets, totalPts;
         if (!perfDomain) {
-          buckets = DOMAINS.map(d => ({ label: d.name, full: d.icon + " " + d.name, ms: state.plans.filter(p => p.type === "points" && planDomain(p) === d.id).reduce((s, p) => s + (p.current || 0), 0) })).filter(b => b.ms > 0);
+          buckets = DOMAINS.map(d => ({ label: d.name, full: d.icon + " " + d.name, ms: state.plans.filter(p => p.type === "points" && planDomain(p) === d.id && (!_favScope || p.favorite)).reduce((s, p) => s + (p.current || 0), 0) })).filter(b => b.ms > 0);
         } else {
-          buckets = state.plans.filter(p => p.type === "points" && planDomain(p) === perfDomain).map(p => ({ label: p.name, full: p.name, ms: (p.current || 0) }));
+          buckets = state.plans.filter(p => p.type === "points" && planDomain(p) === perfDomain && (!_favScope || p.favorite)).map(p => ({ label: p.name, full: p.name, ms: (p.current || 0) }));
         }
-        const plans = state.plans.filter(p => p.type === "points" && (!perfDomain || planDomain(p) === perfDomain));
+        const plans = state.plans.filter(p => p.type === "points" && (!perfDomain || planDomain(p) === perfDomain) && (!_favScope || p.favorite));
         totalPts = plans.reduce((s, p) => s + (p.current || 0), 0);
         card.append(mkMetric("⭐ إجمالي النقاط", toArDigits(Math.round(totalPts)) + " نقطة", null));
         card.append(statRow([[toArDigits(plans.length), "مشاريع نقاط"], [toArDigits(plans.filter(isComplete).length), "مكتملة"], [toArDigits(plans.filter(p => !isComplete(p)).length), "قيد التنفيذ"]]));
@@ -2407,8 +2414,8 @@
         // مؤشّر مركّب: يوحّد الساعات والعادات والنقاط في رقم واحد (0–100+) وفق معادلة قابلة للتعديل
         const cfg = compositeCfg();
         const goal = goalMs();
-        const totalHabits = state.habits.filter(h => !perfDomain || habitDomain(h) === perfDomain).length;
-        const curPts = state.plans.filter(p => p.type === "points" && (!perfDomain || planDomain(p) === perfDomain)).reduce((s, p) => s + (p.current || 0), 0);
+        const totalHabits = state.habits.filter(h => (!perfDomain || habitDomain(h) === perfDomain) && (!_favScope || h.favorite)).length;
+        const curPts = state.plans.filter(p => p.type === "points" && (!perfDomain || planDomain(p) === perfDomain) && (!_favScope || p.favorite)).reduce((s, p) => s + (p.current || 0), 0);
         const pointsFrac = cfg.pointsTarget > 0 ? curPts / cfg.pointsTarget : 0;
 
         const rangeN = { day: 1, week: 7, month: 30, quarter: 90 }[perfPeriod];
@@ -2470,7 +2477,7 @@
         card.append(statRow(tiles));
       } else {
         const activeDays = rangeArr.filter(x => x.v > 0).length;
-        const habN = state.habits.filter(h => !perfDomain || habitDomain(h) === perfDomain).length;
+        const habN = state.habits.filter(h => (!perfDomain || habitDomain(h) === perfDomain) && (!_favScope || h.favorite)).length;
         card.append(statRow([[toArDigits(total), "مرّات الإنجاز"], [toArDigits(activeDays) + "/" + toArDigits(rangeN), "أيام نشطة"], [toArDigits(habN), "عادات"]]));
       }
       wrap.append(card);
@@ -2855,7 +2862,9 @@
     }
 
     function renderPlan() {
-      els.dayLabel.textContent = "الإحصاءات · لوحة الخطة الشخصية · 8 مجالات";
+      _favScope = (statsScope === "fav");
+      document.querySelectorAll("#statsScopeTabs button").forEach(b => b.classList.toggle("active", b.dataset.sscope === statsScope));
+      els.dayLabel.textContent = _favScope ? "الإحصاءات · المفضلة فقط · 8 مجالات" : "الإحصاءات · كل المشاريع · 8 مجالات";
       const uv = document.getElementById("umbrellaVerse");
       if (uv) uv.textContent = state.settings.umbrella || "";
 
@@ -2903,6 +2912,7 @@
         frag.append(card);
       }
       els.domainsGrid.replaceChildren(frag);
+      _favScope = false;
     }
 
     // ═══ رسم توازن المجالات (رادار/مضلّع) وفق المستهدفات والأوزان ═══
@@ -2956,7 +2966,7 @@
     }
 
     function allDone() {
-      const list = state.plans;
+      const list = _favScope ? state.plans.filter(p => p.favorite) : state.plans;
       return { done: list.filter(isComplete).length, total: list.length };
     }
 
@@ -3909,6 +3919,15 @@
         document.querySelectorAll("#statsTabs button").forEach(b => b.classList.toggle("active", b === btn));
         try { localStorage.setItem(STATS_TAB_KEY, statsTab); } catch (_) {}
         render();
+      };
+    });
+
+    // ---------- تبويبات نطاق الإحصاءات (كل المشاريع / المفضلة فقط) ----------
+    document.querySelectorAll("#statsScopeTabs button").forEach(btn => {
+      btn.onclick = () => {
+        statsScope = btn.dataset.sscope;
+        try { localStorage.setItem(STATS_SCOPE_KEY, statsScope); } catch (_) {}
+        renderPlan();
       };
     });
 
