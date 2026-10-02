@@ -1169,7 +1169,6 @@
           <span class="ach-body"><b id="chAchNum">0</b><span class="ach-lbl">مهمة منجَزة</span></span>
           <span class="ach-go">السجل ›</span>
         </button>
-        <div class="chp-stats" id="chStats"></div>
         <div class="ch-add" id="chAddWrap">
           <div class="ch-add-row">
             <input id="chInput" type="text" placeholder="اكتب مهمة أو تحدياً جديداً…" autocomplete="off" />
@@ -1183,12 +1182,15 @@
           </div>
         </div>
         <div class="ch-toolbar">
-          <span id="chCount">المهام</span>
-          <button class="linkbtn" id="chClear">مسح المكتمل</button>
+          <button class="linkbtn" id="chClear">🧹 مسح المكتمل</button>
         </div>
       </div>
+      <div class="chfav-wrap" id="chFavWrap" hidden>
+        <div class="chproj-title">⭐ المفضلة <span class="chproj-hint">وصول سريع لأهم برامجك ومشاريعك</span></div>
+        <div id="chFavGrid" class="chbox-grid"></div>
+      </div>
       <div class="chproj-wrap" id="chProjWrap">
-        <div class="chproj-title">📂 المهام حسب المشاريع <span class="chproj-hint">اضغط الصندوق لعرض مهامه وإضافتها</span></div>
+        <div class="chproj-title">🗂️ كل المجالات <span class="chproj-hint">رؤية كلية · اضغط الصندوق لعرض مهامه</span></div>
         <div id="chProjTree" class="chtree"></div>
       </div>
     </section>
@@ -4575,12 +4577,13 @@
       box.onclick = onOpen;
       return box;
     }
+    const chFavFirst = (a, b) => (!!a.favorite === !!b.favorite) ? 0 : (a.favorite ? -1 : 1);
     function buildProjBox(p) {
       const tasks = state.challenges.filter(c => c.projectId === p.id);
       const dom = planDomain(p);
       const ic = (dom && DOMAINS.some(d => d.id === dom)) ? domainIcon(dom) : "📄";
       const updated = tasks.length ? chMaxTaskTs(tasks) : planUpdatedAt(p);
-      return buildChBox(ic, p.name, tasks.length, updated, false,
+      return buildChBox(ic, (p.favorite ? "★ " : "") + p.name, tasks.length, updated, false,
         () => openProjTasks({ kind: "project", id: p.id, title: "📄 " + p.name }));
     }
     // شجرة قابلة للطيّ: مجال ← برنامج ← صناديق المشاريع المربّعة
@@ -4605,8 +4608,8 @@
         const pbody = document.createElement("div"); pbody.className = "chtree-progbody";
         const grid = mkGrid();
         if (direct.length) grid.append(buildChBox("📁", "مهام البرنامج", direct.length, chMaxTaskTs(direct), true,
-          () => openProjTasks({ kind: "progdirect", id: key.slice(5), title: "📁 مهام البرنامج — " + name.replace(/^📁\s*/, "") })));
-        for (const p of plans) grid.append(buildProjBox(p));
+          () => openProjTasks({ kind: "progdirect", id: key.slice(5), title: "📁 مهام البرنامج — " + name.replace(/^📁\s*(★\s*)?/, "") })));
+        for (const p of plans.slice().sort(chFavFirst)) grid.append(buildProjBox(p));
         pbody.append(grid);
         psec.append(ph, pbody); parent.append(psec);
       };
@@ -4614,7 +4617,7 @@
         if (!plans.length && !domTasks.length) return;
         const general = domTasks.filter(c => !chValidProj(c) && !chValidProg(c));
         const progList = state.programs.filter(pr =>
-          plans.some(p => p.programId === pr.id) || domTasks.some(c => c.programId === pr.id && !chValidProj(c)));
+          plans.some(p => p.programId === pr.id) || domTasks.some(c => c.programId === pr.id && !chValidProj(c))).slice().sort(chFavFirst);
         const noProg = plans.filter(p => !programOf(p));
         const sec = document.createElement("div"); sec.className = "chtree-dom" + (chTreeDoms.has(domKey) ? "" : " col");
         if (domKey !== "__nodom__") sec.dataset.dom = domKey;
@@ -4631,7 +4634,7 @@
         for (const pr of progList) {
           const pl = plans.filter(p => p.programId === pr.id);
           const direct = domTasks.filter(c => c.programId === pr.id && !chValidProj(c));
-          buildProg(body, "prog:" + pr.id, "📁 " + escapeHtml(pr.name), false, pl, direct);
+          buildProg(body, "prog:" + pr.id, "📁 " + (pr.favorite ? "★ " : "") + escapeHtml(pr.name), false, pl, direct);
         }
         if (noProg.length) buildProg(body, "__np__:" + domKey, "📌 بلا برنامج", true, noProg, []);
         sec.append(head, body); tree.append(sec);
@@ -4655,9 +4658,17 @@
     const ptSub = document.getElementById("ptSub");
     const ptInput = document.getElementById("ptInput");
     const ptListEl = document.getElementById("ptList");
+    // كل مهام البرنامج: عبر مشاريعه أو مرتبطة به مباشرةً
+    function progTaskList(progId) {
+      return state.challenges.filter(c => {
+        if (c.projectId) { const pl = state.plans.find(p => p.id === c.projectId); return pl && pl.programId === progId; }
+        return c.programId === progId;
+      });
+    }
     function ptTasksFor() {
       const t = ptTarget; if (!t) return [];
       if (t.kind === "project") return state.challenges.filter(c => c.projectId === t.id);
+      if (t.kind === "program") return progTaskList(t.id);
       if (t.kind === "progdirect") return state.challenges.filter(c => c.programId === t.id && !chValidProj(c));
       const known = new Set(DOMAINS.map(d => d.id));
       return state.challenges.filter(c => !chValidProj(c) && !chValidProg(c) && (t.domainId ? challengeDomain(c) === t.domainId : !known.has(challengeDomain(c))));
@@ -4670,7 +4681,9 @@
       ptSub.textContent = tasks.length ? ("المنجَز " + toArDigits(doneN) + " من " + toArDigits(tasks.length)) : "لا مهام بعد";
       ptListEl.replaceChildren();
       if (!tasks.length) { const e = document.createElement("div"); e.className = "pt-empty"; e.textContent = "لا مهام بعد — أضِف أول مهمة في الأعلى."; ptListEl.append(e); return; }
-      for (const c of tasks) ptListEl.append(chTaskRow(c, true));
+      // في عرض البرنامج نُظهر المشروع بجانب كل مهمة
+      const showProj = (ptTarget.kind === "program");
+      for (const c of tasks) ptListEl.append(chTaskRow(c, !showProj));
     }
     function openProjTasks(target) {
       ptTarget = target;
@@ -4682,7 +4695,7 @@
       const t = ptInput.value.trim(); if (!t || !ptTarget) return;
       let projectId = "", programId = "", domainId = "";
       if (ptTarget.kind === "project") { projectId = ptTarget.id; const pl = state.plans.find(p => p.id === projectId); domainId = pl ? planDomain(pl) : ""; }
-      else if (ptTarget.kind === "progdirect") { programId = ptTarget.id; const pr = state.programs.find(p => p.id === programId); domainId = pr ? (pr.domainId || "") : ""; }
+      else if (ptTarget.kind === "program" || ptTarget.kind === "progdirect") { programId = ptTarget.id; const pr = state.programs.find(p => p.id === programId); domainId = pr ? (pr.domainId || "") : ""; }
       else { domainId = ptTarget.domainId || ""; }
       state.challenges.push({ id: uid(), text: t, projectId, programId, domainId, done: false, created: Date.now() });
       save(); ptInput.value = ""; refreshChallengeViews(); ptInput.focus();
@@ -4698,17 +4711,26 @@
     function renderChallenges() {
       const list = state.challenges;
       const doneN = list.filter(c => c.done).length;
-      const pendN = list.length - doneN;
-      chCount.textContent = list.length ? ("المنجَز " + doneN + " من " + list.length) : "لا مهام بعد";
+      if (chCount) chCount.textContent = list.length ? ("المنجَز " + toArDigits(doneN) + " من " + toArDigits(list.length)) : "لا مهام بعد";
       chAchNum.textContent = completedChallengeCount();
-      const chStats = document.getElementById("chStats");
-      if (chStats) {
-        chStats.innerHTML =
-          "<div class='chp-stat'><b>" + toArDigits(list.length) + "</b><span>الكل</span></div>" +
-          "<div class='chp-stat pend'><b>" + toArDigits(pendN) + "</b><span>قيد التنفيذ</span></div>" +
-          "<div class='chp-stat done'><b>" + toArDigits(doneN) + "</b><span>مكتملة</span></div>";
-      }
+      renderChFavorites();
       renderChProjects();
+    }
+    // ⭐ المفضلة أولاً: صناديق وصول سريع للبرامج والمشاريع المفضّلة
+    function renderChFavorites() {
+      const wrap = document.getElementById("chFavWrap");
+      const grid = document.getElementById("chFavGrid");
+      if (!wrap || !grid) return;
+      const favProgs = state.programs.filter(p => p.favorite);
+      const favProjs = state.plans.filter(p => p.favorite);
+      if (!favProgs.length && !favProjs.length) { wrap.hidden = true; grid.replaceChildren(); return; }
+      wrap.hidden = false; grid.replaceChildren();
+      for (const pr of favProgs) {
+        const tasks = progTaskList(pr.id);
+        grid.append(buildChBox("📁", pr.name, tasks.length, chMaxTaskTs(tasks), false,
+          () => openProjTasks({ kind: "program", id: pr.id, title: "📁 " + pr.name })));
+      }
+      for (const p of favProjs) grid.append(buildProjBox(p));
     }
     function addChallenge() {
       const t = chInput.value.trim(); if (!t) return;
