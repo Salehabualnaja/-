@@ -1201,7 +1201,7 @@
         <div id="chUrgList" class="churg-list"></div>
       </div>
       <div class="chfav-wrap" id="chFavWrap" hidden>
-        <div class="chproj-title">⭐ المفضلة <span class="chproj-hint">وصول سريع لأهم برامجك ومشاريعك</span></div>
+        <div class="chproj-title">⭐ البرامج المفضّلة <span class="chproj-hint">وصول سريع لأهم برامجك</span></div>
         <div id="chFavGrid" class="chbox-grid"></div>
       </div>
       <div class="chproj-wrap" id="chProjWrap">
@@ -2119,7 +2119,7 @@
         else if (statsTab === "followup") renderFollowup();
         else { els.dayLabel.textContent = "العادات — تابِع استمراريتك اليومية 🔥"; renderHabits(); }
       } else if (appMode === "challenges") {
-        els.dayLabel.textContent = "المهام والتحديات — مصنّفة حسب المجال والبرنامج والمشروع";
+        els.dayLabel.textContent = "";
         renderChallenges();
       } else if (appMode === "projects") {
         els.dayLabel.textContent = "الإدخال — برامجك ومشاريعك مصنّفة";
@@ -4602,7 +4602,7 @@
       const dom = planDomain(p);
       const ic = (dom && DOMAINS.some(d => d.id === dom)) ? domainIcon(dom) : "📄";
       const updated = tasks.length ? chMaxTaskTs(tasks) : planUpdatedAt(p);
-      return buildChBox(ic, (p.favorite ? "★ " : "") + p.name, tasks.length, updated, false,
+      return buildChBox(ic, p.name, tasks.length, updated, false,
         () => openProjTasks({ kind: "project", id: p.id, title: "📄 " + p.name }));
     }
     // شجرة قابلة للطيّ: مجال ← برنامج ← صناديق المشاريع المربّعة
@@ -4628,7 +4628,7 @@
         const grid = mkGrid();
         if (direct.length) grid.append(buildChBox("📁", "مهام البرنامج", direct.length, chMaxTaskTs(direct), true,
           () => openProjTasks({ kind: "progdirect", id: key.slice(5), title: "📁 مهام البرنامج — " + name.replace(/^📁\s*(★\s*)?/, "") })));
-        for (const p of plans.slice().sort(chFavFirst)) grid.append(buildProjBox(p));
+        for (const p of plans) grid.append(buildProjBox(p));
         pbody.append(grid);
         psec.append(ph, pbody); parent.append(psec);
       };
@@ -4757,17 +4757,15 @@
       const wrap = document.getElementById("chFavWrap");
       const grid = document.getElementById("chFavGrid");
       if (!wrap || !grid) return;
-      // لا تُعرض المفضّلات الفارغة (بلا مهام) حتى لا تشوّش
+      // المفضلة للبرامج فقط (كما في صفحة الإدخال)، ولا تُعرض الفارغة (بلا مهام)
       const favProgs = state.programs.filter(p => p.favorite && progTaskList(p.id).length);
-      const favProjs = state.plans.filter(p => p.favorite && state.challenges.some(c => c.projectId === p.id));
-      if (!favProgs.length && !favProjs.length) { wrap.hidden = true; grid.replaceChildren(); return; }
+      if (!favProgs.length) { wrap.hidden = true; grid.replaceChildren(); return; }
       wrap.hidden = false; grid.replaceChildren();
       for (const pr of favProgs) {
         const tasks = progTaskList(pr.id);
         grid.append(buildChBox("📁", pr.name, tasks.length, chMaxTaskTs(tasks), false,
           () => openProjTasks({ kind: "program", id: pr.id, title: "📁 " + pr.name })));
       }
-      for (const p of favProjs) grid.append(buildProjBox(p));
     }
     function addChallenge() {
       const t = chInput.value.trim(); if (!t) return;
