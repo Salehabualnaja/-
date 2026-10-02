@@ -110,11 +110,12 @@
 
     /* الرأس */
     header.app { position: relative; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 0 2px; }
-    .hdr-bell, .hdr-gear { position: absolute; top: 0; border: none; background: var(--panel-2); color: var(--accent-ink); width: 38px; height: 38px; border-radius: 12px; font-size: 17px; cursor: pointer; display: grid; place-items: center; box-shadow: var(--shadow); transition: transform .1s, background .15s; }
+    .hdr-bell, .hdr-gear, .hdr-expand { position: absolute; top: 0; border: none; background: var(--panel-2); color: var(--accent-ink); width: 38px; height: 38px; border-radius: 12px; font-size: 17px; cursor: pointer; display: grid; place-items: center; box-shadow: var(--shadow); transition: transform .1s, background .15s; }
     .hdr-bell { inset-inline-start: 0; }
+    .hdr-expand { inset-inline-start: 44px; font-size: 20px; font-weight: 900; }
     .hdr-gear { inset-inline-end: 0; }
-    .hdr-bell:hover, .hdr-gear:hover { background: var(--accent-soft); }
-    .hdr-bell:active, .hdr-gear:active { transform: scale(.92); }
+    .hdr-bell:hover, .hdr-gear:hover, .hdr-expand:hover { background: var(--accent-soft); }
+    .hdr-bell:active, .hdr-gear:active, .hdr-expand:active { transform: scale(.92); }
     header.app h1 { font-size: 17px; margin: 0; font-weight: 800; letter-spacing: .2px; }
     header.app .date { color: var(--muted); font-size: 12.5px; }
 
@@ -1126,6 +1127,7 @@
   <div class="wrap">
     <header class="app">
       <button class="hdr-bell" id="openReminders" title="التذكيرات" aria-label="التذكيرات">🔔</button>
+      <button class="hdr-expand" id="expandAllBtn" title="فتح كل الخانات" aria-label="فتح كل الخانات" hidden>⊞</button>
       <button class="hdr-gear" id="openSettings" title="الإعدادات" aria-label="الإعدادات">⚙️</button>
       <h1 id="appTitle">📖 الصحيفة</h1>
       <div class="date" id="dayLabel"></div>
@@ -2134,6 +2136,39 @@
         els.dayLabel.textContent = "تفاصيل المجال";
         renderDomainPage();
       }
+      updateExpandBtn();
+    }
+
+    // ═══ زرّ فتح/طيّ كل الخانات (للصفحات ذات الأقسام القابلة للطيّ) ═══
+    function collapsibleCtx() {
+      if (appMode === "projects") {
+        const domKeys = DOMAINS.map(d => d.id).concat("__nodom__");
+        return { doms: expandedDomains, progs: expandedPrograms, domKeys, progKeys: state.programs.map(p => p.id), render: renderProjects };
+      }
+      if (appMode === "challenges") {
+        const domKeys = DOMAINS.map(d => d.id).concat("__nodom__");
+        const progKeys = state.programs.map(p => "prog:" + p.id).concat(domKeys.map(k => "__np__:" + k));
+        return { doms: chTreeDoms, progs: chTreeProgs, domKeys, progKeys, render: renderChallenges };
+      }
+      return null;
+    }
+    function isAllExpanded(c) { return c.domKeys.every(k => c.doms.has(k)) && c.progKeys.every(k => c.progs.has(k)); }
+    function updateExpandBtn() {
+      const btn = document.getElementById("expandAllBtn"); if (!btn) return;
+      const c = collapsibleCtx();
+      if (!c) { btn.hidden = true; return; }
+      btn.hidden = false;
+      const open = isAllExpanded(c);
+      btn.textContent = open ? "⊟" : "⊞";
+      btn.title = open ? "طيّ كل الخانات" : "فتح كل الخانات";
+      btn.setAttribute("aria-label", btn.title);
+    }
+    function toggleExpandAll() {
+      const c = collapsibleCtx(); if (!c) return;
+      if (isAllExpanded(c)) { c.doms.clear(); c.progs.clear(); }
+      else { c.domKeys.forEach(k => c.doms.add(k)); c.progKeys.forEach(k => c.progs.add(k)); }
+      c.render();
+      updateExpandBtn();
     }
 
     // إعادة رسم ما هو ظاهر حالياً بعد أي تعديل
@@ -5043,6 +5078,7 @@
       saveUI(); render();
     }
     document.getElementById("openReminders").onclick = openRemindersView;
+    document.getElementById("expandAllBtn").onclick = toggleExpandAll;
     // فتح الإعدادات من زر الترس في الرأس
     document.getElementById("openSettings").onclick = () => {
       appMode = "settings";
