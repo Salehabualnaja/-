@@ -869,6 +869,10 @@
     .ch-fire:active { transform: scale(.85); }
     .ch-task.urgent { border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 8%, var(--panel-2)); }
     .ch-task.urgent .ch-fire, .ch-fire.on { filter: none; opacity: 1; }
+    /* زر الشعلة في شريط الإضافة */
+    .ch-urg-toggle { flex: 0 0 auto; width: 40px; border: 1px solid var(--border-strong); border-radius: 9px; background: var(--panel-2); font-size: 15px; cursor: pointer; font-family: inherit; filter: grayscale(1); opacity: .5; transition: opacity .15s, filter .15s, border-color .15s, background .15s; }
+    .ch-urg-toggle:active { transform: scale(.92); }
+    .ch-urg-toggle.on { filter: none; opacity: 1; border-color: color-mix(in srgb, var(--danger) 55%, transparent); background: color-mix(in srgb, var(--danger) 12%, var(--panel)); }
 
     /* شبكة مشاريع صفحة المهام (صناديق مربعة) */
     .chproj-wrap { margin-bottom: 14px; }
@@ -1185,6 +1189,7 @@
         <div class="ch-add" id="chAddWrap">
           <div class="ch-add-row">
             <input id="chInput" type="text" placeholder="اكتب مهمة أو تحدياً جديداً…" autocomplete="off" />
+            <button type="button" class="ch-urg-toggle" id="chUrgentBtn" title="تعيين كعاجل" aria-label="تعيين كعاجل">🔥</button>
             <button class="ch-addbtn" id="chAdd">➕ إضافة</button>
             <button class="ch-canceledit" id="chCancelEdit" hidden title="إلغاء التعديل" aria-label="إلغاء التعديل">✕</button>
           </div>
@@ -1495,6 +1500,7 @@
       </div>
       <div class="pt-add">
         <input id="ptInput" type="text" placeholder="أضف مهمة…" autocomplete="off" />
+        <button type="button" class="ch-urg-toggle" id="ptUrgentBtn" title="تعيين كعاجل" aria-label="تعيين كعاجل">🔥</button>
         <button class="ch-addbtn" id="ptAdd">➕</button>
       </div>
       <div class="pt-list" id="ptList"></div>
@@ -4571,6 +4577,12 @@
     chDomain.addEventListener("change", () => fillChProjects(""));
 
     let editingChId = null;
+    let chUrgentNew = false; // حالة الشعلة في شريط الإضافة
+    function setChUrgentNew(v) {
+      chUrgentNew = !!v;
+      const b = document.getElementById("chUrgentBtn");
+      if (b) { b.classList.toggle("on", chUrgentNew); b.title = chUrgentNew ? "عاجل ✓" : "تعيين كعاجل"; }
+    }
     function chTaskRow(c, hideProj) {
       const row = document.createElement("div"); row.className = "ch-task" + (c.done ? " done" : "") + (c.urgent ? " urgent" : "");
       const check = document.createElement("button"); check.className = "ch-check" + (c.done ? " on" : "");
@@ -4598,6 +4610,7 @@
       const dom = challengeDomain(c);
       chDomain.value = (dom && DOMAINS.some(d => d.id === dom)) ? dom : "career";
       fillChProjects(c.projectId ? c.projectId : (c.programId ? "prog:" + c.programId : ""));
+      setChUrgentNew(!!c.urgent);
       chAdd.textContent = "💾 حفظ";
       chCancelEdit.hidden = false;
       chAddWrap.classList.add("editing");
@@ -4607,6 +4620,7 @@
       editingChId = null;
       chInput.value = "";
       fillChProjects("");
+      setChUrgentNew(false);
       chAdd.textContent = "➕ إضافة";
       chCancelEdit.hidden = true;
       chAddWrap.classList.remove("editing");
@@ -4748,6 +4762,7 @@
     }
     function openProjTasks(target) {
       ptTarget = target;
+      setPtUrgentNew(false);
       renderProjTasks();
       projTasksDlg.showModal();
       setTimeout(() => { try { ptInput.focus(); } catch (_) {} }, 50);
@@ -4758,14 +4773,21 @@
       if (ptTarget.kind === "project") { projectId = ptTarget.id; const pl = state.plans.find(p => p.id === projectId); domainId = pl ? planDomain(pl) : ""; }
       else if (ptTarget.kind === "program" || ptTarget.kind === "progdirect") { programId = ptTarget.id; const pr = state.programs.find(p => p.id === programId); domainId = pr ? (pr.domainId || "") : ""; }
       else { domainId = ptTarget.domainId || ""; }
-      state.challenges.push({ id: uid(), text: t, projectId, programId, domainId, done: false, created: Date.now() });
-      save(); ptInput.value = ""; refreshChallengeViews(); ptInput.focus();
+      state.challenges.push({ id: uid(), text: t, projectId, programId, domainId, done: false, urgent: ptUrgentNew, created: Date.now() });
+      save(); ptInput.value = ""; setPtUrgentNew(false); refreshChallengeViews(); ptInput.focus();
+    }
+    let ptUrgentNew = false; // حالة الشعلة في نافذة مهام المشروع
+    function setPtUrgentNew(v) {
+      ptUrgentNew = !!v;
+      const b = document.getElementById("ptUrgentBtn");
+      if (b) { b.classList.toggle("on", ptUrgentNew); b.title = ptUrgentNew ? "عاجل ✓" : "تعيين كعاجل"; }
     }
     function refreshChallengeViews() {
       renderChallenges();
       if (projTasksDlg && projTasksDlg.open) renderProjTasks();
     }
     document.getElementById("ptAdd").onclick = ptAddTask;
+    document.getElementById("ptUrgentBtn").onclick = () => setPtUrgentNew(!ptUrgentNew);
     document.getElementById("ptX").onclick = () => projTasksDlg.close();
     ptInput.addEventListener("keydown", e => { if (e.key === "Enter") ptAddTask(); });
 
@@ -4813,13 +4835,14 @@
       const domainId = proj ? planDomain(proj) : (prog ? (prog.domainId || "") : (chDomain.value || ""));
       if (editingChId) {
         const c = state.challenges.find(x => x.id === editingChId);
-        if (c) { c.text = t; c.projectId = projectId; c.programId = programId; c.domainId = domainId; if (c.done) logDoneTask(c); }
+        if (c) { c.text = t; c.projectId = projectId; c.programId = programId; c.domainId = domainId; c.urgent = chUrgentNew; if (c.done) logDoneTask(c); }
         save(); exitChEdit(); refreshChallengeViews(); return;
       }
-      state.challenges.push({ id: uid(), text: t, projectId: projectId, programId: programId, domainId: domainId, done: false, created: Date.now() });
-      save(); chInput.value = ""; fillChProjects(""); refreshChallengeViews(); chInput.focus();
+      state.challenges.push({ id: uid(), text: t, projectId: projectId, programId: programId, domainId: domainId, done: false, urgent: chUrgentNew, created: Date.now() });
+      save(); chInput.value = ""; fillChProjects(""); setChUrgentNew(false); refreshChallengeViews(); chInput.focus();
     }
     chAdd.onclick = addChallenge;
+    document.getElementById("chUrgentBtn").onclick = () => setChUrgentNew(!chUrgentNew);
     chCancelEdit.onclick = exitChEdit;
     chInput.addEventListener("keydown", e => { if (e.key === "Enter") addChallenge(); if (e.key === "Escape" && editingChId) exitChEdit(); });
     chClear.onclick = () => {
