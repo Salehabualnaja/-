@@ -1382,7 +1382,7 @@
   <nav class="bottomnav" id="bottomnav">
     <button class="navbtn active" data-mode="stats"><span class="bi">📊</span><span class="bl">الإحصاءات</span></button>
     <button class="navbtn" data-mode="projects"><span class="bi">📁</span><span class="bl">الإدخال</span></button>
-    <button class="navbtn" data-mode="challenges"><span class="bi">✅</span><span class="bl">المهام والتحديات</span></button>
+    <button class="navbtn" data-mode="challenges"><span class="bi">✅</span><span class="bl">المهام</span></button>
   </nav>
 
   <!-- ورقة إجراء الإضافة -->
@@ -4656,8 +4656,9 @@
       const buildProg = (parent, key, name, plain, plans, direct) => {
         if (!plans.length && !direct.length) return;
         const psec = document.createElement("div"); psec.className = "chtree-prog" + (plain ? " plain" : "") + (chTreeProgs.has(key) ? "" : " col");
+        const progTaskN = direct.length + plans.reduce((s, p) => s + state.challenges.filter(c => c.projectId === p.id).length, 0);
         const ph = document.createElement("div"); ph.className = "chtree-proghead";
-        ph.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + name + "</span><span class='cx-count'>" + toArDigits(plans.length) + " مشروع</span>";
+        ph.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + name + "</span><span class='cx-count'>" + toArDigits(plans.length) + " مشروع · " + toArDigits(progTaskN) + " مهمة</span>";
         ph.onclick = () => { if (chTreeProgs.has(key)) chTreeProgs.delete(key); else chTreeProgs.add(key); psec.classList.toggle("col"); };
         const pbody = document.createElement("div"); pbody.className = "chtree-progbody";
         const grid = mkGrid();
