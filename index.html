@@ -927,8 +927,13 @@
     .tmr-total-lbl { font-size: 12.5px; font-weight: 800; opacity: .92; }
     .tmr-total-time { font-size: 44px; font-weight: 900; line-height: 1.05; margin: 4px 0 2px; font-variant-numeric: tabular-nums; letter-spacing: 1px; }
     .tmr-total-sub { font-size: 11px; font-weight: 700; opacity: .82; }
-    .tmr-total-reset { margin-top: 10px; border: none; background: rgba(255,255,255,.22); color: #fff; font-family: inherit; font-size: 11px; font-weight: 800; border-radius: 999px; padding: 5px 14px; cursor: pointer; }
-    .tmr-total-reset:active { transform: scale(.95); }
+    .tmr-total-prog { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+    .ttp-bar { flex: 1; height: 8px; border-radius: 999px; background: rgba(255,255,255,.28); overflow: hidden; }
+    .ttp-fill { height: 100%; width: 0; background: #fff; border-radius: 999px; transition: width .3s; }
+    .ttp-pct { font-size: 11px; font-weight: 800; white-space: nowrap; }
+    .tmr-total-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 11px; }
+    .tmr-total-btn { border: none; background: rgba(255,255,255,.22); color: #fff; font-family: inherit; font-size: 11px; font-weight: 800; border-radius: 999px; padding: 6px 14px; cursor: pointer; }
+    .tmr-total-btn:active { transform: scale(.95); }
     .tmr-dims { display: flex; flex-direction: column; gap: 11px; }
     .tmr-dim { display: flex; align-items: center; gap: 11px; padding: 12px 13px; border-radius: 15px; border: 1.5px solid var(--border); background: var(--panel-2); transition: border-color .18s, background .18s; }
     .tmr-dim.on { border-color: var(--run); background: var(--run-soft); }
@@ -1221,8 +1226,8 @@
       <button class="add-goal-btn" id="projectsAddBtn">➕ إضافة برنامج أو مشروع</button>
       <button class="sched-open-btn" id="scheduleBtn">🗓️ جدولة المشاريع دفعةً واحدة</button>
       <div class="tabs" id="projViewTabs">
-        <button data-pview="favorites" class="active">⭐ المفضلة</button>
         <button data-pview="domain">حسب المجالات</button>
+        <button data-pview="favorites" class="active">⭐ المفضلة</button>
       </div>
       <div id="projectsList"></div>
     </section>
@@ -1473,7 +1478,11 @@
           <div class="tmr-total-lbl">الإجمالي اليومي</div>
           <div class="tmr-total-time" id="tmrTotal">00:00:00</div>
           <div class="tmr-total-sub" id="tmrTotalSub">مجموع الأبعاد الثلاثة</div>
-          <button class="tmr-total-reset" id="tmrResetAll" type="button">↺ تصفير الكل</button>
+          <div class="tmr-total-prog" id="tmrTotalProg" hidden><div class="ttp-bar"><div class="ttp-fill" id="tmrTotalFill"></div></div><span class="ttp-pct" id="tmrTotalPct">0٪</span></div>
+          <div class="tmr-total-actions">
+            <button class="tmr-total-btn" id="tmrGoalBtn" type="button">🎯 حدّد الهدف اليومي</button>
+            <button class="tmr-total-btn" id="tmrResetAll" type="button">↺ تصفير الكل</button>
+          </div>
         </div>
         <div class="tmr-dims" id="tmrDims"></div>
       </div>
@@ -1821,8 +1830,11 @@
       if (!p.dayTimers || typeof p.dayTimers !== "object") p.dayTimers = {};
       if (!p.dayTimers.running || typeof p.dayTimers.running !== "object") p.dayTimers.running = { dim: null, since: 0 };
       if (!p.dayTimers.log || typeof p.dayTimers.log !== "object") p.dayTimers.log = {};
-      // الهدف اليومي لكل بُعد (بالدقائق؛ 0 = بلا هدف)
-      if (!p.dayTimers.targets || typeof p.dayTimers.targets !== "object") p.dayTimers.targets = { absorb: 0, activate: 0, enablers: 0 };
+      // الهدف اليومي الكلي (بالدقائق؛ 0 = بلا هدف) — للعدد الكلي لا لكل بُعد
+      if (typeof p.dayTimers.goalTotal !== "number") {
+        const old = p.dayTimers.targets;
+        p.dayTimers.goalTotal = (old && typeof old === "object") ? ((old.absorb || 0) + (old.activate || 0) + (old.enablers || 0)) : 0;
+      }
       // مهام التحدي السريعة
       if (!Array.isArray(p.challenges)) p.challenges = [];
       for (const c of p.challenges) {
@@ -4912,14 +4924,13 @@
       if (!wasRunning) { run.dim = dim; run.since = Date.now(); }
       save(); renderDayTimer();
     }
-    function timerTargetMin(dim) { return (state.dayTimers.targets && state.dayTimers.targets[dim]) || 0; }
-    function timerSetTarget(dim) {
-      const d = TIMER_DIMS.find(x => x.id === dim); const cur = timerTargetMin(dim);
-      const ans = prompt("الهدف اليومي لـ«" + (d ? d.name : "") + "» بالدقائق (0 لإلغاء الهدف):", cur ? String(cur) : "");
+    function timerGoalMin() { return state.dayTimers.goalTotal || 0; }
+    function timerSetGoal() {
+      const cur = timerGoalMin();
+      const ans = prompt("الهدف اليومي الكلي بالدقائق (مجموع الأبعاد الثلاثة؛ 0 لإلغاء الهدف):", cur ? String(cur) : "");
       if (ans === null) return;
       let m = parseInt(ans, 10); if (isNaN(m) || m < 0) m = 0; m = Math.min(m, 1440);
-      if (!state.dayTimers.targets) state.dayTimers.targets = {};
-      state.dayTimers.targets[dim] = m; save(); renderDayTimer();
+      state.dayTimers.goalTotal = m; save(); renderDayTimer();
     }
     function timerReset(dim) {
       const d = TIMER_DIMS.find(x => x.id === dim);
@@ -4945,59 +4956,52 @@
       const run = state.dayTimers.running;
       for (const d of TIMER_DIMS) {
         const on = run.dim === d.id;
-        const tgtMin = timerTargetMin(d.id);
         const row = document.createElement("div"); row.className = "tmr-dim" + (on ? " on" : ""); row.dataset.dim = d.id;
         row.innerHTML =
           "<div class='tmr-dim-ic'>" + d.icon + "</div>" +
           "<div class='tmr-dim-mid'>" +
-            "<div class='tmr-dim-toprow'><span class='tmr-dim-nm'>" + d.name + "</span>" +
-              "<button type='button' class='tmr-dim-goal" + (tgtMin ? " set" : "") + "' data-goal='" + d.id + "'>🎯 " + (tgtMin ? fmtHM(tgtMin * 60000) : "حدّد هدفاً") + "</button></div>" +
+            "<div class='tmr-dim-nm'>" + d.name + "</div>" +
             "<div class='tmr-dim-time' data-tdim='" + d.id + "'>" + fmtClock(timerElapsedToday(d.id)) + "</div>" +
-            "<div class='tmr-dim-prog' data-prog='" + d.id + "'" + (tgtMin ? "" : " hidden") + "><div class='tdp-bar'><div class='tdp-fill'></div></div><span class='tdp-pct'>0٪</span></div>" +
           "</div>" +
           "<div class='tmr-dim-actions'>" +
             "<button type='button' class='tmr-dim-reset' data-reset='" + d.id + "' title='تصفير' aria-label='تصفير'>↺</button>" +
             "<button type='button' class='tmr-dim-btn' aria-label='" + (on ? "إيقاف" : "تشغيل") + "'>" + (on ? "⏸" : "▶") + "</button>" +
           "</div>";
         row.querySelector(".tmr-dim-btn").onclick = () => timerToggle(d.id);
-        row.querySelector(".tmr-dim-goal").onclick = () => timerSetTarget(d.id);
         row.querySelector(".tmr-dim-reset").onclick = () => timerReset(d.id);
         dims.append(row);
       }
+      const gb = document.getElementById("tmrGoalBtn");
+      if (gb) { const g = timerGoalMin(); gb.textContent = g ? ("🎯 الهدف: " + fmtHM(g * 60000)) : "🎯 حدّد الهدف اليومي"; }
       updateDayTimerDisplay();
     }
     function updateDayTimerDisplay() {
       if (!timerDlg.open) return;
       for (const d of TIMER_DIMS) {
-        const elapsed = timerElapsedToday(d.id);
         const el = timerDlg.querySelector('.tmr-dim-time[data-tdim="' + d.id + '"]');
-        if (el) el.textContent = fmtClock(elapsed);
-        const tgtMs = timerTargetMin(d.id) * 60000;
-        const prog = timerDlg.querySelector('.tmr-dim-prog[data-prog="' + d.id + '"]');
-        if (prog) {
-          if (tgtMs) {
-            prog.hidden = false;
-            const pct = Math.min(100, Math.round(elapsed / tgtMs * 100));
-            const fill = prog.querySelector('.tdp-fill'); if (fill) { fill.style.width = pct + "%"; fill.classList.toggle("done", pct >= 100); }
-            const p = prog.querySelector('.tdp-pct'); if (p) p.textContent = toArDigits(pct) + "٪";
-          } else prog.hidden = true;
-        }
+        if (el) el.textContent = fmtClock(timerElapsedToday(d.id));
       }
+      const total = timerTotalToday();
       const tot = document.getElementById("tmrTotal");
-      if (tot) tot.textContent = fmtClock(timerTotalToday());
+      if (tot) tot.textContent = fmtClock(total);
+      const gMs = timerGoalMin() * 60000;
+      const prog = document.getElementById("tmrTotalProg");
       const sub = document.getElementById("tmrTotalSub");
-      if (sub) {
-        let tgtTotal = 0; for (const d of TIMER_DIMS) tgtTotal += timerTargetMin(d.id);
-        if (tgtTotal > 0) {
-          const pct = Math.min(100, Math.round(timerTotalToday() / (tgtTotal * 60000) * 100));
-          sub.textContent = "الهدف " + fmtHM(tgtTotal * 60000) + " · " + toArDigits(pct) + "٪";
-        } else sub.textContent = "مجموع الأبعاد الثلاثة";
+      if (gMs > 0) {
+        const pct = Math.min(100, Math.round(total / gMs * 100));
+        if (prog) { prog.hidden = false; const f = document.getElementById("tmrTotalFill"); if (f) f.style.width = pct + "%"; const p = document.getElementById("tmrTotalPct"); if (p) p.textContent = toArDigits(pct) + "٪"; }
+        if (sub) sub.textContent = "الهدف اليومي " + fmtHM(gMs);
+      } else {
+        if (prog) prog.hidden = true;
+        if (sub) sub.textContent = "مجموع الأبعاد الثلاثة";
       }
     }
     const tmrXBtn = document.getElementById("tmrX");
     if (tmrXBtn) tmrXBtn.onclick = () => timerDlg.close();
     const tmrResetAllBtn = document.getElementById("tmrResetAll");
     if (tmrResetAllBtn) tmrResetAllBtn.onclick = timerResetAll;
+    const tmrGoalBtn = document.getElementById("tmrGoalBtn");
+    if (tmrGoalBtn) tmrGoalBtn.onclick = timerSetGoal;
 
     // ---------- العادات اليومية ----------
     document.getElementById("habitsAddBtn").onclick = () => openItem(null, null, "habit");
