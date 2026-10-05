@@ -890,6 +890,8 @@
     .chbox-num small { font-size: 9.5px; font-weight: 800; color: var(--muted); margin-inline-start: 2px; }
     .chbox-upd { font-size: 9px; font-weight: 700; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
     .chbox.special { background: var(--panel-2); border-style: dashed; }
+    .chbox.fav { border-color: color-mix(in srgb, var(--dial-gold) 55%, var(--border)); background: color-mix(in srgb, var(--dial-gold) 8%, var(--panel)); }
+    .chbox-star { color: var(--dial-gold); font-size: 10px; }
     /* نافذة مهام المشروع */
     #projTasksDlg { width: 460px; max-width: 94vw; max-height: 90dvh; overflow: hidden; padding: 0; border: none; border-radius: 18px; }
     .pt-dlg { display: flex; flex-direction: column; max-height: inherit; padding: 0; }
@@ -3036,7 +3038,7 @@
     const expandedStatsDoms = new Set();
     const expandedStatsProgs = new Set();
     function _statPlans(progId) {
-      return programProjects(progId).filter(pl => !_favScope || pl.favorite || (programOf(pl) && programOf(pl).favorite));
+      return programProjects(progId).filter(pl => !_favScope || pl.favorite);
     }
     function sbdBar(pct) {
       const bar = document.createElement("div"); bar.className = "sbd-bar";
@@ -3047,7 +3049,7 @@
       const pct = Math.round(goalProgress(pl) * 100);
       const row = document.createElement("div"); row.className = "sbd-proj" + (isComplete(pl) ? " done" : "");
       const nm = document.createElement("span"); nm.className = "sbd-proj-nm";
-      nm.textContent = (isComplete(pl) ? "✓ " : "") + pl.name;
+      nm.textContent = (isComplete(pl) ? "✓ " : "") + (pl.favorite ? "★ " : "") + pl.name;
       const pc = document.createElement("span"); pc.className = "sbd-proj-pct"; pc.textContent = toArDigits(pct) + "٪";
       row.append(nm, sbdBar(pct), pc);
       return row;
@@ -3071,7 +3073,7 @@
     function buildStatsByDomain() {
       const wrap = els.statsByDomain; if (!wrap) return;
       const frag = document.createDocumentFragment();
-      const favP = pr => !_favScope || pr.favorite || programProjects(pr.id).some(pl => pl.favorite);
+      const favP = pr => !_favScope || programProjects(pr.id).some(pl => pl.favorite);
       let shown = 0;
       for (const d of domainsOrdered()) {
         const progs = state.programs.filter(pr => (pr.domainId || "") === d.id && favP(pr));
@@ -3169,34 +3171,52 @@
       head.onclick = () => { if (set.has(key)) set.delete(key); else set.add(key); sec.classList.toggle("collapsed"); };
       return head;
     }
+    // كتلة مشاريع مفضّلة مستقلة (مشاريع مفضّلة لا ينتمي برنامجها للمفضلة) — تُعرض في تبويب المفضلة
+    function favProjectsBlock(title, plans) {
+      const block = document.createElement("div"); block.className = "prog-block";
+      const head = document.createElement("div"); head.className = "prog-head static";
+      head.innerHTML = '<span class="ph-name"><span class="dc-icon">⭐</span> ' + escapeHtml(title) + '</span>'
+        + '<span class="ph-count">(' + toArDigits(plans.length) + ')</span>';
+      block.append(head);
+      const box = document.createElement("div"); box.className = "goals-group";
+      for (const pl of plans.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created))) box.append(buildGoalRow(pl));
+      block.append(box);
+      return block;
+    }
     function buildFavoritesFrag() {
       const favPrograms = state.programs.filter(p => p.favorite);
       const favHabits = state.habits.filter(h => h.favorite);
+      // مشاريع مفضّلة لا يظهر برنامجها أصلاً ضمن المفضلة (لتفادي التكرار)
+      const favProjects = state.plans.filter(p => p.favorite && !(programOf(p) && programOf(p).favorite));
       const frag = document.createDocumentFragment();
-      if (!favPrograms.length && !favHabits.length) {
+      if (!favPrograms.length && !favHabits.length && !favProjects.length) {
         const e = document.createElement("div"); e.className = "empty";
-        e.textContent = "لا مفضّلة بعد. أضِف أي برنامج أو عادة إلى المفضلة عبر النجمة ★ من قائمة الخيارات.";
+        e.textContent = "لا مفضّلة بعد. أضِف أي مشروع أو برنامج أو عادة إلى المفضلة عبر النجمة ★ من قائمة الخيارات.";
         frag.append(e); return frag;
       }
       favHabits.sort((a, b) => habitStreak(b) - habitStreak(a) || (b.created - a.created));
       // منسّقة على هيئة المجالات (قابلة للطيّ) مثل عرض المجالات
       for (const d of domainsOrdered()) {
         const progs = favPrograms.filter(pr => (pr.domainId || "") === d.id);
+        const projs = favProjects.filter(pl => planDomain(pl) === d.id);
         const habs = favHabits.filter(h => habitDomain(h) === d.id);
-        if (!progs.length && !habs.length) continue;
+        if (!progs.length && !projs.length && !habs.length) continue;
         const sec = document.createElement("div"); sec.className = "dom-section" + (expandedDomains.has(d.id) ? "" : " collapsed");
         sec.dataset.dom = d.id;
         sec.append(domSectionHead(sec, d.id, d.icon + " " + d.name));
         for (const prog of progs) sec.append(buildProgramBlock(prog, true, true));
+        if (projs.length) sec.append(favProjectsBlock("مشاريع مفضّلة", projs));
         if (habs.length) sec.append(habitsBlock("عادات " + d.name, habs));
         frag.append(sec);
       }
       const noDomProgs = favPrograms.filter(pr => !pr.domainId || !DOMAINS.some(d => d.id === pr.domainId));
+      const noDomProjs = favProjects.filter(pl => !DOMAINS.some(d => d.id === planDomain(pl)));
       const noDomHabs = favHabits.filter(h => !DOMAINS.some(d => d.id === habitDomain(h)));
-      if (noDomProgs.length || noDomHabs.length) {
+      if (noDomProgs.length || noDomProjs.length || noDomHabs.length) {
         const sec = document.createElement("div"); sec.className = "dom-section" + (expandedDomains.has("__nodom__") ? "" : " collapsed");
         sec.append(domSectionHead(sec, "__nodom__", "📌 بلا مجال"));
         for (const prog of noDomProgs) sec.append(buildProgramBlock(prog, false, true));
+        if (noDomProjs.length) sec.append(favProjectsBlock("مشاريع مفضّلة", noDomProjs));
         if (noDomHabs.length) sec.append(habitsBlock("عادات بلا مجال", noDomHabs));
         frag.append(sec);
       }
@@ -3231,6 +3251,7 @@
       main.className = "gtitle";
       const t = document.createElement("div"); t.className = "gname";
       const nameSpan = document.createElement("span"); nameSpan.textContent = g.name; t.append(nameSpan);
+      if (g.favorite) { const fi = document.createElement("span"); fi.className = "gfav-ind"; fi.textContent = "★"; t.append(fi); }
       const meta = document.createElement("div"); meta.className = "gmeta";
       const badges = ['<span class="gbadge">' + typeLabel(g.type) + '</span>'];
       const per = fmtPeriod(g);
@@ -3275,8 +3296,9 @@
         main.append(gp);
       }
 
-      // قائمة الثلاث نقاط: تنبيه · تعديل · حذف
+      // قائمة الثلاث نقاط: مفضلة · تنبيه · تعديل · حذف
       const menu = buildKebabMenu([
+        { icon: g.favorite ? "★" : "☆", label: g.favorite ? "إزالة من المفضلة" : "إضافة للمفضلة", onClick: () => { g.favorite = !g.favorite; save(); refreshViews(); } },
         { icon: "🔔", label: "تنبيه وتذكير", onClick: () => openReminder("project:" + g.id) },
         { icon: "✏️", label: "تعديل", onClick: () => openItem(g) },
         { icon: "🗑️", label: "حذف", danger: true, onClick: () => { const d = planDomain(g); state.plans = state.plans.filter(x => x.id !== g.id); touchDomain(d); save(); refreshViews(); } }
@@ -4508,7 +4530,7 @@
       itemTargetRow.hidden = habit;
       itemCurrentRow.hidden = habit;
       itemDatesRow.hidden = habit;
-      itemFav.hidden = true; // المفضلة صارت للبرامج لا للمشاريع
+      itemFav.hidden = false; // المفضلة متاحة للمشاريع والعادات والبرامج
       itemHabitDaysRow.hidden = !habit;
       itemNameLabel.textContent = habit ? "اسم العادة" : "اسم المشروع";
       itemName.placeholder = habit ? "مثال: قراءة وِرد القرآن" : "مثال: قراءة 12 كتاباً";
@@ -4803,11 +4825,11 @@
     const chProjHasTasks = (p) => state.challenges.some(c => c.projectId === p.id);
     function chMaxTaskTs(tasks) { let t = 0; for (const c of tasks) { const x = c.doneAt || c.created || 0; if (x > t) t = x; } return t; }
     // صندوق مربّع موحّد: الاسم · العدد الكلي للمهام · آخر تحديث
-    function buildChBox(icon, name, total, updatedTs, special, onOpen) {
-      const box = document.createElement("div"); box.className = "chbox" + (special ? " special" : "");
+    function buildChBox(icon, name, total, updatedTs, special, onOpen, fav) {
+      const box = document.createElement("div"); box.className = "chbox" + (special ? " special" : "") + (fav ? " fav" : "");
       box.setAttribute("role", "button"); box.tabIndex = 0;
       box.innerHTML =
-        "<div class='chbox-nm'>" + icon + " " + escapeHtml(name) + "</div>" +
+        "<div class='chbox-nm'>" + (fav ? "<span class='chbox-star'>★</span>" : "") + icon + " " + escapeHtml(name) + "</div>" +
         "<div class='chbox-num'>" + toArDigits(total) + "<small>مهمة</small></div>" +
         "<div class='chbox-upd'>🕒 " + (updatedTs ? fmtUpdatedShort(updatedTs) : "—") + "</div>";
       box.title = name;
@@ -4822,7 +4844,7 @@
       const ic = (dom && DOMAINS.some(d => d.id === dom)) ? domainIcon(dom) : "📄";
       const updated = tasks.length ? chMaxTaskTs(tasks) : planUpdatedAt(p);
       const box = buildChBox(ic, p.name, tasks.length, updated, false,
-        () => openProjTasks({ kind: "project", id: p.id, title: "📄 " + p.name }));
+        () => openProjTasks({ kind: "project", id: p.id, title: "📄 " + p.name }), !!p.favorite);
       box.dataset.proj = p.id;
       return box;
     }
@@ -4873,7 +4895,7 @@
         const grid = mkGrid();
         if (direct.length) grid.append(buildChBox("📁", "مهام البرنامج", direct.length, chMaxTaskTs(direct), true,
           () => openProjTasks({ kind: "progdirect", id: key.slice(5), title: "📁 مهام البرنامج — " + name.replace(/^📁\s*(★\s*)?/, "") })));
-        for (const p of plans) grid.append(buildProjBox(p));
+        for (const p of plans.slice().sort(chFavFirst)) grid.append(buildProjBox(p));
         pbody.append(grid);
         makeReorderable(grid, ".chbox[data-proj]", null, "proj", ids => reorderPlansSubset(ids)); // سحب صناديق المشاريع
         psec.append(ph, pbody); parent.append(psec);
