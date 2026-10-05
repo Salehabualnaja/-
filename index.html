@@ -954,12 +954,30 @@
     .tdp-fill.done { background: var(--run); }
     .tdp-pct { flex: none; font-size: 9.5px; font-weight: 800; color: var(--muted); white-space: nowrap; }
     .tmr-dim-actions { flex: none; display: flex; align-items: center; gap: 7px; }
-    .tmr-dim-reset { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--panel); color: var(--muted); font-size: 15px; cursor: pointer; font-family: inherit; display: grid; place-items: center; }
-    .tmr-dim-reset:active { transform: scale(.9); }
+    .tmr-dim-reset, .tmr-dim-edit { flex: none; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--border-strong); background: var(--panel); color: var(--muted); font-size: 15px; cursor: pointer; font-family: inherit; display: grid; place-items: center; }
+    .tmr-dim-edit { font-size: 13px; }
+    .tmr-dim-reset:active, .tmr-dim-edit:active { transform: scale(.9); }
     .tmr-dim-btn { flex: none; width: 50px; height: 50px; border-radius: 50%; border: none; cursor: pointer; font-size: 20px; color: #fff; background: var(--run); display: grid; place-items: center; box-shadow: 0 5px 14px rgba(21,128,61,.34); font-family: inherit; transition: transform .1s; }
     .tmr-dim-btn:active { transform: scale(.9); }
     .tmr-dim.on .tmr-dim-btn { background: var(--danger); box-shadow: 0 5px 14px rgba(180,36,28,.34); }
     .tmr-note { font-size: 11.5px; font-weight: 700; color: var(--muted); text-align: center; line-height: 1.6; padding: 0 6px; }
+    /* ═══ المؤقت على الجوال: لوح سفلي + أزرار أكبر وصفّان للتحكّم ═══ */
+    @media (max-width: 460px) {
+      #timerDlg { width: 100%; max-width: 100%; max-height: 92dvh; margin: auto auto 0; border-radius: 22px 22px 0 0; }
+      .tmr-head { padding: 14px 16px; }
+      .tmr-body { padding: 14px 14px calc(16px + env(safe-area-inset-bottom)); gap: 12px; }
+      .tmr-total { padding: 16px 12px; }
+      .tmr-total-time { font-size: 40px; }
+      .tmr-dim { flex-wrap: wrap; row-gap: 11px; padding: 12px; gap: 12px; }
+      .tmr-dim-ic { width: 38px; height: 38px; font-size: 20px; }
+      .tmr-dim-mid { flex: 1 1 60%; }
+      .tmr-dim-nm { font-size: 14px; white-space: normal; }
+      .tmr-dim-time { font-size: 22px; }
+      .tmr-dim-actions { flex: 1 0 100%; justify-content: flex-end; gap: 10px; }
+      .tmr-dim-reset, .tmr-dim-edit { width: 42px; height: 42px; font-size: 17px; }
+      .tmr-dim-edit { font-size: 15px; }
+      .tmr-dim-btn { width: 52px; height: 52px; font-size: 22px; }
+    }
 
     /* ═══ تقويم التذكيرات ═══ */
     .rem-panel { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin: 12px auto 0; max-width: 460px; box-shadow: var(--shadow); }
@@ -5104,6 +5122,31 @@
       let m = parseInt(ans, 10); if (isNaN(m) || m < 0) m = 0; m = Math.min(m, 1440);
       state.dayTimers.goalTotal = m; save(); renderDayTimer();
     }
+    // إدخال يدوي: تحديد وقت البُعد لهذا اليوم (ساعات:دقائق أو دقائق)
+    function parseManualMs(str) {
+      str = (str || "").trim().replace(/[٠-٩]/g, ch => "٠١٢٣٤٥٦٧٨٩".indexOf(ch));
+      if (!str) return null;
+      let h = 0, m = 0;
+      if (str.indexOf(":") >= 0) { const p = str.split(":"); h = parseInt(p[0], 10) || 0; m = parseInt(p[1], 10) || 0; }
+      else { m = parseFloat(str); if (!isFinite(m)) return null; h = Math.floor(m / 60); m = m % 60; }
+      if (h < 0 || m < 0) return null;
+      let total = (h * 60 + m) * 60000;
+      return Math.min(total, 24 * 3600000);
+    }
+    function timerSetManual(dim) {
+      const d = TIMER_DIMS.find(x => x.id === dim);
+      const curMs = (timerDayRec()[dim] || 0);
+      const curH = Math.floor(curMs / 3600000), curM = Math.round((curMs % 3600000) / 60000);
+      const pre = curMs ? (curH + ":" + String(curM).padStart(2, "0")) : "";
+      const ans = prompt("إدخال يدوي لوقت «" + (d ? d.name : "") + "» لهذا اليوم\n(الصيغة: ساعات:دقائق مثل 1:30 ، أو دقائق مثل 90):", pre);
+      if (ans === null) return;
+      const ms = parseManualMs(ans);
+      if (ms === null) { alert("صيغة غير صحيحة. استخدم ساعات:دقائق أو عدد الدقائق."); return; }
+      timerDayRec()[dim] = ms;
+      const run = state.dayTimers.running;
+      if (run.dim === dim) run.since = Date.now(); // يكمل العدّ من القيمة المُدخَلة إن كان يعمل
+      save(); renderDayTimer();
+    }
     function timerReset(dim) {
       const d = TIMER_DIMS.find(x => x.id === dim);
       if (!confirm("تصفير مؤقت «" + (d ? d.name : "") + "» لهذا اليوم؟")) return;
@@ -5136,10 +5179,12 @@
             "<div class='tmr-dim-time' data-tdim='" + d.id + "'>" + fmtClock(timerElapsedToday(d.id)) + "</div>" +
           "</div>" +
           "<div class='tmr-dim-actions'>" +
+            "<button type='button' class='tmr-dim-edit' data-edit='" + d.id + "' title='إدخال يدوي' aria-label='إدخال يدوي'>✏️</button>" +
             "<button type='button' class='tmr-dim-reset' data-reset='" + d.id + "' title='تصفير' aria-label='تصفير'>↺</button>" +
             "<button type='button' class='tmr-dim-btn' aria-label='" + (on ? "إيقاف" : "تشغيل") + "'>" + (on ? "⏸" : "▶") + "</button>" +
           "</div>";
         row.querySelector(".tmr-dim-btn").onclick = () => timerToggle(d.id);
+        row.querySelector(".tmr-dim-edit").onclick = () => timerSetManual(d.id);
         row.querySelector(".tmr-dim-reset").onclick = () => timerReset(d.id);
         dims.append(row);
       }
