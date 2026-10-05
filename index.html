@@ -865,6 +865,8 @@
     .churg-list { display: flex; flex-direction: column; gap: 6px; }
     .churg-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 6px; font-weight: 700; }
     /* زر الشعلة (عاجل) في صف المهمة */
+    .ch-grip { flex: 0 0 auto; color: var(--muted); font-size: 13px; line-height: 1; cursor: grab; opacity: .55; padding: 0 2px; user-select: none; touch-action: none; }
+    .ch-grip:active { cursor: grabbing; }
     .ch-fire { flex: 0 0 auto; border: none; background: none; cursor: pointer; font-size: 15px; padding: 3px; line-height: 1; filter: grayscale(1); opacity: .45; transition: opacity .15s, filter .15s, transform .1s; }
     .ch-fire:active { transform: scale(.85); }
     .ch-task.urgent { border-color: color-mix(in srgb, var(--danger) 45%, transparent); background: color-mix(in srgb, var(--danger) 8%, var(--panel-2)); }
@@ -3350,7 +3352,7 @@
       const items = () => Array.from(container.querySelectorAll(":scope > " + itemSel));
       for (const item of items()) {
         const handle = handleSel ? (item.querySelector(handleSel) || item) : item;
-        let timer = null, active = false, sx = 0, sy = 0, offsetY = 0, lastY = 0, ph = null, vel = 0, raf = null;
+        let timer = null, active = false, sx = 0, sy = 0, offsetY = 0, offsetX = 0, lastY = 0, lastX = 0, ph = null, vel = 0, raf = null;
         const clearTimer = () => { if (timer) { clearTimeout(timer); timer = null; } };
 
         // تحريك البقية بسلاسة عند نقل الفراغ النائب (تقنية FLIP)
@@ -3367,25 +3369,35 @@
           });
         };
 
+        // تحديد موضع الإفلات بشكل ثنائي الأبعاد (يدعم القوائم العمودية والشبكات)
         const place = () => {
-          const y = lastY;
-          for (const s of items()) {
-            if (s === item) continue;
-            const r = s.getBoundingClientRect();
-            if (y >= r.top && y <= r.bottom) {
-              const ref = (y < r.top + r.height / 2) ? s : s.nextSibling;
-              if (ref !== ph && s !== ph && ref !== item) flipMove(() => container.insertBefore(ph, ref === item ? item.nextSibling : ref));
-              break;
-            }
+          const x = lastX, y = lastY;
+          const list = items().filter(s => s !== item && s !== ph);
+          if (!list.length) return;
+          const cw = container.getBoundingClientRect().width;
+          let target = null;
+          for (const s of list) { const r = s.getBoundingClientRect(); if (x >= r.left && x <= r.right && y >= r.top && y <= r.bottom) { target = s; break; } }
+          if (!target) { // لا شيء تحت المؤشّر: اختر الأقرب عموديّاً
+            let best = Infinity; for (const s of list) { const r = s.getBoundingClientRect(); const d = Math.abs(y - (r.top + r.height / 2)); if (d < best) { best = d; target = s; } }
           }
+          if (!target) return;
+          const r = target.getBoundingClientRect();
+          const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+          const wide = r.width > cw * 0.8; // صف بعرض الحاوي = قائمة عمودية
+          let before;
+          if (wide) before = y < cy;
+          else if (Math.abs(y - cy) > r.height * 0.5) before = y < cy; // صف مختلف
+          else before = x > cx; // نفس الصف (RTL): يمين المركز = أسبق منطقيّاً
+          const ref = before ? target : target.nextSibling;
+          if (ref !== ph && target !== ph && ref !== item) flipMove(() => container.insertBefore(ph, ref === item ? item.nextSibling : ref));
         };
 
-        const follow = () => { item.style.top = (lastY - offsetY) + "px"; };
+        const follow = () => { item.style.top = (lastY - offsetY) + "px"; item.style.left = (lastX - offsetX) + "px"; };
 
         const onMove = (e) => {
           if (!active) return;
           e.preventDefault();
-          lastY = e.clientY; follow(); place();
+          lastY = e.clientY; lastX = e.clientX; follow(); place();
           const vh = window.innerHeight;
           vel = lastY < 90 ? -Math.ceil((90 - lastY) / 5) : lastY > vh - 90 ? Math.ceil((lastY - (vh - 90)) / 5) : 0;
           if (vel && !raf) raf = requestAnimationFrame(loop);
@@ -3415,7 +3427,7 @@
         const begin = () => {
           active = true;
           const r = item.getBoundingClientRect();
-          offsetY = lastY - r.top;
+          offsetY = lastY - r.top; offsetX = lastX - r.left;
           ph = document.createElement("div"); ph.className = "reorder-ph"; ph.style.height = r.height + "px";
           item.parentNode.insertBefore(ph, item.nextSibling);
           item.classList.add("dragging");
@@ -3431,11 +3443,11 @@
         handle.addEventListener("pointerdown", (e) => {
           if (e.button != null && e.button !== 0) return;
           if (e.target.closest("button, input, select, .gmenu")) return;
-          sx = e.clientX; sy = e.clientY; lastY = e.clientY; clearTimer();
+          sx = e.clientX; sy = e.clientY; lastY = e.clientY; lastX = e.clientX; clearTimer();
           timer = setTimeout(begin, 320);
         });
         handle.addEventListener("pointermove", (e) => {
-          lastY = e.clientY;
+          lastY = e.clientY; lastX = e.clientX;
           if (!active && timer && (Math.abs(e.clientX - sx) > 9 || Math.abs(e.clientY - sy) > 9)) clearTimer();
         });
         handle.addEventListener("pointerup", clearTimer);
@@ -4597,6 +4609,8 @@
     }
     function chTaskRow(c, hideProj) {
       const row = document.createElement("div"); row.className = "ch-task" + (c.done ? " done" : "") + (c.urgent ? " urgent" : "");
+      row.dataset.cid = c.id;
+      const grip = document.createElement("span"); grip.className = "ch-grip"; grip.textContent = "⠿"; grip.title = "اسحب لإعادة الترتيب";
       const check = document.createElement("button"); check.className = "ch-check" + (c.done ? " on" : "");
       check.textContent = c.done ? "✓" : ""; check.title = "تبديل الإنجاز";
       check.onclick = () => { c.done = !c.done; if (c.done) { c.doneAt = Date.now(); logDoneTask(c); } else unlogDoneTask(c); save(); refreshChallengeViews(); };
@@ -4612,7 +4626,7 @@
         // المهمة المنجَزة تبقى مسجَّلة في سجلّ الإنجازات حتى بعد حذفها
         state.challenges = state.challenges.filter(x => x.id !== c.id); save(); refreshChallengeViews();
       };
-      row.append(check, txt, fire, del);
+      row.append(grip, check, txt, fire, del);
       return row;
     }
     function enterChEdit(c) {
@@ -4641,20 +4655,23 @@
     // حالة الطيّ لشجرة صفحة المهام (مستقلة عن صفحة الإدخال)
     const chTreeDoms = new Set();   // معرّفات المجالات المفتوحة
     const chTreeProgs = new Set();  // معرّفات البرامج المفتوحة
-    const chSortTasks = (arr) => arr.slice().sort((a, b) => (a.done - b.done) || (b.created - a.created));
+    // ترتيب المهام: احترام الترتيب اليدوي (ترتيب المصفوفة) مع إبقاء المنجَز أسفل
+    const chSortTasks = (arr) => arr.slice().sort((a, b) => (a.done - b.done));
     const chValidProj = (c) => c.projectId && state.plans.some(p => p.id === c.projectId);
     const chValidProg = (c) => c.programId && state.programs.some(p => p.id === c.programId);
     const chProjHasTasks = (p) => state.challenges.some(c => c.projectId === p.id);
     function chMaxTaskTs(tasks) { let t = 0; for (const c of tasks) { const x = c.doneAt || c.created || 0; if (x > t) t = x; } return t; }
     // صندوق مربّع موحّد: الاسم · العدد الكلي للمهام · آخر تحديث
     function buildChBox(icon, name, total, updatedTs, special, onOpen) {
-      const box = document.createElement("button"); box.type = "button"; box.className = "chbox" + (special ? " special" : "");
+      const box = document.createElement("div"); box.className = "chbox" + (special ? " special" : "");
+      box.setAttribute("role", "button"); box.tabIndex = 0;
       box.innerHTML =
         "<div class='chbox-nm'>" + icon + " " + escapeHtml(name) + "</div>" +
         "<div class='chbox-num'>" + toArDigits(total) + "<small>مهمة</small></div>" +
         "<div class='chbox-upd'>🕒 " + (updatedTs ? fmtUpdatedShort(updatedTs) : "—") + "</div>";
       box.title = name;
       box.onclick = onOpen;
+      box.onkeydown = (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(); } };
       return box;
     }
     const chFavFirst = (a, b) => (!!a.favorite === !!b.favorite) ? 0 : (a.favorite ? -1 : 1);
@@ -4663,8 +4680,32 @@
       const dom = planDomain(p);
       const ic = (dom && DOMAINS.some(d => d.id === dom)) ? domainIcon(dom) : "📄";
       const updated = tasks.length ? chMaxTaskTs(tasks) : planUpdatedAt(p);
-      return buildChBox(ic, p.name, tasks.length, updated, false,
+      const box = buildChBox(ic, p.name, tasks.length, updated, false,
         () => openProjTasks({ kind: "project", id: p.id, title: "📄 " + p.name }));
+      box.dataset.proj = p.id;
+      return box;
+    }
+    // إعادة ترتيب مجموعة جزئية من المشاريع مع الحفاظ على مواضع البقية
+    function reorderPlansSubset(orderedIds) {
+      orderedIds = orderedIds.filter(Boolean);
+      const map = new Map(state.plans.map(p => [p.id, p]));
+      const reordered = orderedIds.map(id => map.get(id)).filter(Boolean);
+      const positions = [];
+      state.plans.forEach((p, i) => { if (orderedIds.includes(p.id)) positions.push(i); });
+      const result = state.plans.slice();
+      positions.forEach((pos, k) => { if (reordered[k]) result[pos] = reordered[k]; });
+      state.plans = result; save();
+    }
+    // إعادة ترتيب مجموعة جزئية من المهام مع الحفاظ على مواضع البقية
+    function reorderChallengesSubset(orderedIds) {
+      orderedIds = orderedIds.filter(Boolean);
+      const map = new Map(state.challenges.map(c => [c.id, c]));
+      const reordered = orderedIds.map(id => map.get(id)).filter(Boolean);
+      const positions = [];
+      state.challenges.forEach((c, i) => { if (orderedIds.includes(c.id)) positions.push(i); });
+      const result = state.challenges.slice();
+      positions.forEach((pos, k) => { if (reordered[k]) result[pos] = reordered[k]; });
+      state.challenges = result; save();
     }
     // شجرة قابلة للطيّ: مجال ← برنامج ← صناديق المشاريع المربّعة
     function renderChProjects() {
@@ -4682,6 +4723,7 @@
       const buildProg = (parent, key, name, plain, plans, direct) => {
         if (!plans.length && !direct.length) return;
         const psec = document.createElement("div"); psec.className = "chtree-prog" + (plain ? " plain" : "") + (chTreeProgs.has(key) ? "" : " col");
+        if (key.indexOf("prog:") === 0) psec.dataset.prog = key.slice(5); // البرامج الحقيقية فقط قابلة للسحب
         const progTaskN = direct.length + plans.reduce((s, p) => s + state.challenges.filter(c => c.projectId === p.id).length, 0);
         const ph = document.createElement("div"); ph.className = "chtree-proghead";
         ph.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + name + "</span><span class='cx-count'>" + toArDigits(plans.length) + " مشروع · " + toArDigits(progTaskN) + " مهمة</span>";
@@ -4692,6 +4734,7 @@
           () => openProjTasks({ kind: "progdirect", id: key.slice(5), title: "📁 مهام البرنامج — " + name.replace(/^📁\s*(★\s*)?/, "") })));
         for (const p of plans) grid.append(buildProjBox(p));
         pbody.append(grid);
+        makeReorderable(grid, ".chbox[data-proj]", null, "proj", ids => reorderPlansSubset(ids)); // سحب صناديق المشاريع
         psec.append(ph, pbody); parent.append(psec);
       };
       const buildDom = (domKey, icon, name, plans, domTasks) => {
@@ -4719,6 +4762,7 @@
           buildProg(body, "prog:" + pr.id, "📁 " + (pr.favorite ? "★ " : "") + escapeHtml(pr.name), false, pl, direct);
         }
         if (noProg.length) buildProg(body, "__np__:" + domKey, "📌 بلا برنامج", true, noProg, []);
+        makeReorderable(body, ".chtree-prog[data-prog]", ".chtree-proghead", "prog", ids => reorderProgramsSubset(ids)); // سحب البرامج
         sec.append(head, body); tree.append(sec);
       };
       const domList = (typeof domainsOrdered === "function" ? domainsOrdered() : DOMAINS);
@@ -4771,6 +4815,7 @@
       // في عرض البرنامج نُظهر المشروع بجانب كل مهمة
       const showProj = (ptTarget.kind === "program");
       for (const c of tasks) ptListEl.append(chTaskRow(c, !showProj));
+      makeReorderable(ptListEl, ".ch-task[data-cid]", ".ch-grip", "cid", ids => reorderChallengesSubset(ids));
     }
     function openProjTasks(target) {
       ptTarget = target;
@@ -4821,6 +4866,7 @@
       if (!urgent.length) { wrap.hidden = true; listEl.replaceChildren(); return; }
       wrap.hidden = false; listEl.replaceChildren();
       for (const c of urgent) listEl.append(chTaskRow(c, false));
+      makeReorderable(listEl, ".ch-task[data-cid]", ".ch-grip", "cid", ids => reorderChallengesSubset(ids));
     }
     // ⭐ المفضلة أولاً: صناديق وصول سريع للبرامج والمشاريع المفضّلة
     function renderChFavorites() {
@@ -4833,9 +4879,12 @@
       wrap.hidden = false; grid.replaceChildren();
       for (const pr of favProgs) {
         const tasks = progTaskList(pr.id);
-        grid.append(buildChBox("📁", pr.name, tasks.length, chMaxTaskTs(tasks), false,
-          () => openProjTasks({ kind: "program", id: pr.id, title: "📁 " + pr.name })));
+        const box = buildChBox("📁", pr.name, tasks.length, chMaxTaskTs(tasks), false,
+          () => openProjTasks({ kind: "program", id: pr.id, title: "📁 " + pr.name }));
+        box.dataset.prog = pr.id;
+        grid.append(box);
       }
+      makeReorderable(grid, ".chbox[data-prog]", null, "prog", ids => reorderProgramsSubset(ids));
     }
     function addChallenge() {
       const t = chInput.value.trim(); if (!t) return;
