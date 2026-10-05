@@ -972,6 +972,7 @@
     .hour-label { flex: 0 0 50px; text-align: center; font-size: 11px; font-weight: 800; color: var(--muted); padding-top: 8px; }
     .hour-slot { flex: 1; display: flex; flex-direction: column; gap: 6px; min-height: 30px; padding: 4px 0; }
     .rem-chip { display: flex; align-items: center; gap: 8px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px; }
+    .rem-domlist { display: flex; flex-direction: column; gap: 7px; }
     .rem-chip.off { opacity: .5; }
     .rem-chip .rc-time { font-size: 11px; font-weight: 800; color: var(--accent-ink); background: var(--accent-soft); border-radius: 6px; padding: 2px 7px; white-space: nowrap; }
     .rem-chip .rc-body { flex: 1; min-width: 0; }
@@ -1067,7 +1068,25 @@
     .dom-section-head .dsh-chev { display: inline-block; font-size: 12px; color: var(--muted); transition: transform .2s; }
     .dom-section.collapsed .dsh-chev { transform: rotate(-90deg); }
     .dom-section.collapsed .dom-section-head { margin-bottom: 0; padding-bottom: 8px; }
-    .dom-section.collapsed > .prog-block { display: none; }
+    .dom-section.collapsed > *:not(.dom-section-head) { display: none; }
+    /* تفصيل الإحصاءات حسب المجال (شجرة مجال←برنامج←مشروع للقراءة) */
+    .sbd-wrap { margin-top: 4px; }
+    .sbd-prog { margin-bottom: 8px; }
+    .sbd-prog-head { display: flex; align-items: center; gap: 8px; padding: 9px 11px; background: var(--card); border: 1px solid var(--line); border-radius: 12px; cursor: pointer; }
+    .sbd-prog.static .sbd-prog-head { cursor: default; background: transparent; border-style: dashed; }
+    .sbd-chev { font-size: 11px; color: var(--muted); transition: transform .2s; }
+    .sbd-prog-head:not(.open) .sbd-chev { transform: rotate(-90deg); }
+    .sbd-prog-nm { flex: 1; font-weight: 700; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sbd-cnt { font-size: 11.5px; color: var(--muted); background: var(--accent-soft); border-radius: 20px; padding: 1px 8px; font-variant-numeric: tabular-nums; }
+    .sbd-prog-pct { font-size: 12.5px; font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; min-width: 34px; text-align: left; }
+    .sbd-projs { padding: 6px 6px 2px 6px; }
+    .sbd-empty { font-size: 12px; color: var(--muted); padding: 4px 8px; }
+    .sbd-proj { display: flex; align-items: center; gap: 8px; padding: 5px 8px; font-size: 12.5px; }
+    .sbd-proj.done .sbd-proj-nm { color: var(--muted); text-decoration: line-through; }
+    .sbd-proj-nm { flex: 0 0 42%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sbd-proj-pct { font-size: 11.5px; color: var(--muted); font-variant-numeric: tabular-nums; min-width: 30px; text-align: left; }
+    .sbd-bar { flex: 1; height: 6px; background: var(--accent-soft); border-radius: 20px; overflow: hidden; }
+    .sbd-fill { height: 100%; background: var(--accent); border-radius: 20px; }
     /* بطاقة إحصاءات البرامج والمشاريع */
     .stats-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 12px; margin-bottom: 12px; box-shadow: var(--shadow); }
     .stats-card[hidden] { display: none; }
@@ -1176,6 +1195,9 @@
 
       <div class="section-title">المجالات الثمانية</div>
       <div class="domains-grid" id="domainsGrid"></div>
+
+      <div class="section-title">تفصيل حسب المجال</div>
+      <div id="statsByDomain" class="sbd-wrap"></div>
     </section>
 
     <!-- ═══ قسم الأهداف ═══ -->
@@ -1268,6 +1290,7 @@
         <button data-rview="weekly">أسبوعي</button>
         <button data-rview="monthly">شهري</button>
         <button data-rview="yearly">سنوي</button>
+        <button data-rview="domain">🗂️ حسب المجال</button>
       </div>
       <div id="remindersList"></div>
     </section>
@@ -1747,7 +1770,8 @@
     const PROJ_VIEW_KEY = "ptt.ui.projview";
     let projectsView = readUI(PROJ_VIEW_KEY, ["favorites", "domain"], "favorites");
     const REM_VIEW_KEY = "ptt.ui.remview";
-    let reminderView = readUI(REM_VIEW_KEY, ["daily", "weekly", "monthly", "yearly"], "daily");
+    let reminderView = readUI(REM_VIEW_KEY, ["daily", "weekly", "monthly", "yearly", "domain"], "daily");
+    const expandedRemDoms = new Set(); // حالة طيّ مجالات صفحة التذكيرات
     // فلاتر لوحة أداء الإحصاءات
     const PERF_TYPE_KEY = "ptt.ui.perftype", PERF_PERIOD_KEY = "ptt.ui.perfperiod", PERF_DOM_KEY = "ptt.ui.perfdom";
     let perfType = readUI(PERF_TYPE_KEY, ["hours", "points", "habits", "composite"], "hours");
@@ -2093,6 +2117,7 @@
       domainSection: document.getElementById("domainSection"),
       statsTabs: document.getElementById("statsTabs"),
       domainsGrid: document.getElementById("domainsGrid"),
+      statsByDomain: document.getElementById("statsByDomain"),
       balanceWrap: document.getElementById("balanceWrap"),
       pct2030: document.getElementById("pct2030"),
       fill2030: document.getElementById("fill2030"),
@@ -2985,7 +3010,77 @@
         frag.append(card);
       }
       els.domainsGrid.replaceChildren(frag);
+      buildStatsByDomain();
       _favScope = false;
+    }
+
+    // عرض تفصيلي للمشاريع/البرامج منسّق على هيئة المجالات (كصفحة المفضلة في الإدخال) — إحصائي للقراءة
+    const expandedStatsDoms = new Set();
+    const expandedStatsProgs = new Set();
+    function _statPlans(progId) {
+      return programProjects(progId).filter(pl => !_favScope || pl.favorite || (programOf(pl) && programOf(pl).favorite));
+    }
+    function sbdBar(pct) {
+      const bar = document.createElement("div"); bar.className = "sbd-bar";
+      const fill = document.createElement("div"); fill.className = "sbd-fill"; fill.style.width = pct + "%";
+      bar.append(fill); return bar;
+    }
+    function sbdProjRow(pl) {
+      const pct = Math.round(goalProgress(pl) * 100);
+      const row = document.createElement("div"); row.className = "sbd-proj" + (isComplete(pl) ? " done" : "");
+      const nm = document.createElement("span"); nm.className = "sbd-proj-nm";
+      nm.textContent = (isComplete(pl) ? "✓ " : "") + pl.name;
+      const pc = document.createElement("span"); pc.className = "sbd-proj-pct"; pc.textContent = toArDigits(pct) + "٪";
+      row.append(nm, sbdBar(pct), pc);
+      return row;
+    }
+    function sbdProgBlock(prog) {
+      const list = _statPlans(prog.id);
+      const block = document.createElement("div"); block.className = "sbd-prog";
+      const pct = programPct(prog.id);
+      const open = expandedStatsProgs.has(prog.id);
+      const head = document.createElement("div"); head.className = "sbd-prog-head" + (open ? " open" : "");
+      head.innerHTML = "<span class='sbd-chev'>▾</span><span class='sbd-prog-nm'>📁 " + escapeHtml(prog.name)
+        + "</span><span class='sbd-cnt'>" + toArDigits(list.length) + "</span><span class='sbd-prog-pct'>" + toArDigits(pct) + "٪</span>";
+      block.append(head);
+      const box = document.createElement("div"); box.className = "sbd-projs"; box.hidden = !open;
+      if (!list.length) { const e = document.createElement("div"); e.className = "sbd-empty"; e.textContent = "لا مشاريع"; box.append(e); }
+      else for (const pl of list.slice().sort((a, b) => isComplete(a) - isComplete(b) || (b.created - a.created))) box.append(sbdProjRow(pl));
+      block.append(box);
+      head.onclick = () => { if (expandedStatsProgs.has(prog.id)) expandedStatsProgs.delete(prog.id); else expandedStatsProgs.add(prog.id); head.classList.toggle("open"); box.hidden = !expandedStatsProgs.has(prog.id); };
+      return block;
+    }
+    function buildStatsByDomain() {
+      const wrap = els.statsByDomain; if (!wrap) return;
+      const frag = document.createDocumentFragment();
+      const favP = pr => !_favScope || pr.favorite || programProjects(pr.id).some(pl => pl.favorite);
+      let shown = 0;
+      for (const d of domainsOrdered()) {
+        const progs = state.programs.filter(pr => (pr.domainId || "") === d.id && favP(pr));
+        const noProg = state.plans.filter(pl => (pl.programId || "") === "" && (pl.domainId || "") === d.id && (!_favScope || pl.favorite));
+        if (!progs.length && !noProg.length) continue;
+        shown++;
+        const pct = Math.round(domainProgress(d.id, false) * 100);
+        const sec = document.createElement("div"); sec.className = "dom-section" + (expandedStatsDoms.has(d.id) ? "" : " collapsed");
+        sec.append(domSectionHead(sec, d.id, d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪", expandedStatsDoms));
+        for (const prog of progs) sec.append(sbdProgBlock(prog));
+        if (noProg.length) {
+          const nb = document.createElement("div"); nb.className = "sbd-prog static";
+          const hd = document.createElement("div"); hd.className = "sbd-prog-head open";
+          hd.innerHTML = "<span class='sbd-prog-nm'>🗂️ بلا برنامج</span><span class='sbd-cnt'>" + toArDigits(noProg.length) + "</span>";
+          nb.append(hd);
+          const bx = document.createElement("div"); bx.className = "sbd-projs";
+          for (const pl of noProg.slice().sort((a, b) => isComplete(a) - isComplete(b) || (b.created - a.created))) bx.append(sbdProjRow(pl));
+          nb.append(bx); sec.append(nb);
+        }
+        frag.append(sec);
+      }
+      if (!shown) {
+        const e = document.createElement("div"); e.className = "empty";
+        e.textContent = _favScope ? "لا مشاريع مفضّلة بعد." : "لا مشاريع بعد.";
+        frag.append(e);
+      }
+      wrap.replaceChildren(frag);
     }
 
     // ═══ رسم توازن المجالات (رادار/مضلّع) وفق المستهدفات والأوزان ═══
@@ -3048,6 +3143,14 @@
     function typeLabel(t) { return t === "points" ? "⭐ نقاط" : "⏱️ ساعات"; }
 
     // بطاقات المفضلة (تُعرض في صفحة المشاريع) — مشاريع وعادات قابلة للتعديل وإدخال التقدّم
+    // رأس قسم مجال قابل للطيّ (مشترك بين عرض المجالات والمفضلة والتذكيرات)
+    function domSectionHead(sec, key, inner, set) {
+      set = set || expandedDomains;
+      const head = document.createElement("div"); head.className = "dom-section-head";
+      head.innerHTML = "<span class='dsh-nm'><span class='dsh-chev'>▾</span> " + inner + "</span>";
+      head.onclick = () => { if (set.has(key)) set.delete(key); else set.add(key); sec.classList.toggle("collapsed"); };
+      return head;
+    }
     function buildFavoritesFrag() {
       const favPrograms = state.programs.filter(p => p.favorite);
       const favHabits = state.habits.filter(h => h.favorite);
@@ -3057,9 +3160,28 @@
         e.textContent = "لا مفضّلة بعد. أضِف أي برنامج أو عادة إلى المفضلة عبر النجمة ★ من قائمة الخيارات.";
         frag.append(e); return frag;
       }
-      for (const prog of favPrograms) frag.append(buildProgramBlock(prog, false, true));
       favHabits.sort((a, b) => habitStreak(b) - habitStreak(a) || (b.created - a.created));
-      for (const h of favHabits) frag.append(habitCard(h));
+      // منسّقة على هيئة المجالات (قابلة للطيّ) مثل عرض المجالات
+      for (const d of domainsOrdered()) {
+        const progs = favPrograms.filter(pr => (pr.domainId || "") === d.id);
+        const habs = favHabits.filter(h => habitDomain(h) === d.id);
+        if (!progs.length && !habs.length) continue;
+        const sec = document.createElement("div"); sec.className = "dom-section" + (expandedDomains.has(d.id) ? "" : " collapsed");
+        sec.dataset.dom = d.id;
+        sec.append(domSectionHead(sec, d.id, d.icon + " " + d.name));
+        for (const prog of progs) sec.append(buildProgramBlock(prog, true, true));
+        if (habs.length) sec.append(habitsBlock("عادات " + d.name, habs));
+        frag.append(sec);
+      }
+      const noDomProgs = favPrograms.filter(pr => !pr.domainId || !DOMAINS.some(d => d.id === pr.domainId));
+      const noDomHabs = favHabits.filter(h => !DOMAINS.some(d => d.id === habitDomain(h)));
+      if (noDomProgs.length || noDomHabs.length) {
+        const sec = document.createElement("div"); sec.className = "dom-section" + (expandedDomains.has("__nodom__") ? "" : " collapsed");
+        sec.append(domSectionHead(sec, "__nodom__", "📌 بلا مجال"));
+        for (const prog of noDomProgs) sec.append(buildProgramBlock(prog, false, true));
+        if (noDomHabs.length) sec.append(habitsBlock("عادات بلا مجال", noDomHabs));
+        frag.append(sec);
+      }
       return frag;
     }
 
@@ -3218,6 +3340,7 @@
       // تبويب المفضلة
       if (projectsView === "favorites") {
         els.projectsList.replaceChildren(buildFavoritesFrag());
+        wireProjectReordering();
         return;
       }
 
@@ -3510,7 +3633,7 @@
     }
     function wireProjectReordering() {
       const listEl = els.projectsList;
-      if (projectsView === "domain") {
+      if (projectsView === "domain" || projectsView === "favorites") {
         wireDomains(listEl);
         listEl.querySelectorAll(".dom-section").forEach(sec => wirePrograms(sec));
       } else wirePrograms(listEl);
@@ -5509,6 +5632,27 @@
       return list.slice().sort((a, b) => { const A = parseHM(a.time), B = parseHM(b.time); return A[0] - B[0] || A[1] - B[1]; });
     }
 
+    // مجال التذكير حسب هدفه (برنامج/مشروع)
+    function reminderDomain(rem) {
+      if (rem.refType === "program") { const p = state.programs.find(x => x.id === rem.refId); return p ? (p.domainId || "") : "__none__"; }
+      const pl = state.plans.find(x => x.id === rem.refId); return pl ? planDomain(pl) : "__none__";
+    }
+    // عرض التذكيرات مجمّعة حسب المجال (قابل للطيّ)
+    function buildRemByDomain() {
+      const frag = document.createDocumentFragment();
+      const known = new Set(DOMAINS.map(d => d.id));
+      const section = (key, title, rems) => {
+        if (!rems.length) return;
+        const sec = document.createElement("div"); sec.className = "dom-section" + (expandedRemDoms.has(key) ? "" : " collapsed");
+        sec.append(domSectionHead(sec, key, title + "</span><span class='dsh-pct'>" + toArDigits(rems.length), expandedRemDoms));
+        const box = document.createElement("div"); box.className = "rem-domlist";
+        for (const r of remsByTime(rems)) box.append(remChip(r, true));
+        sec.append(box); frag.append(sec);
+      };
+      for (const d of domainsOrdered()) section(d.id, d.icon + " " + d.name, state.reminders.filter(r => reminderDomain(r) === d.id));
+      section("__nodom__", "📌 بلا مجال", state.reminders.filter(r => !known.has(reminderDomain(r))));
+      return frag;
+    }
     // عرض يومي — محور الساعات مع تذكيرات اليوم
     function buildRemDaily() {
       const panel = document.createElement("div"); panel.className = "rem-panel";
@@ -5659,6 +5803,7 @@
       } else if (reminderView === "daily") frag.append(buildRemDaily());
       else if (reminderView === "weekly") frag.append(buildRemWeekly());
       else if (reminderView === "monthly") frag.append(buildRemMonthly());
+      else if (reminderView === "domain") frag.append(buildRemByDomain());
       else frag.append(buildRemYearly());
       els.remindersList.replaceChildren(frag);
     }
