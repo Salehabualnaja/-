@@ -1,6 +1,6 @@
 /* Service Worker — مؤقت المشاريع
    يخزّن ملفات التطبيق ليعمل بدون اتصال بالإنترنت. */
-const CACHE = "ptt-cache-v135";
+const CACHE = "ptt-cache-v136";
 const ASSETS = [
   "./",
   "./index.html",
@@ -78,7 +78,17 @@ function parseHM(t) {
 function computeNextAt(rem) {
   const now = new Date(); const [h, mi] = parseHM(rem.time); let d = new Date(now);
   if (rem.recurrence === "daily") { d.setHours(h, mi, 0, 0); if (d <= now) d.setDate(d.getDate() + 1); }
-  else if (rem.recurrence === "weekly") { d.setHours(h, mi, 0, 0); let add = (rem.weekday - d.getDay() + 7) % 7; if (add === 0 && d <= now) add = 7; d.setDate(d.getDate() + add); }
+  else if (rem.recurrence === "weekly") {
+    const days = (rem.weekdays && rem.weekdays.length) ? rem.weekdays : [typeof rem.weekday === "number" ? rem.weekday : 6];
+    let best = Infinity;
+    for (const wd of days) {
+      const cand = new Date(now); cand.setHours(h, mi, 0, 0);
+      let add = (wd - cand.getDay() + 7) % 7; if (add === 0 && cand <= now) add = 7;
+      cand.setDate(cand.getDate() + add);
+      if (cand.getTime() < best) best = cand.getTime();
+    }
+    return best;
+  }
   else if (rem.recurrence === "monthly") { const day = Math.min(28, Math.max(1, rem.monthday || 1)); d.setDate(day); d.setHours(h, mi, 0, 0); if (d <= now) { d.setMonth(d.getMonth() + 1); d.setDate(day); } }
   else { if (rem.date) { const p = rem.date.split("-").map(Number); d = new Date(now.getFullYear(), p[1] - 1, p[2], h, mi, 0, 0); if (d <= now) d.setFullYear(d.getFullYear() + 1); } else { d.setHours(h, mi, 0, 0); if (d <= now) d.setFullYear(d.getFullYear() + 1); } }
   return d.getTime();

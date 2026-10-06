@@ -654,7 +654,7 @@
     .pk-opt .pk-check { flex: none; color: var(--accent); display: none; }
     .pk-opt.sel .pk-check { display: inline; }
     .pk-empty { font-size: 13px; color: var(--muted); text-align: center; padding: 20px; }
-    .dlg .inline { display: flex; gap: 10px; }
+    .dlg .inline { display: flex; gap: 10px; flex-wrap: wrap; }
     .dlg .inline > div { flex: 1; }
     .dlg .actions { display: flex; gap: 10px; margin-top: 18px; }
     .dlg .actions button { flex: 1; border: none; border-radius: 10px; padding: 11px 0; font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit; }
@@ -1040,6 +1040,13 @@
     .time-sel { border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 10px; padding: 9px 12px; font-size: 16px; font-family: inherit; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; min-width: 66px; }
     .ts-lbl { font-size: 10.5px; color: var(--muted); font-weight: 700; }
     .ts-colon { font-size: 18px; font-weight: 800; color: var(--muted); padding-top: 8px; }
+    /* اختيار أيام الأسبوع المتعددة للتذكير */
+    #remWeekdayWrap { flex: 1 1 100% !important; }
+    .rem-days-hint { font-size: 10px; color: var(--muted); font-weight: 600; margin-inline-start: 4px; }
+    .rem-days { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+    .rem-day { border: 1.5px solid var(--border-strong); background: var(--panel-2); color: var(--muted); font-family: inherit; font-size: 12.5px; font-weight: 800; border-radius: 999px; padding: 7px 13px; cursor: pointer; transition: background .15s, color .15s, border-color .15s; }
+    .rem-day:active { transform: scale(.94); }
+    .rem-day.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
     /* تاريخ آخر تحديث للمجال */
     .dc-updated { font-size: 9.5px; color: var(--muted); margin-top: 1px; }
@@ -1480,11 +1487,16 @@
             </div>
           </div>
           <div id="remWeekdayWrap">
-            <label>اليوم</label>
-            <select id="remWeekday">
-              <option value="6">السبت</option><option value="0">الأحد</option><option value="1">الإثنين</option>
-              <option value="2">الثلاثاء</option><option value="3">الأربعاء</option><option value="4">الخميس</option><option value="5">الجمعة</option>
-            </select>
+            <label>الأيام <span class="rem-days-hint">اختر يوماً أو أكثر</span></label>
+            <div id="remDays" class="rem-days">
+              <button type="button" class="rem-day" data-wd="6">السبت</button>
+              <button type="button" class="rem-day" data-wd="0">الأحد</button>
+              <button type="button" class="rem-day" data-wd="1">الإثنين</button>
+              <button type="button" class="rem-day" data-wd="2">الثلاثاء</button>
+              <button type="button" class="rem-day" data-wd="3">الأربعاء</button>
+              <button type="button" class="rem-day" data-wd="4">الخميس</button>
+              <button type="button" class="rem-day" data-wd="5">الجمعة</button>
+            </div>
           </div>
           <div id="remMonthdayWrap">
             <label>يوم الشهر</label>
@@ -1914,7 +1926,14 @@
       if (!p.domainUpdated || typeof p.domainUpdated !== "object") p.domainUpdated = {};
       // التذكيرات
       if (!Array.isArray(p.reminders)) p.reminders = [];
-      for (const r of p.reminders) { if (typeof r.note !== "string") r.note = ""; }
+      for (const r of p.reminders) {
+        if (typeof r.note !== "string") r.note = "";
+        // الأيام المتعددة للتكرار الأسبوعي (ترحيل من اليوم المفرد القديم)
+        if (!Array.isArray(r.weekdays)) r.weekdays = (typeof r.weekday === "number") ? [r.weekday] : [6];
+        r.weekdays = r.weekdays.filter(d => typeof d === "number" && d >= 0 && d <= 6);
+        if (!r.weekdays.length) r.weekdays = [typeof r.weekday === "number" ? r.weekday : 6];
+        if (typeof r.weekday !== "number") r.weekday = r.weekdays[0];
+      }
       // الأرشيف: خطط ومواد وروابط ومراجع
       if (!Array.isArray(p.archive)) p.archive = [];
       for (const a of p.archive) {
@@ -5467,9 +5486,14 @@
     const pad2 = (n) => String(n).padStart(2, "0");
     (function fillTimeSelects() {
       for (let h = 0; h < 24; h++) { const o = document.createElement("option"); o.value = h; o.textContent = pad2(h); remHour.append(o); }
-      for (let m = 0; m < 60; m++) { const o = document.createElement("option"); o.value = m; o.textContent = pad2(m); remMin.append(o); }
+      for (let m = 0; m < 60; m += 5) { const o = document.createElement("option"); o.value = m; o.textContent = pad2(m); remMin.append(o); }
     })();
-    const remWeekday = document.getElementById("remWeekday");
+    // اختيار أيام الأسبوع المتعددة (أزرار قابلة للتبديل)
+    const remDays = document.getElementById("remDays");
+    const remDayBtns = () => Array.from(remDays.querySelectorAll(".rem-day"));
+    remDayBtns().forEach(b => b.onclick = () => b.classList.toggle("on"));
+    function getRemDays() { return remDayBtns().filter(b => b.classList.contains("on")).map(b => parseInt(b.dataset.wd, 10)); }
+    function setRemDays(arr) { const s = new Set(arr || []); remDayBtns().forEach(b => b.classList.toggle("on", s.has(parseInt(b.dataset.wd, 10)))); }
     const remMonthday = document.getElementById("remMonthday");
     const remDate = document.getElementById("remDate");
     const remNote = document.getElementById("remNote");
@@ -5515,20 +5539,29 @@
       }
       fillRemTarget();
       remRecur.value = "daily"; remHour.value = "9"; remMin.value = "0";
-      remWeekday.value = "6"; remMonthday.value = "1"; remDate.value = ""; remNote.value = "";
+      setRemDays([new Date().getDay()]); remMonthday.value = "1"; remDate.value = ""; remNote.value = "";
       if (preTarget && [...remTarget.options].some(o => o.value === preTarget)) remTarget.value = preTarget;
       updateRemFields();
       reminderDlg.showModal();
     }
+    // منع الحفظ إن كان التكرار أسبوعياً بلا أيّ يوم مختار
+    document.getElementById("remSave").addEventListener("click", (e) => {
+      if (remRecur.value === "weekly" && !getRemDays().length) {
+        e.preventDefault();
+        alert("اختر يوماً واحداً على الأقل للتكرار الأسبوعي.");
+      }
+    });
     reminderDlg.addEventListener("close", () => {
       if (reminderDlg.returnValue !== "save") return;
       const sel = (remTarget.value || "").split(":");
       const refType = sel[0], refId = sel[1];
       if (!refType || !refId) return;
+      let weekdays = getRemDays();
+      if (remRecur.value === "weekly" && !weekdays.length) weekdays = [new Date().getDay()];
       const rem = {
         id: uid(), refType: refType, refId: refId,
         recurrence: remRecur.value, time: pad2(parseInt(remHour.value, 10) || 0) + ":" + pad2(parseInt(remMin.value, 10) || 0),
-        weekday: parseInt(remWeekday.value, 10), monthday: parseInt(remMonthday.value, 10) || 1,
+        weekdays: weekdays, weekday: weekdays.length ? weekdays[0] : 6, monthday: parseInt(remMonthday.value, 10) || 1,
         date: remDate.value || "", note: (remNote.value || "").trim(), enabled: true, nextAt: 0, lastFired: null
       };
       rem.nextAt = computeNextAt(rem);
@@ -5545,16 +5578,27 @@
     function computeNextAt(rem) {
       const now = new Date(); const [h, mi] = parseHM(rem.time); let d = new Date(now);
       if (rem.recurrence === "daily") { d.setHours(h, mi, 0, 0); if (d <= now) d.setDate(d.getDate() + 1); }
-      else if (rem.recurrence === "weekly") { d.setHours(h, mi, 0, 0); let add = (rem.weekday - d.getDay() + 7) % 7; if (add === 0 && d <= now) add = 7; d.setDate(d.getDate() + add); }
+      else if (rem.recurrence === "weekly") {
+        const days = (rem.weekdays && rem.weekdays.length) ? rem.weekdays : [typeof rem.weekday === "number" ? rem.weekday : 6];
+        let best = Infinity;
+        for (const wd of days) {
+          const cand = new Date(now); cand.setHours(h, mi, 0, 0);
+          let add = (wd - cand.getDay() + 7) % 7; if (add === 0 && cand <= now) add = 7;
+          cand.setDate(cand.getDate() + add);
+          if (cand.getTime() < best) best = cand.getTime();
+        }
+        return best;
+      }
       else if (rem.recurrence === "monthly") { const day = Math.min(28, Math.max(1, rem.monthday || 1)); d.setDate(day); d.setHours(h, mi, 0, 0); if (d <= now) { d.setMonth(d.getMonth() + 1); d.setDate(day); } }
       else { if (rem.date) { const p = rem.date.split("-").map(Number); d = new Date(now.getFullYear(), p[1] - 1, p[2], h, mi, 0, 0); if (d <= now) d.setFullYear(d.getFullYear() + 1); } else { d.setHours(h, mi, 0, 0); if (d <= now) d.setFullYear(d.getFullYear() + 1); } }
       return d.getTime();
     }
     function recurLabel(r) { return { daily: "يومي", weekly: "أسبوعي", monthly: "شهري", yearly: "سنوي" }[r] || r; }
     const AR_WD = ["الأحد", "الإثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+    function remDaysOf(rem) { return (rem.weekdays && rem.weekdays.length) ? rem.weekdays : [typeof rem.weekday === "number" ? rem.weekday : 6]; }
     function remDetail(rem) {
       const tm = fmtRemTime(rem.time);
-      if (rem.recurrence === "weekly") return "كل " + AR_WD[rem.weekday] + " " + tm;
+      if (rem.recurrence === "weekly") { const ds = remDaysOf(rem); const names = ds.length >= 6 ? "كل الأيام" : ds.map(w => AR_WD[w]).join("، "); return "كل " + names + " " + tm; }
       if (rem.recurrence === "monthly") return "يوم " + rem.monthday + " من كل شهر " + tm;
       if (rem.recurrence === "yearly") return (rem.date ? fmtDateShort(rem.date) : "") + " سنوياً " + tm;
       return "كل يوم " + tm;
@@ -5611,7 +5655,7 @@
         if (!nm) continue;
         out.push({
           id: rem.id, name: nm, note: rem.note || "",
-          recurrence: rem.recurrence, time: rem.time, weekday: rem.weekday,
+          recurrence: rem.recurrence, time: rem.time, weekday: rem.weekday, weekdays: remDaysOf(rem),
           monthday: rem.monthday, date: rem.date || "",
           nextAt: rem.nextAt || computeNextAt(rem)
         });
@@ -5667,7 +5711,7 @@
     function remClampMonthday(rem) { return Math.min(28, Math.max(1, rem.monthday || 1)); }
     function remOccursOn(rem, date) {
       if (rem.recurrence === "daily") return true;
-      if (rem.recurrence === "weekly") return date.getDay() === rem.weekday;
+      if (rem.recurrence === "weekly") return remDaysOf(rem).includes(date.getDay());
       if (rem.recurrence === "monthly") return date.getDate() === remClampMonthday(rem);
       if (rem.recurrence === "yearly") { if (!rem.date) return false; const p = rem.date.split("-").map(Number); return (date.getMonth() + 1) === p[1] && date.getDate() === p[2]; }
       return false;
@@ -5749,7 +5793,7 @@
       const wrap = document.createElement("div"); wrap.className = "rem-panel";
       const today = new Date().getDay();
       for (const wd of WD_ORDER) {
-        const list = remsByTime(state.reminders.filter(r => r.recurrence === "daily" || (r.recurrence === "weekly" && r.weekday === wd)));
+        const list = remsByTime(state.reminders.filter(r => r.recurrence === "daily" || (r.recurrence === "weekly" && remDaysOf(r).includes(wd))));
         const card = document.createElement("div"); card.className = "wk-day" + (wd === today ? " today" : "");
         const nm = document.createElement("div"); nm.className = "wk-name";
         nm.innerHTML = "<span>" + AR_WD[wd] + (wd === today ? " · اليوم" : "") + "</span><span class='wk-badge'>" + (list.length ? list.length + " تذكير" : "—") + "</span>";
