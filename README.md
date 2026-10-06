@@ -51,7 +51,6 @@
 - `manifest.webmanifest` — بيانات الـ PWA (الاسم، الأيقونات، وضع العرض).
 - `sw.js` — الـ Service Worker للعمل دون اتصال.
 - `icons/` و`apple-touch-icon.png` — أيقونات التطبيق.
-- `CLAUDE.md` و`.claude/` — فريق وكلاء Claude الذي يعمل بطريقتي (تخطيط، ملفات، تصميم، مراسلات، تحليل)، ومرجعهم `.claude/work-profile.md`.
 
 ## ملاحظة حول البيانات
 
