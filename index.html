@@ -4840,7 +4840,7 @@
       none.innerHTML = '<span class="pk-nm">📌 بدون مشروع (المجال فقط)</span><span class="pk-check">✓</span>';
       none.onclick = () => { setChTarget(""); chProjectPickerDlg.close(); };
       chpkList.append(none);
-      const plans = state.plans.filter(pl => planDomain(pl) === dom);
+      const plans = state.plans.filter(pl => planDomain(pl) === dom && !isComplete(pl)); // إخفاء المشاريع المكتملة عند إضافة مهمة
       const domProgs = state.programs.filter(pr => (pr.domainId || "") === dom);
       if (!plans.length && !domProgs.length) {
         const e = document.createElement("div"); e.className = "pk-empty"; e.textContent = "لا برامج أو مشاريع في هذا المجال."; chpkList.append(e);
