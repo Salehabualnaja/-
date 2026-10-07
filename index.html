@@ -2310,6 +2310,19 @@
     function programOf(pl) { return state.programs.find(pr => pr.id === pl.programId) || null; }
     function planDomain(pl) { const pr = programOf(pl); return pr ? (pr.domainId || "") : (pl.domainId || ""); }
     function domainPlans(domainId) { return state.plans.filter(pl => planDomain(pl) === domainId && (!_favScope || pl.favorite)); }
+    // ترتيب موحّد للقوائم غير القابلة للسحب: حسب المجال (ترتيب المجالات) ثم الاسم أبجدياً
+    const _domRank = (id) => { const i = DOMAINS.findIndex(d => d.id === id); return i < 0 ? DOMAINS.length : i; };
+    const _byName = (a, b) => (a || "").localeCompare(b || "", "ar");
+    function programsOrdered(list) {
+      return (list || state.programs).slice().sort((a, b) =>
+        _domRank(a.domainId || "") - _domRank(b.domainId || "") || _byName(a.name, b.name));
+    }
+    function plansOrdered(list) {
+      return (list || state.plans).slice().sort((a, b) =>
+        _domRank(planDomain(a)) - _domRank(planDomain(b))
+        || _byName((programOf(a) || {}).name, (programOf(b) || {}).name)
+        || _byName(a.name, b.name));
+    }
     // المُنجَز الفعلي: لمشاريع الساعات = يدوي + ساعات المؤقّت
     function goalCurrent(g) {
       const base = g.current || 0;
@@ -4537,7 +4550,7 @@
       // مجموعات حسب البرنامج (بترتيب المجالات ثم البرامج)
       const byProg = new Map();
       for (const pl of state.plans) { const k = pl.programId || ""; if (!byProg.has(k)) byProg.set(k, []); byProg.get(k).push(pl); }
-      const order = state.programs.filter(pr => byProg.has(pr.id)).map(pr => pr.id);
+      const order = programsOrdered(state.programs.filter(pr => byProg.has(pr.id))).map(pr => pr.id);
       if (byProg.has("")) order.push("");
       for (const k of order) {
         const grp = document.createElement("div"); grp.className = "sch-grp";
@@ -4545,7 +4558,7 @@
         const h = document.createElement("div"); h.className = "sch-grp-head";
         h.textContent = pr ? ("📁 " + pr.name) : "🗂️ مشاريع بلا برنامج";
         grp.append(h);
-        for (const pl of byProg.get(k)) grp.append(schRow(pl));
+        for (const pl of plansOrdered(byProg.get(k))) grp.append(schRow(pl));
         schList.append(grp);
       }
     }
@@ -4841,7 +4854,7 @@
       none.onclick = () => { setChTarget(""); chProjectPickerDlg.close(); };
       chpkList.append(none);
       const plans = state.plans.filter(pl => planDomain(pl) === dom && !isComplete(pl)); // إخفاء المشاريع المكتملة عند إضافة مهمة
-      const domProgs = state.programs.filter(pr => (pr.domainId || "") === dom);
+      const domProgs = programsOrdered(state.programs.filter(pr => (pr.domainId || "") === dom));
       if (!plans.length && !domProgs.length) {
         const e = document.createElement("div"); e.className = "pk-empty"; e.textContent = "لا برامج أو مشاريع في هذا المجال."; chpkList.append(e);
         setChTarget(""); return;
@@ -5608,25 +5621,24 @@
 
     function fillRemTarget() {
       remTarget.replaceChildren();
-      const domName = (id) => { const d = DOMAINS.find(x => x.id === id); return d ? d.name : "بلا مجال"; };
-      if (state.programs.length) {
-        const og = document.createElement("optgroup"); og.label = "البرامج";
-        for (const p of state.programs) {
-          const o = document.createElement("option");
-          o.value = "program:" + p.id; o.textContent = "📁 " + p.name + " — " + domName(p.domainId);
-          og.append(o);
-        }
+      const mkGroup = (label, items) => {
+        if (!items.length) return;
+        const og = document.createElement("optgroup"); og.label = label;
+        for (const it of items) { const o = document.createElement("option"); o.value = it.value; o.textContent = it.text; og.append(o); }
         remTarget.append(og);
+      };
+      const itemsFor = (progs, plans) =>
+        programsOrdered(progs).map(p => ({ value: "program:" + p.id, text: "📁 " + p.name }))
+          .concat(plansOrdered(plans).map(p => ({ value: "project:" + p.id, text: "📄 " + p.name })));
+      // مجمّعة حسب المجال (بترتيب المجالات) ثم أبجدياً داخل كل مجال
+      for (const d of DOMAINS) {
+        mkGroup(d.icon + " " + d.name,
+          itemsFor(state.programs.filter(p => (p.domainId || "") === d.id),
+                   state.plans.filter(p => planDomain(p) === d.id)));
       }
-      if (state.plans.length) {
-        const og = document.createElement("optgroup"); og.label = "المشاريع";
-        for (const pl of state.plans) {
-          const o = document.createElement("option");
-          o.value = "project:" + pl.id; o.textContent = "📄 " + pl.name;
-          og.append(o);
-        }
-        remTarget.append(og);
-      }
+      mkGroup("📌 بلا مجال",
+        itemsFor(state.programs.filter(p => !p.domainId || !DOMAINS.some(d => d.id === p.domainId)),
+                 state.plans.filter(p => !DOMAINS.some(d => d.id === planDomain(p)))));
     }
 
     function openReminder(preTarget) {
