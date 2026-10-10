@@ -27,12 +27,9 @@
 ### 2) نزّل المستودع
 
 ```bash
-git clone https://github.com/Salehabualnaja/-.git saha-team
-cd saha-team
-git checkout claude/clever-cannon-bksksf
+git clone https://github.com/Salehabualnaja/-.git cloud-team
+cd cloud-team
 ```
-
-لا تحتاج أمر `git checkout` بعد دمج الفرع في الفرع الرئيسي.
 
 ### 3) أنشئ البوت
 
