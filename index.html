@@ -781,6 +781,12 @@
     .ch-add input, .ch-add select { width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 9px; padding: 8px 11px; font-size: 13px; font-family: inherit; box-sizing: border-box; }
     .ch-add-row input { flex: 1; min-width: 0; }
     .ch-add-row { display: flex; gap: 8px; }
+    /* خانة اسم المهمة كبيرة وموسّعة بصفّ مستقل، والأزرار في صفّ آخر */
+    .ch-input-big { width: 100%; font-size: 16px !important; font-weight: 600; padding: 14px 15px !important; border-radius: 12px !important; }
+    .ch-actions-row { display: flex; gap: 8px; }
+    .ch-actions-row .ch-urg-toggle { flex: 0 0 auto; width: 52px; height: 44px; font-size: 18px; border-radius: 11px; }
+    .ch-actions-row .ch-addbtn { flex: 1 1 auto !important; padding: 12px 0 !important; font-size: 15px !important; border-radius: 11px; }
+    .ch-actions-row .ch-canceledit { flex: 0 0 auto; width: 52px; height: 44px; border-radius: 11px; }
     .ch-add-row select { flex: 1; }
     .ch-add-row .ch-addbtn { flex: 1; }
     .ch-dom, .ch-proj { width: 100%; }
@@ -1266,8 +1272,10 @@
           <span class="ach-go">السجل ›</span>
         </button>
         <div class="ch-add" id="chAddWrap">
-          <div class="ch-add-row">
-            <input id="chInput" type="text" placeholder="اكتب مهمة أو تحدياً جديداً…" autocomplete="off" />
+          <div class="ch-add-row ch-input-row">
+            <input id="chInput" class="ch-input-big" type="text" placeholder="اكتب مهمة أو تحدياً جديداً…" autocomplete="off" />
+          </div>
+          <div class="ch-add-row ch-actions-row">
             <button type="button" class="ch-urg-toggle" id="chUrgentBtn" title="تعيين كعاجل" aria-label="تعيين كعاجل">🔥</button>
             <button class="ch-addbtn" id="chAdd">➕ إضافة</button>
             <button class="ch-canceledit" id="chCancelEdit" hidden title="إلغاء التعديل" aria-label="إلغاء التعديل">✕</button>
