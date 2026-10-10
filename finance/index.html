@@ -1,0 +1,1383 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0F1412" />
+  <title>الميزان</title>
+  <meta name="description" content="الميزان — تطبيق شخصي لحساب المصاريف والمستحقات القادمة وقراءة رسائل البنوك." />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <link rel="icon" href="./icons/icon-192.png" type="image/png" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="الميزان" />
+  <style>
+    @font-face { font-family: "Tajawal"; font-weight: 100 500; font-display: swap; src: url(./fonts/tajawal-regular.ttf) format("truetype"); }
+    @font-face { font-family: "Tajawal"; font-weight: 600 900; font-display: swap; src: url(./fonts/tajawal-bold.ttf) format("truetype"); }
+    :root {
+      color-scheme: light;
+      --bg: #F6F7F4; --panel: #FFFFFF; --panel-2: #EEF1EC; --text: #17201C; --muted: #6E7A73;
+      --border: #E1E6E0; --border-strong: #CDD5CE;
+      --accent: #0F766E; --accent-ink: #0B5D56; --accent-soft: #DDF1EE;
+      --income: #15803D; --income-soft: #DCF2E2; --expense: #B4241C; --expense-soft: #FBE3E1;
+      --warn: #B45309; --warn-soft: #FBEBD5; --company: #6D28D9; --company-soft: #EDE5FB;
+      --track: #E7EBE6;
+      --shadow: 0 1px 2px rgba(20,30,25,.06), 0 10px 28px rgba(20,30,25,.07);
+      --radius: 16px;
+      --f-sans: "Tajawal", system-ui, -apple-system, "Segoe UI", Roboto, "Noto Kufi Arabic", Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #0F1412; --panel: #171E1B; --panel-2: #131916; --text: #E8EEEA; --muted: #93A199;
+        --border: #25302B; --border-strong: #33403A;
+        --accent: #2DB3A5; --accent-ink: #5FD0C3; --accent-soft: #11302C;
+        --income: #4CBE72; --income-soft: #15301F; --expense: #EF7C73; --expense-soft: #3A1916;
+        --warn: #E8A04A; --warn-soft: #3A2810; --company: #A78BFA; --company-soft: #2A1F45;
+        --track: #222B27;
+        --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 30px rgba(0,0,0,.4);
+      }
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0F1412; --panel: #171E1B; --panel-2: #131916; --text: #E8EEEA; --muted: #93A199;
+      --border: #25302B; --border-strong: #33403A;
+      --accent: #2DB3A5; --accent-ink: #5FD0C3; --accent-soft: #11302C;
+      --income: #4CBE72; --income-soft: #15301F; --expense: #EF7C73; --expense-soft: #3A1916;
+      --warn: #E8A04A; --warn-soft: #3A2810; --company: #A78BFA; --company-soft: #2A1F45;
+      --track: #222B27;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 12px 30px rgba(0,0,0,.4);
+    }
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body { margin: 0; background: var(--bg); color: var(--text); font-family: var(--f-sans); }
+    body { min-height: 100vh; padding-bottom: calc(92px + env(safe-area-inset-bottom)); font-size: 15px; line-height: 1.5; }
+    button, input, select, textarea { font: inherit; color: inherit; }
+    button { cursor: pointer; }
+    .num { font-variant-numeric: tabular-nums; direction: ltr; unicode-bidi: isolate; display: inline-block; }
+    .wrap { max-width: 560px; margin: 0 auto; padding: 0 16px; }
+    .muted { color: var(--muted); }
+    .small { font-size: 13px; }
+    .tiny { font-size: 12px; }
+    .bold { font-weight: 800; }
+    .row { display: flex; align-items: center; gap: 10px; }
+    .between { justify-content: space-between; }
+    .grow { flex: 1; min-width: 0; }
+    .ellipsis { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pos { color: var(--income); }
+    .neg { color: var(--expense); }
+
+    /* الرأس */
+    header.top { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); padding-top: env(safe-area-inset-top); border-bottom: 1px solid var(--border); }
+    header.top .wrap { display: flex; align-items: center; gap: 10px; padding-top: 10px; padding-bottom: 10px; }
+    .brand { font-weight: 900; font-size: 20px; letter-spacing: -.2px; display: flex; align-items: center; gap: 8px; }
+    .brand .logo { width: 30px; height: 30px; border-radius: 9px; background: var(--accent); color: #fff; display: grid; place-items: center; font-size: 17px; }
+    .icon-btn { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--border); background: var(--panel); display: grid; place-items: center; }
+    .icon-btn svg { width: 20px; height: 20px; }
+    .seg { display: inline-flex; background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 3px; gap: 2px; }
+    .seg button { border: 0; background: transparent; padding: 6px 12px; border-radius: 9px; font-weight: 700; font-size: 13px; color: var(--muted); white-space: nowrap; }
+    .seg button.on { background: var(--panel); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+    .seg.full { display: flex; width: 100%; }
+    .seg.full button { flex: 1; }
+
+    /* البطاقات */
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; margin-top: 14px; }
+    .card h3 { margin: 0 0 10px; font-size: 15px; font-weight: 800; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .card h3 .link { font-size: 13px; font-weight: 700; color: var(--accent); background: none; border: 0; padding: 0; }
+    .hero { background: linear-gradient(135deg, #0F766E, #134E4A); color: #ECFDF8; border: 0; }
+    :root[data-theme="dark"] .hero { background: linear-gradient(135deg, #115E57, #0D2F2C); }
+    .hero .label { opacity: .8; font-size: 13px; }
+    .hero .big { font-size: 34px; font-weight: 900; line-height: 1.2; margin: 2px 0 10px; }
+    .hero .split { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .hero .split > div { background: rgba(255,255,255,.1); border-radius: 12px; padding: 10px 12px; }
+    .hero .split .v { font-weight: 800; font-size: 17px; }
+    .tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .tile { background: var(--panel-2); border: 1px solid var(--border); border-radius: 12px; padding: 10px; min-width: 0; }
+    .tile .t { font-size: 12px; color: var(--muted); }
+    .tile .v { font-weight: 800; font-size: 16px; white-space: nowrap; overflow: hidden; }
+    .tile .v .cur, .hero .split .cur { font-size: 11px; font-weight: 700; opacity: .8; }
+    .hero .big .cur { font-size: 18px; font-weight: 700; opacity: .85; }
+    .tiles.two { grid-template-columns: 1fr 1fr; }
+    .tiles.four { grid-template-columns: 1fr 1fr; }
+
+    /* القوائم */
+    .list { display: flex; flex-direction: column; }
+    .item { display: flex; align-items: center; gap: 12px; padding: 11px 0; border-bottom: 1px solid var(--border); background: none; border-left: 0; border-right: 0; border-top: 0; width: 100%; text-align: right; }
+    .item:last-child { border-bottom: 0; }
+    .ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; font-size: 19px; background: var(--panel-2); border: 1px solid var(--border); flex: none; }
+    .item .main { flex: 1; min-width: 0; }
+    .item .t1 { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item .t2 { font-size: 12.5px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .item .amt { font-weight: 800; text-align: left; white-space: nowrap; }
+    .day-h { display: flex; justify-content: space-between; font-size: 13px; color: var(--muted); font-weight: 700; padding: 14px 2px 4px; }
+    .badge { display: inline-block; font-size: 11px; font-weight: 800; padding: 1px 7px; border-radius: 999px; background: var(--panel-2); color: var(--muted); border: 1px solid var(--border); vertical-align: middle; }
+    .badge.sms { background: var(--accent-soft); color: var(--accent-ink); border-color: transparent; }
+    .badge.company { background: var(--company-soft); color: var(--company); border-color: transparent; }
+    .badge.warn { background: var(--warn-soft); color: var(--warn); border-color: transparent; }
+    .badge.bad { background: var(--expense-soft); color: var(--expense); border-color: transparent; }
+    .badge.good { background: var(--income-soft); color: var(--income); border-color: transparent; }
+    .empty { text-align: center; padding: 22px 10px; color: var(--muted); }
+    .empty .e { font-size: 34px; }
+
+    /* الأشرطة */
+    .bar-row { padding: 7px 0; }
+    .bar-row .lab { display: flex; justify-content: space-between; gap: 8px; font-size: 13.5px; margin-bottom: 5px; }
+    .bar { height: 8px; background: var(--track); border-radius: 99px; overflow: hidden; }
+    .bar > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; }
+    .bar > i.warn { background: var(--warn); }
+    .bar > i.bad { background: var(--expense); }
+    .chart { width: 100%; height: auto; display: block; }
+    .chart text { font-family: var(--f-sans); fill: var(--muted); font-size: 10px; }
+
+    /* الأزرار */
+    .btn { border: 1px solid var(--border-strong); background: var(--panel); border-radius: 12px; padding: 10px 14px; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .btn.danger { color: var(--expense); border-color: color-mix(in srgb, var(--expense) 35%, var(--border)); }
+    .btn.ghost { border-color: transparent; background: var(--panel-2); }
+    .btn.sm { padding: 6px 10px; font-size: 13px; border-radius: 10px; }
+    .btn.block { width: 100%; }
+    .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .btns > .btn { flex: 1; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chip { border: 1px solid var(--border); background: var(--panel-2); border-radius: 999px; padding: 6px 11px; font-size: 13px; font-weight: 700; white-space: nowrap; }
+    .chip.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* الشريط السفلي */
+    nav.bottom { position: fixed; bottom: 0; left: 0; right: 0; z-index: 30; background: color-mix(in srgb, var(--panel) 92%, transparent); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-top: 1px solid var(--border); padding-bottom: env(safe-area-inset-bottom); }
+    nav.bottom .wrap { display: grid; grid-template-columns: repeat(5, 1fr); align-items: end; padding-top: 6px; padding-bottom: 6px; }
+    nav.bottom button { border: 0; background: none; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11.5px; font-weight: 700; color: var(--muted); padding: 4px 0; }
+    nav.bottom button svg { width: 23px; height: 23px; }
+    nav.bottom button.on { color: var(--accent); }
+    nav.bottom .fab { width: 54px; height: 54px; border-radius: 18px; background: var(--accent); color: #fff; display: grid; place-items: center; margin: -22px auto 0; box-shadow: 0 8px 20px color-mix(in srgb, var(--accent) 45%, transparent); }
+    nav.bottom .fab svg { width: 28px; height: 28px; }
+
+    /* النوافذ السفلية */
+    .sheet-bg { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 50; opacity: 0; transition: opacity .2s; }
+    .sheet-bg.show { opacity: 1; }
+    .sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 51; max-height: 92vh; overflow-y: auto; overscroll-behavior: contain; background: var(--bg); border-radius: 22px 22px 0 0; transform: translateY(100%); transition: transform .25s ease; padding-bottom: calc(20px + env(safe-area-inset-bottom)); }
+    .sheet.show { transform: none; }
+    .sheet .wrap { padding-top: 8px; }
+    .sheet .grab { width: 42px; height: 5px; border-radius: 9px; background: var(--border-strong); margin: 4px auto 8px; }
+    .sheet h2 { font-size: 18px; margin: 4px 0 12px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; }
+    .field { margin-bottom: 12px; }
+    .field > label { display: block; font-size: 13px; font-weight: 700; color: var(--muted); margin-bottom: 5px; }
+    .input, select.input, textarea.input { width: 100%; border: 1px solid var(--border-strong); background: var(--panel); border-radius: 12px; padding: 11px 12px; outline: none; }
+    .input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    textarea.input { min-height: 120px; resize: vertical; direction: rtl; }
+    .amount-input { font-size: 30px; font-weight: 900; text-align: center; direction: ltr; }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+    .cat-opt { border: 1px solid var(--border); background: var(--panel); border-radius: 12px; padding: 8px 2px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; font-weight: 700; line-height: 1.25; text-align: center; min-height: 66px; }
+    .cat-opt .e { font-size: 20px; }
+    .cat-opt.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+    .check { display: flex; gap: 8px; align-items: center; font-size: 14px; }
+    .check input { width: 18px; height: 18px; accent-color: var(--accent); }
+    details.raw { margin-top: 6px; font-size: 12.5px; color: var(--muted); }
+    details.raw pre { white-space: pre-wrap; background: var(--panel-2); padding: 8px; border-radius: 10px; font-family: inherit; margin: 6px 0 0; }
+
+    .cand { border: 1px solid var(--border); background: var(--panel); border-radius: 14px; padding: 12px; margin-bottom: 10px; }
+    .cand.off { opacity: .55; }
+    .cand .top { display: flex; align-items: center; gap: 10px; }
+    .cand .amt { font-size: 19px; font-weight: 900; }
+    .cand select { padding: 7px 9px; font-size: 13px; border-radius: 10px; }
+
+    .acc-card { border-radius: 14px; padding: 14px; color: #fff; position: relative; overflow: hidden; margin-bottom: 10px; border: 0; width: 100%; text-align: right; display: block; }
+    .acc-card .n { font-weight: 800; font-size: 15px; }
+    .acc-card .b { font-size: 24px; font-weight: 900; margin-top: 6px; }
+    .acc-card .m { font-size: 12px; opacity: .85; }
+    .acc-card::after { content: ""; position: absolute; left: -30px; top: -30px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,.08); }
+
+    .toast { position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); background: var(--text); color: var(--bg); padding: 10px 16px; border-radius: 12px; font-weight: 700; font-size: 14px; z-index: 60; opacity: 0; transition: all .25s; pointer-events: none; max-width: 92vw; display: flex; gap: 12px; align-items: center; }
+    .toast.show { opacity: 1; transform: translateX(-50%); pointer-events: auto; }
+    .toast button { background: none; border: 0; color: var(--accent-soft); font-weight: 900; padding: 0; }
+    .steps { margin: 0; padding-inline-start: 20px; }
+    .steps li { margin-bottom: 6px; }
+    code.k { background: var(--panel-2); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; font-size: 12.5px; direction: ltr; unicode-bidi: isolate; word-break: break-all; }
+    .month-nav { display: flex; align-items: center; justify-content: space-between; margin-top: 14px; }
+    .month-nav .m { font-weight: 900; font-size: 17px; }
+    .search { margin-top: 12px; display: flex; gap: 8px; }
+    .search select { width: 38%; }
+    .alert { display: flex; gap: 10px; align-items: center; padding: 11px 12px; border-radius: 12px; margin-top: 10px; font-weight: 700; font-size: 14px; }
+    .alert.bad { background: var(--expense-soft); color: var(--expense); }
+    .alert.warn { background: var(--warn-soft); color: var(--warn); }
+    .alert.info { background: var(--accent-soft); color: var(--accent-ink); }
+    .onb li { margin-bottom: 10px; }
+    @media (max-width: 360px) { .cat-grid { grid-template-columns: repeat(3, 1fr); } .hero .big { font-size: 28px; } }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <div class="wrap">
+      <div class="brand grow"><span class="logo">⚖︎</span>الميزان</div>
+      <div class="seg" id="scopeSeg">
+        <button data-scope="all">الكل</button>
+        <button data-scope="personal">شخصي</button>
+        <button data-scope="company">الشركة</button>
+      </div>
+      <button class="icon-btn" data-act="go" data-view="more" aria-label="الإعدادات">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="wrap" id="view"></main>
+
+  <nav class="bottom">
+    <div class="wrap">
+      <button data-act="go" data-view="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>الرئيسية</button>
+      <button data-act="go" data-view="txns"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>العمليات</button>
+      <button data-act="add" aria-label="إضافة"><span class="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></span></button>
+      <button data-act="go" data-view="dues"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 15h2M14 15h2"/></svg>المستحقات</button>
+      <button data-act="go" data-view="accounts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7H5a2 2 0 0 1 0-4h13v4"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1V8a1 1 0 0 0-1-1"/><circle cx="16.5" cy="14" r="1.5"/></svg>الحسابات</button>
+    </div>
+  </nav>
+
+  <div class="toast" id="toast"></div>
+  <input type="file" id="importFile" accept="application/json,.json" hidden />
+
+  <script src="./sms.js"></script>
+  <script>
+  "use strict";
+  /* ═══════════════ أدوات عامة ═══════════════ */
+  const LS_KEY = "mizan-v1";
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+  const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const pad = (n) => String(n).padStart(2, "0");
+  const dateKey = (d) => { d = new Date(d); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
+  const monthKey = (d) => { d = new Date(d); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}`; };
+  const fromKey = (k) => { const [y, m, d] = k.split("-").map(Number); return new Date(y, m - 1, d || 1); };
+  const todayKey = () => dateKey(new Date());
+  const daysBetween = (a, b) => Math.round((fromKey(b) - fromKey(a)) / 864e5);
+  const localInput = (d) => { d = new Date(d); return `${dateKey(d)}T${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const parseAmount = (s) => { const v = parseFloat(SmsParser.normalize(String(s)).replace(/,/g, "")); return isFinite(v) ? v : NaN; };
+
+  function numLocale() { return state.settings.digits === "arab" ? "ar-SA-u-nu-arab" : "ar-SA-u-nu-latn"; }
+  // يُنسَّق الرقم مطلقاً وتُضاف الإشارة يدوياً حتى لا تتبعثر علامات الاتجاه في النص العربي
+  function fmtNum(n, opts = {}) {
+    const a = Math.abs(n) < 0.005 ? 0 : Math.abs(n);
+    const dec = opts.dec ?? (opts.short && a >= 1000 ? 0 : a % 1 ? 2 : 0);
+    const s = new Intl.NumberFormat(numLocale(), { minimumFractionDigits: dec, maximumFractionDigits: dec }).format(a);
+    return (n <= -0.005 && !opts.abs ? "−" : "") + s;
+  }
+  function fmt(n, opts = {}) { const s = fmtNum(n, opts); return opts.bare ? s : `${s} ر.س`; }
+  const money = (n, opts = {}) => `<span class="num">${opts.prefix || ""}${esc(fmtNum(n, opts))}</span><span class="cur"> ر.س</span>`;
+  function dfmt(d, o) { return new Intl.DateTimeFormat(state.settings.digits === "arab" ? "ar-SA-u-ca-gregory-nu-arab" : "ar-SA-u-ca-gregory-nu-latn", o).format(new Date(d)); }
+  const dShort = (d) => dfmt(d, { day: "numeric", month: "short" });
+  const dLong = (d) => dfmt(d, { weekday: "long", day: "numeric", month: "long" });
+  const mName = (d) => dfmt(d, { month: "long", year: "numeric" });
+  const mShort = (d) => dfmt(d, { month: "short" });
+  const tShort = (d) => dfmt(d, { hour: "numeric", minute: "2-digit" });
+  function relDays(k) {
+    const n = daysBetween(todayKey(), k);
+    if (n === 0) return "اليوم";
+    if (n === 1) return "غداً";
+    if (n === -1) return "أمس";
+    if (n < 0) return `متأخر ${-n} يوم`;
+    if (n <= 10) return `بعد ${n} أيام`;
+    return dShort(fromKey(k));
+  }
+
+  /* ═══════════════ البيانات ═══════════════ */
+  const DEFAULT_CATS = [
+    ["housing", "السكن والإيجار", "🏠"], ["bills", "الفواتير والخدمات", "💡"], ["grocery", "البقالة والتموين", "🛒"],
+    ["food", "المطاعم والقهوة", "☕"], ["car", "السيارة والمواصلات", "🚗"], ["health", "الصحة والطبي", "🩺"],
+    ["subs", "الاشتراكات والأدوات", "📺"], ["shopping", "التسوق", "🛍️"], ["family", "العائلة والأطفال", "👨‍👩‍👧"],
+    ["edu", "التعليم والتطوير", "📚"], ["travel", "السفر", "✈️"], ["fun", "الترفيه", "🎮"], ["gov", "رسوم حكومية", "🏛️"],
+    ["charity", "الصدقات والزكاة", "🤲"], ["business", "مصاريف الشركة", "💼"], ["cash", "سحب نقدي", "💵"],
+    ["transfer_out", "حوالات صادرة", "📤"], ["fees", "رسوم بنكية", "🏦"], ["other", "أخرى", "📦"],
+  ].map(([id, name, icon]) => ({ id, name, icon, kind: "expense", budget: 0 }))
+   .concat([["salary", "الراتب", "💰"], ["biz_income", "دخل الشركة", "📈"], ["transfer_in", "حوالات واردة", "📥"], ["refund", "استرداد", "↩️"], ["other_income", "دخل آخر", "➕"]]
+   .map(([id, name, icon]) => ({ id, name, icon, kind: "income", budget: 0 })));
+
+  // كلمات دلالية لتصنيف التاجر تلقائياً (يُطابق كلمة كاملة، مع «ال/و/ب» للعربية)
+  const KEYWORDS = [
+    ["subs", "netflix,نتفلكس,نتفليكس,youtube,يوتيوب,google,spotify,سبوتيفاي,apple.com,itunes,icloud,app store,shahid,شاهد,osn,disney,anghami,أنغامي,chatgpt,openai,anthropic,claude,notion,adobe,microsoft,office 365,canva,figma,github,prime video,amazon prime,starzplay,linkedin,zoom,dropbox,midjourney,cursor,vercel,aws,godaddy,namecheap,x premium,telegram premium,tod,crunchyroll,duolingo,audible,kindle unlimited,subscription,اشتراك"],
+    ["health", "pharmacy,صيدلية,صيدليات,nahdi,النهدي,aldawaa,al-dawaa,الدواء,whites,وايتس,hospital,مستشفى,clinic,عيادة,عيادات,dental,أسنان,medical,طبي,طبية,lab,laboratory,مختبر,habib,الحبيب,mouwasat,المواساة,dallah,دله,fakeeh,فقيه,bupa,بوبا,tawuniya,medgulf,optics,بصريات,نظارات,magrabi,المغربي,seha"],
+    ["car", "aldrees,الدريس,petromin,بترومين,sasco,ساسكو,naft,نفط,fuel,وقود,بنزين,محطة,petrol,petroleum,car wash,مغسلة,كفرات,tyres,tires,najm,نجم,saher,ساهر,parking,مواقف,uber,أوبر,careem,كريم,bolt,jeeny,جيني,المرور,فحص دوري,mvpi,ورشة,قطع غيار,toyota,تويوتا,hyundai,هيونداي,abdul latif jameel,عبداللطيف جميل,almajdouie,yelo,يلو,lumi,لومي,rent a car,تأجير سيارات,تأمين سيارة"],
+    ["food", "hungerstation,هنقرستيشن,jahez,جاهز,mrsool,مرسول,toyou,تويو,keeta,كيتا,chefz,شفز,starbucks,ستاربكس,barns,بارنز,dunkin,دانكن,tim hortons,هورتنز,half million,هاف مليون,dr.cafe,mcdonald's,mcdonalds,ماكدونالدز,kfc,كنتاكي,albaik,al baik,البيك,kudu,كودو,herfy,هرفي,burger,برجر,pizza,بيتزا,shawarma,شاورما,shawarmer,شاورمر,domino's,dominos,papa john's,cafe,café,coffee,كوفي,قهوة,مقهى,كافيه,restaurant,مطعم,مطاعم,bakery,مخبز,حلويات,sweets,roastery,محمصة"],
+    ["grocery", "panda,بنده,othaim,العثيم,tamimi,التميمي,danube,الدانوب,carrefour,كارفور,lulu,لولو,nana,نعناع,farm superstores,المزرعة,بقالة,تموينات,supermarket,سوبرماركت,hypermarket,هايبر,ninja,نينجا,manuel,مانويل,bin dawood,بن داود,السدحان,grocery"],
+    ["bills", "stc,mobily,موبايلي,zain,زين,سوا,sawa,salam,سلام,virgin mobile,lebara,ليبارا,كهرباء,electricity,sec,مياه,water,nwc,فاتورة,bill,sadad,internet,انترنت,إنترنت,اتصالات"],
+    ["gov", "absher,أبشر,muqeem,مقيم,الجوازات,jawazat,وزارة,ministry,balady,بلدي,أمانة,najiz,ناجز,efaa,حكومي,government,zatca,هيئة الزكاة,gosi,التأمينات,qiwa,قوى,mudad,مدد,تأشيرة,musaned,مساند"],
+    ["housing", "إيجار,ايجار,rent,ejar,عقار,عقارات,real estate,property,صيانة منزل,سباك,كهربائي"],
+    ["travel", "saudia,السعودية للطيران,flynas,طيران ناس,flyadeal,أديل,booking.com,airbnb,hotel,hotels,فندق,فنادق,almosafer,المسافر,agoda,expedia,emirates,qatar airways,طيران,airlines,airways,marriott,hilton,gathern,جاذر"],
+    ["fun", "cinema,سينما,vox,muvi,موفي,amc,playstation,steam,xbox,webook,ويبوك,boulevard,بوليفارد,موسم الرياض,bowling,ملاهي"],
+    ["edu", "udemy,coursera,مكتبة,bookstore,school,مدرسة,مدارس,university,جامعة,academy,أكاديمية,kindle,معهد,institute,دورة,course,training,تدريب"],
+    ["family", "toys r us,mothercare,babyshop,حضانة,nursery,kids,أطفال,ألعاب"],
+    ["shopping", "amazon,أمازون,noon,نون,shein,شي ان,namshi,نمشي,ikea,ايكيا,extra,اكسترا,jarir,جرير,h&m,zara,زارا,centrepoint,سنتربوينت,max fashion,home centre,saco,ساكو,nike,adidas,sephora,سيفورا,mall,مول,apple store,istyle,trendyol,aliexpress,temu"],
+    ["charity", "ehsan,إحسان,جمعية,charity,صدقة,زكاة,zakat,تبرع,donation,شفاء,جود,وقف,فرجت"],
+    ["fees", "رسوم,fee,fees,عمولة,commission"],
+  ].map(([id, s]) => [id, s.split(",").map((k) => kwRegex(k.trim()))]);
+  function kwRegex(k) {
+    const e = k.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return /[؀-ۿ]/.test(k) ? new RegExp(`(^|[^\\p{L}])(?:ال|و|ب|لل)?${e}($|[^\\p{L}])`, "iu") : new RegExp(`(^|[^\\p{L}])${e}($|[^\\p{L}])`, "iu");
+  }
+  const TEXT_HINTS = [["bills", /سداد فاتور|فاتورة|المفوتر|bill payment|sadad/i], ["housing", /إيجار|ايجار|ejar/i], ["gov", /مدفوعات حكومية|سداد حكومي|government payment/i]];
+
+  const ACC_COLORS = ["#0F766E", "#1D4ED8", "#6D28D9", "#B45309", "#BE123C", "#047857", "#334155", "#0E7490", "#7C2D12", "#4D7C0F"];
+  const BANKS = ["الراجحي", "الأهلي", "الرياض", "الإنماء", "ساب", "البلاد", "الجزيرة", "العربي", "الفرنسي", "STC Bank", "urpay", "D360", "برق", "الخليج الدولي", "نقدي", "أخرى"];
+  const ACC_KINDS = { bank: "حساب بنكي", credit: "بطاقة ائتمانية", wallet: "محفظة رقمية", cash: "نقدي" };
+  const FREQS = { monthly: "شهري", yearly: "سنوي", quarterly: "كل ٣ أشهر", semiannual: "كل ٦ أشهر", weekly: "أسبوعي", once: "مرة واحدة" };
+  const FREQ_MONTHS = { monthly: 1, quarterly: 3, semiannual: 6, yearly: 12 };
+  const PER_MONTH = { weekly: 52 / 12, monthly: 1, quarterly: 1 / 3, semiannual: 1 / 6, yearly: 1 / 12, once: 0 };
+  const DUE_TEMPLATES = [
+    ["إيجار السكن", "housing", "yearly"], ["الكهرباء", "bills", "monthly"], ["فاتورة الجوال", "bills", "monthly"], ["الإنترنت", "bills", "monthly"],
+    ["قسط السيارة", "car", "monthly"], ["تأمين السيارة", "car", "yearly"], ["الفحص الدوري", "car", "yearly"], ["تجديد الاستمارة", "car", "yearly"],
+    ["التأمين الطبي", "health", "yearly"], ["YouTube Premium", "subs", "monthly"], ["Netflix", "subs", "monthly"], ["ChatGPT", "subs", "monthly"],
+    ["iCloud", "subs", "monthly"], ["رسوم المدارس", "edu", "semiannual"], ["إيجار مكتب الشركة", "business", "yearly"], ["رواتب الموظفين", "business", "monthly"],
+  ];
+
+  function defaults() {
+    return {
+      v: 1, accounts: [], txns: [], dues: [], rules: [], categories: JSON.parse(JSON.stringify(DEFAULT_CATS)),
+      settings: { scope: "all", theme: "auto", digits: "latn", defaultAccountId: "", autoSms: false, notified: {} },
+    };
+  }
+  let state = load();
+  function load() {
+    try {
+      const s = JSON.parse(localStorage.getItem(LS_KEY));
+      if (s && s.v) { const d = defaults(); s.settings = Object.assign(d.settings, s.settings); for (const k of ["accounts", "txns", "dues", "rules", "categories"]) if (!Array.isArray(s[k])) s[k] = d[k]; return s; }
+    } catch (e) {}
+    return defaults();
+  }
+  function save() {
+    try { localStorage.setItem(LS_KEY, JSON.stringify(state)); }
+    catch (e) { toast("تعذّر الحفظ — مساحة التخزين ممتلئة؟"); }
+  }
+
+  const cat = (id) => state.categories.find((c) => c.id === id) || { id, name: "غير مصنّف", icon: "❔", kind: "expense" };
+  const acc = (id) => state.accounts.find((a) => a.id === id);
+  const accName = (id) => (acc(id) ? acc(id).name : "بدون حساب");
+  const ownerOfTxn = (t) => (acc(t.accountId) || {}).owner || "personal";
+  const inScope = (owner) => state.settings.scope === "all" || state.settings.scope === owner;
+  const scopedAccounts = () => state.accounts.filter((a) => !a.archived && inScope(a.owner));
+  const scopedTxns = () => state.txns.filter((t) => inScope(ownerOfTxn(t)) || (t.type === "transfer" && inScope((acc(t.toAccountId) || {}).owner)));
+  const scopedDues = () => state.dues.filter((d) => inScope(d.owner || "personal"));
+
+  /* ═══════════════ الحسابات والأرصدة ═══════════════ */
+  // الرصيد = آخر رصيد مرجعي (افتتاحي أو من رسالة البنك أو تعديل يدوي) + العمليات بعده
+  function balanceOf(a) {
+    const anchor = a.anchor || { amount: 0, date: "1970-01-01T00:00:00.000Z" };
+    const at = new Date(anchor.date).getTime();
+    let b = anchor.amount;
+    for (const t of state.txns) {
+      if (new Date(t.date).getTime() <= at) continue;
+      b += effectOn(t, a.id);
+    }
+    return b;
+  }
+  function effectOn(t, id) {
+    if (t.type === "income" && t.accountId === id) return t.amount;
+    if (t.type === "expense" && t.accountId === id) return -t.amount;
+    if (t.type === "transfer") return (t.toAccountId === id ? t.amount : 0) - (t.accountId === id ? t.amount : 0);
+    return 0;
+  }
+  function setAnchor(a, amount, date) {
+    const d = new Date(date || Date.now());
+    if (a.anchor && new Date(a.anchor.date) > d) return;
+    a.anchor = { amount, date: d.toISOString() };
+  }
+  function accountByDigits(d) { return d && state.accounts.find((a) => (a.digits || []).includes(d)); }
+
+  /* ═══════════════ التصنيف التلقائي ═══════════════ */
+  const normMerchant = (m) => SmsParser.normalize(m || "").toLowerCase().replace(/[#*]\s*\d+|\d{3,}/g, " ").replace(/[^\p{L}\p{N}\s.&']/gu, " ").replace(/\s+/g, " ").trim();
+  function ruleFor(merchant) {
+    const n = normMerchant(merchant);
+    if (!n) return null;
+    return state.rules.find((r) => r.key === n) || state.rules.find((r) => r.key.length >= 4 && n.includes(r.key)) || null;
+  }
+  function guessCategory(p) {
+    const r = ruleFor(p.merchant);
+    if (r && state.categories.some((c) => c.id === r.categoryId)) return r.categoryId;
+    const text = p.text || "";
+    if (p.kind === "income") {
+      if (/راتب|رواتب|salary|payroll/i.test(text)) return "salary";
+      if (/استرداد|استرجاع|مسترد|refund|reversal|cash ?back/i.test(text)) return "refund";
+      if (p.isTransfer) return "transfer_in";
+      return "other_income";
+    }
+    if (p.isAtm) return "cash";
+    if (p.isFee) return "fees";
+    const m = SmsParser.normalize(p.merchant || "");
+    if (m) for (const [id, res] of KEYWORDS) if (res.some((re) => re.test(m))) return id;
+    for (const [id, re] of TEXT_HINTS) if (re.test(text)) return id;
+    if (p.isTransfer) return "transfer_out";
+    return "other";
+  }
+  function learnRule(merchant, categoryId) {
+    const key = normMerchant(merchant);
+    if (!key || key.length < 2) return;
+    const ex = state.rules.find((r) => r.key === key);
+    if (ex) ex.categoryId = categoryId; else state.rules.push({ key, label: merchant, categoryId });
+  }
+
+  /* ═══════════════ المستحقات والتوقعات ═══════════════ */
+  function addFreq(k, freq, anchorDay) {
+    const d = fromKey(k);
+    if (freq === "weekly") { d.setDate(d.getDate() + 7); return dateKey(d); }
+    const n = FREQ_MONTHS[freq];
+    if (!n) return k;
+    const day = anchorDay || d.getDate();
+    const t = new Date(d.getFullYear(), d.getMonth() + n, 1);
+    const last = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+    t.setDate(Math.min(day, last));
+    return dateKey(t);
+  }
+  // مواعيد الاستحقاق ضمن فترة [from, to] (مفاتيح تاريخ)
+  function occurrences(d, from, to) {
+    const out = [];
+    if (!d.active) return out;
+    let k = d.nextDate, guard = 0;
+    while (k <= to && guard++ < 400) {
+      if (k >= from) out.push(k);
+      if (d.freq === "once") break;
+      k = addFreq(k, d.freq, d.day);
+    }
+    return out;
+  }
+  function dueStatus(d) {
+    const n = daysBetween(todayKey(), d.nextDate);
+    if (!d.active) return "done";
+    if (n < 0) return "overdue";
+    if (n <= (d.remindDays ?? 3)) return "soon";
+    return "later";
+  }
+  function monthEndKey(d = new Date()) { return dateKey(new Date(d.getFullYear(), d.getMonth() + 1, 0)); }
+  // ما تبقّى من مستحقات حتى نهاية الشهر (مع المتأخر)
+  function remainingThisMonth(dues) {
+    const end = monthEndKey();
+    let s = 0;
+    for (const d of dues) for (const k of occurrences(d, "0000-01-01", end)) s += d.amount;
+    return s;
+  }
+  function forecast(dues, months = 12) {
+    const now = new Date();
+    const arr = [];
+    for (let i = 0; i < months; i++) {
+      const m0 = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      const from = i === 0 ? "0000-01-01" : dateKey(m0);
+      const to = dateKey(new Date(m0.getFullYear(), m0.getMonth() + 1, 0));
+      let total = 0; const items = [];
+      for (const d of dues) for (const k of occurrences(d, from, to)) { total += d.amount; items.push({ d, k }); }
+      arr.push({ month: m0, total, items });
+    }
+    return arr;
+  }
+  // متوسط المصروف المتغيّر (غير المرتبط بمستحق) لآخر ٣ أشهر مكتملة
+  function avgVariable(txns) {
+    const now = new Date(); let s = 0;
+    const start = new Date(now.getFullYear(), now.getMonth() - 3, 1), end = new Date(now.getFullYear(), now.getMonth(), 1);
+    const months = new Set();
+    for (const t of txns) {
+      const d = new Date(t.date);
+      if (t.type !== "expense" || t.dueId || d < start || d >= end) continue;
+      s += t.amount; months.add(monthKey(d));
+    }
+    return months.size ? s / Math.max(months.size, 1) : 0;
+  }
+  function payDue(d, opts = {}) {
+    let t = opts.txn;
+    if (!t) {
+      t = { id: uid(), type: "expense", amount: opts.amount ?? d.amount, accountId: opts.accountId || d.accountId || state.settings.defaultAccountId || (state.accounts[0] || {}).id || "",
+        categoryId: d.categoryId, merchant: d.name, note: "", date: new Date().toISOString(), source: "due", dueId: d.id };
+      state.txns.push(t);
+    } else t.dueId = d.id;
+    d.lastPaid = new Date(t.date).toISOString();
+    if (d.freq === "once") d.active = false; else d.nextDate = addFreq(d.nextDate, d.freq, d.day);
+    return t;
+  }
+  function matchDue(p, merchant, date) {
+    const m = normMerchant(merchant) + " " + normMerchant(p.text || "");
+    const dk = dateKey(date);
+    return state.dues.find((d) => {
+      if (!d.active || !d.match) return false;
+      const keys = d.match.split(/[,،]/).map((s) => normMerchant(s)).filter(Boolean);
+      if (!keys.some((k) => m.includes(k))) return false;
+      const n = daysBetween(d.nextDate, dk);
+      return n >= -25 && n <= 15;
+    });
+  }
+
+  /* ═══════════════ التنقل والعرض ═══════════════ */
+  let view = "home";
+  const ui = { month: monthKey(new Date()), q: "", fAcc: "", fCat: "", txTab: "list" };
+  function go(v) { view = v; render(); window.scrollTo({ top: 0 }); }
+  function render() {
+    $$("#scopeSeg button").forEach((b) => b.classList.toggle("on", b.dataset.scope === state.settings.scope));
+    $$("nav.bottom [data-view]").forEach((b) => b.classList.toggle("on", b.dataset.view === view));
+    const V = { home: renderHome, txns: renderTxns, dues: renderDues, accounts: renderAccounts, more: renderMore, rules: renderRules, cats: renderCats, guide: renderGuide }[view] || renderHome;
+    $("#view").innerHTML = V();
+  }
+
+  function txnRow(t) {
+    const c = t.type === "transfer" ? { icon: "🔁", name: "تحويل بين حساباتي" } : cat(t.categoryId);
+    const a = acc(t.accountId);
+    const sign = t.type === "income" ? 1 : t.type === "expense" ? -1 : 0;
+    const sub = t.type === "transfer" ? `${esc(accName(t.accountId))} ← ${esc(accName(t.toAccountId))}` : `${esc(c.name)} · ${esc(a ? a.name : "بدون حساب")}`;
+    return `<button class="item" data-act="editTxn" data-id="${t.id}">
+      <span class="ic">${c.icon}</span>
+      <span class="main"><div class="t1">${esc(t.merchant || c.name)} ${t.source === "sms" ? '<span class="badge sms">رسالة</span>' : ""}${t.dueId ? ' <span class="badge">مستحق</span>' : ""}${a && a.owner === "company" ? ' <span class="badge company">الشركة</span>' : ""}</div>
+      <div class="t2">${sub} · <span class="num">${esc(tShort(t.date))}</span></div></span>
+      <span class="amt ${sign > 0 ? "pos" : ""}">${money(t.amount, { abs: true, prefix: sign > 0 ? "+" : sign < 0 ? "−" : "" })}${t.approx ? `<div class="tiny muted">${esc(t.originalAmount)} ${esc(t.currency)} ≈</div>` : ""}</span>
+    </button>`;
+  }
+  function dueRow(d, k) {
+    const st = k ? (k < todayKey() ? "overdue" : daysBetween(todayKey(), k) <= (d.remindDays ?? 3) ? "soon" : "later") : dueStatus(d);
+    const key = k || d.nextDate;
+    const c = cat(d.categoryId);
+    const badge = st === "overdue" ? `<span class="badge bad">${relDays(key)}</span>` : st === "soon" ? `<span class="badge warn">${relDays(key)}</span>` : `<span class="badge">${relDays(key)}</span>`;
+    return `<div class="item">
+      <span class="ic">${c.icon}</span>
+      <button class="main" data-act="editDue" data-id="${d.id}" style="background:none;border:0;padding:0;text-align:right">
+        <div class="t1">${esc(d.name)} ${d.owner === "company" ? '<span class="badge company">الشركة</span>' : ""}</div>
+        <div class="t2">${FREQS[d.freq]} · ${badge}</div>
+      </button>
+      <div style="text-align:left"><div class="amt">${money(d.amount)}</div>
+      ${!k || k === d.nextDate ? `<button class="btn sm ghost" data-act="payDue" data-id="${d.id}" style="margin-top:4px">✓ دُفع</button>` : ""}</div>
+    </div>`;
+  }
+  function monthTotals(txns, mk) {
+    let exp = 0, inc = 0; const byCat = {};
+    for (const t of txns) {
+      if (monthKey(t.date) !== mk) continue;
+      if (t.type === "expense") { exp += t.amount; byCat[t.categoryId] = (byCat[t.categoryId] || 0) + t.amount; }
+      else if (t.type === "income") inc += t.amount;
+    }
+    return { exp, inc, byCat };
+  }
+  function catBars(byCat, limit = 99) {
+    const rows = Object.entries(byCat).sort((a, b) => b[1] - a[1]);
+    if (!rows.length) return `<div class="empty small">لا توجد مصاريف في هذا الشهر</div>`;
+    const max = rows[0][1], total = rows.reduce((s, r) => s + r[1], 0);
+    return rows.slice(0, limit).map(([id, v]) => {
+      const c = cat(id), b = c.budget || 0;
+      const w = b ? Math.min(100, (v / b) * 100) : (v / max) * 100;
+      const cls = b ? (v > b ? "bad" : v > b * 0.85 ? "warn" : "") : "";
+      return `<div class="bar-row"><div class="lab"><span>${c.icon} ${esc(c.name)} <span class="muted tiny num">${Math.round((v / total) * 100)}%</span></span>
+        <span class="bold">${money(v)}${b ? ` <span class="muted tiny">/ ${esc(fmt(b, { bare: true }))}</span>` : ""}</span></div>
+        <div class="bar"><i class="${cls}" style="width:${w.toFixed(1)}%"></i></div></div>`;
+    }).join("");
+  }
+  function barChart(data, opts = {}) {
+    // data: [{label, a, b?}] — a: عمود رئيسي، b: عمود ثانوي (اختياري)
+    const W = 340, H = 150, pb = 22, pt = 14, n = data.length;
+    const max = Math.max(1, ...data.map((d) => Math.max(d.a, d.b || 0)));
+    const gw = W / n, two = data.some((d) => d.b != null);
+    const bw = Math.min(two ? 11 : 18, gw * (two ? 0.32 : 0.55));
+    let s = `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img">`;
+    s += `<line x1="0" x2="${W}" y1="${H - pb}" y2="${H - pb}" stroke="var(--border)"/>`;
+    data.forEach((d, i) => {
+      const cx = W - (i + 0.5) * gw; // من اليمين لليسار
+      const h1 = ((H - pb - pt) * d.a) / max;
+      const x1 = two ? cx + 1 : cx - bw / 2;
+      s += `<rect x="${x1.toFixed(1)}" y="${(H - pb - h1).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(h1, d.a ? 1.5 : 0).toFixed(1)}" rx="3" fill="${opts.colorA || "var(--accent)"}" opacity="${d.dim ? 0.45 : 1}"><title>${esc(d.label)}: ${esc(fmt(d.a))}</title></rect>`;
+      if (two) {
+        const h2 = ((H - pb - pt) * (d.b || 0)) / max;
+        s += `<rect x="${(cx - 1 - bw).toFixed(1)}" y="${(H - pb - h2).toFixed(1)}" width="${bw.toFixed(1)}" height="${Math.max(h2, d.b ? 1.5 : 0).toFixed(1)}" rx="3" fill="${opts.colorB || "var(--income)"}"><title>${esc(d.label)}: ${esc(fmt(d.b || 0))}</title></rect>`;
+      }
+      if (!opts.every || i % opts.every === 0) s += `<text x="${cx.toFixed(1)}" y="${H - 6}" text-anchor="middle">${esc(d.label)}</text>`;
+      if (opts.values && d.a) s += `<text x="${cx.toFixed(1)}" y="${(H - pb - h1 - 3).toFixed(1)}" text-anchor="middle" style="font-size:8.5px">${esc(compact(d.a))}</text>`;
+    });
+    return s + "</svg>";
+  }
+  const compact = (v) => new Intl.NumberFormat(numLocale(), { notation: "compact", maximumFractionDigits: 1 }).format(v);
+
+  /* ───── الرئيسية ───── */
+  function renderHome() {
+    const accs = scopedAccounts(), txns = scopedTxns(), dues = scopedDues().filter((d) => d.active);
+    if (!state.accounts.length && !state.txns.length && !state.dues.length) return onboarding();
+    const total = accs.reduce((s, a) => s + balanceOf(a), 0);
+    const remain = remainingThisMonth(dues);
+    const mk = monthKey(new Date());
+    const prev = new Date(); prev.setDate(1); prev.setMonth(prev.getMonth() - 1);
+    const cur = monthTotals(txns, mk), last = monthTotals(txns, monthKey(prev));
+    const dayOfMonth = new Date().getDate();
+    // مقارنة عادلة: مصروف أول N يوم من الشهر الماضي
+    let lastSame = 0;
+    for (const t of txns) { const d = new Date(t.date); if (t.type === "expense" && monthKey(d) === monthKey(prev) && d.getDate() <= dayOfMonth) lastSame += t.amount; }
+    const diff = lastSame && cur.exp ? Math.round(((cur.exp - lastSame) / lastSame) * 100) : null;
+    const overdue = dues.filter((d) => dueStatus(d) === "overdue"), soon = dues.filter((d) => dueStatus(d) === "soon");
+    const upcoming = dues.slice().sort((a, b) => a.nextDate.localeCompare(b.nextDate)).slice(0, 5);
+    const recent = txns.slice().sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 6);
+    return `
+      <div class="card hero">
+        <div class="label">إجمالي الأرصدة · ${{ all: "كل الحسابات", personal: "الحسابات الشخصية", company: "حسابات الشركة" }[state.settings.scope]}</div>
+        <div class="big">${money(total)}</div>
+        <div class="split">
+          <div><div class="label">مستحقات باقي الشهر</div><div class="v">${money(remain, { short: true })}</div></div>
+          <div><div class="label">المتاح بعد المستحقات</div><div class="v">${money(total - remain, { short: true })}</div></div>
+        </div>
+      </div>
+      ${overdue.length ? `<button class="alert bad" style="width:100%;border:0" data-act="go" data-view="dues">⚠️ ${overdue.length} مستحق متأخر بإجمالي ${money(overdue.reduce((s, d) => s + d.amount, 0))}</button>` : ""}
+      ${soon.length ? `<button class="alert warn" style="width:100%;border:0" data-act="go" data-view="dues">⏰ ${soon.length} مستحق قريب: ${esc(soon.map((d) => d.name).slice(0, 3).join("، "))}</button>` : ""}
+      <div class="card">
+        <h3>${esc(mName(new Date()))} <button class="link" data-act="go" data-view="txns">التفاصيل</button></h3>
+        <div class="tiles">
+          <div class="tile"><div class="t">المصروف</div><div class="v neg">${money(cur.exp, { short: true })}</div></div>
+          <div class="tile"><div class="t">الدخل</div><div class="v pos">${money(cur.inc, { short: true })}</div></div>
+          <div class="tile"><div class="t">الصافي</div><div class="v">${money(cur.inc - cur.exp, { short: true })}</div></div>
+        </div>
+        ${diff !== null ? `<div class="small muted" style="margin-top:8px">${diff > 0 ? "📈" : "📉"} مصروفك ${diff > 0 ? "أعلى" : "أقل"} بـ <b class="${diff > 0 ? "neg" : "pos"} num">${Math.abs(diff)}%</b> من نفس الفترة في الشهر الماضي (${money(lastSame)})</div>` : ""}
+        <div style="margin-top:10px">${catBars(cur.byCat, 6)}</div>
+      </div>
+      <div class="card">
+        <h3>المستحقات القادمة <button class="link" data-act="go" data-view="dues">الكل</button></h3>
+        ${upcoming.length ? `<div class="list">${upcoming.map((d) => dueRow(d)).join("")}</div>` : `<div class="empty small">لا مستحقات بعد — أضف الإيجار والاشتراكات والفواتير<br><button class="btn sm primary" style="margin-top:8px" data-act="newDue">+ مستحق</button></div>`}
+      </div>
+      <div class="card">
+        <h3>آخر العمليات <button class="link" data-act="sms">📩 لصق رسالة</button></h3>
+        ${recent.length ? `<div class="list">${recent.map(txnRow).join("")}</div>` : `<div class="empty small">لا عمليات بعد</div>`}
+      </div>`;
+  }
+  function onboarding() {
+    return `
+      <div class="card hero"><div class="big" style="font-size:24px">أهلاً بك في الميزان</div>
+        <div class="label" style="font-size:14px;opacity:.9">احسب مصاريفك، صنّفها تلقائياً، واعرف ما ينتظرك من مستحقات — كل البيانات تبقى على جهازك فقط.</div></div>
+      <div class="card"><h3>ابدأ بثلاث خطوات</h3>
+        <ol class="steps onb">
+          <li><b>أضف حساباتك</b> (الشخصية وحساب الشركة) مع آخر ٤ أرقام من البطاقة/الحساب كما تظهر في رسائل البنك، ليتعرّف التطبيق على كل رسالة وينسبها لحسابها.<br><button class="btn sm primary" style="margin-top:6px" data-act="newAcc">+ إضافة حساب</button></li>
+          <li><b>أضف مستحقاتك الثابتة</b>: الإيجار، الفواتير، أقساط السيارة، التأمين الطبي، اشتراكات يوتيوب والأدوات…<br><button class="btn sm" style="margin-top:6px" data-act="newDue">+ إضافة مستحق</button></li>
+          <li><b>الصق رسائل البنك</b> أو شاركها مع التطبيق مباشرة، فيستخرج المبلغ والتاجر والتصنيف تلقائياً.<br><button class="btn sm" style="margin-top:6px" data-act="sms">📩 لصق رسالة</button> <button class="btn sm ghost" style="margin-top:6px" data-act="go" data-view="guide">طريقة الربط التلقائي</button></li>
+        </ol>
+      </div>
+      <div class="card"><h3>تريد أن ترى التطبيق ممتلئاً أولاً؟</h3>
+        <p class="small muted" style="margin:0 0 10px">نضيف بيانات تجريبية (حسابات ومستحقات وعمليات) يمكنك حذفها بضغطة من الإعدادات.</p>
+        <button class="btn block" data-act="demo">تجربة ببيانات تجريبية</button></div>`;
+  }
+
+  /* ───── العمليات ───── */
+  function renderTxns() {
+    const d = fromKey(ui.month + "-01");
+    const all = scopedTxns();
+    const tabs = `<div class="seg full" style="margin-top:14px"><button class="${ui.txTab === "list" ? "on" : ""}" data-act="txTab" data-v="list">القائمة</button><button class="${ui.txTab === "stats" ? "on" : ""}" data-act="txTab" data-v="stats">التحليل</button></div>`;
+    const nav = `<div class="month-nav"><button class="icon-btn" data-act="month" data-d="-1" aria-label="الشهر السابق">›</button><div class="m">${esc(mName(d))}</div><button class="icon-btn" data-act="month" data-d="1" aria-label="الشهر التالي">‹</button></div>`;
+    const tot = monthTotals(all, ui.month);
+    const tiles = `<div class="card" style="padding:12px"><div class="tiles"><div class="tile"><div class="t">المصروف</div><div class="v neg">${money(tot.exp, { short: true })}</div></div><div class="tile"><div class="t">الدخل</div><div class="v pos">${money(tot.inc, { short: true })}</div></div><div class="tile"><div class="t">الصافي</div><div class="v">${money(tot.inc - tot.exp, { short: true })}</div></div></div></div>`;
+    if (ui.txTab === "stats") return nav + tabs + tiles + renderStats(all, d, tot);
+    const q = normMerchant(ui.q);
+    const list = all.filter((t) => monthKey(t.date) === ui.month && (!ui.fAcc || t.accountId === ui.fAcc || t.toAccountId === ui.fAcc) && (!ui.fCat || t.categoryId === ui.fCat) &&
+      (!q || normMerchant(`${t.merchant} ${t.note} ${cat(t.categoryId).name} ${t.raw || ""}`).includes(q))).sort((a, b) => new Date(b.date) - new Date(a.date));
+    const groups = {};
+    for (const t of list) (groups[dateKey(t.date)] = groups[dateKey(t.date)] || []).push(t);
+    const filters = `<div class="search"><input class="input" id="q" placeholder="بحث بالتاجر أو الملاحظة…" value="${esc(ui.q)}" />
+      <select class="input" id="fCat"><option value="">كل التصنيفات</option>${state.categories.map((c) => `<option value="${c.id}" ${ui.fCat === c.id ? "selected" : ""}>${c.icon} ${esc(c.name)}</option>`).join("")}</select></div>
+      <div class="chips" style="margin-top:8px"><button class="chip ${!ui.fAcc ? "on" : ""}" data-act="fAcc" data-id="">كل الحسابات</button>${scopedAccounts().map((a) => `<button class="chip ${ui.fAcc === a.id ? "on" : ""}" data-act="fAcc" data-id="${a.id}">${esc(a.name)}</button>`).join("")}</div>`;
+    const body = Object.keys(groups).length ? Object.entries(groups).map(([k, ts]) => {
+      const dayExp = ts.filter((t) => t.type === "expense").reduce((s, t) => s + t.amount, 0);
+      return `<div class="day-h"><span>${esc(dLong(fromKey(k)))}</span><span>${dayExp ? "−" + esc(fmt(dayExp)) : ""}</span></div><div class="card" style="margin-top:0;padding:4px 14px">${ts.map(txnRow).join("")}</div>`;
+    }).join("") : `<div class="card empty"><div class="e">🧾</div>لا عمليات ${q || ui.fAcc || ui.fCat ? "مطابقة" : "في هذا الشهر"}</div>`;
+    return nav + tabs + filters + body;
+  }
+  function renderStats(all, d, tot) {
+    const trend = [];
+    for (let i = 5; i >= 0; i--) {
+      const m = new Date(d.getFullYear(), d.getMonth() - i, 1);
+      const t = monthTotals(all, monthKey(m));
+      trend.unshift({ label: mShort(m), a: t.exp, b: t.inc });
+    }
+    const days = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+    const daily = Array.from({ length: days }, (_, i) => ({ label: (i + 1) % 5 === 0 || i === 0 ? String(i + 1) : "", a: 0 }));
+    const merchants = {}, incByCat = {};
+    for (const t of all) {
+      if (monthKey(t.date) !== ui.month) continue;
+      if (t.type === "expense") {
+        daily[new Date(t.date).getDate() - 1].a += t.amount;
+        const k = (t.merchant || cat(t.categoryId).name).trim();
+        merchants[k] = (merchants[k] || 0) + t.amount;
+      } else if (t.type === "income") incByCat[t.categoryId] = (incByCat[t.categoryId] || 0) + t.amount;
+    }
+    const top = Object.entries(merchants).sort((a, b) => b[1] - a[1]).slice(0, 8);
+    const isCur = ui.month === monthKey(new Date());
+    const elapsed = isCur ? new Date().getDate() : days;
+    return `
+      <div class="card"><h3>المصروف حسب التصنيف</h3>${catBars(tot.byCat)}</div>
+      <div class="card"><h3>المصروف اليومي <span class="small muted">المعدّل ${money(tot.exp / Math.max(elapsed, 1))} / يوم</span></h3>${barChart(daily)}</div>
+      <div class="card"><h3>آخر ٦ أشهر <span class="small"><span class="neg">■</span> مصروف <span class="pos">■</span> دخل</span></h3>${barChart(trend, { colorA: "var(--expense)", colorB: "var(--income)" })}</div>
+      <div class="card"><h3>أكثر الجهات صرفاً</h3>${top.length ? top.map(([k, v]) => `<div class="row between" style="padding:7px 0;border-bottom:1px solid var(--border)"><span class="ellipsis">${esc(k)}</span><b>${money(v)}</b></div>`).join("") : '<div class="empty small">لا بيانات</div>'}</div>
+      <div class="card"><h3>مصادر الدخل</h3>${Object.keys(incByCat).length ? catBars(incByCat) : '<div class="empty small">لا دخل مسجّل</div>'}</div>`;
+  }
+
+  /* ───── المستحقات ───── */
+  function renderDues() {
+    const dues = scopedDues();
+    const active = dues.filter((d) => d.active);
+    const today = todayKey();
+    const in7 = dateKey(new Date(Date.now() + 7 * 864e5)), in30 = dateKey(new Date(Date.now() + 30 * 864e5));
+    const sum = (from, to) => active.reduce((s, d) => s + occurrences(d, from, to).length * d.amount, 0);
+    const overdue = active.filter((d) => d.nextDate < today).reduce((s, d) => s + d.amount, 0);
+    const fc = forecast(active);
+    const monthly = active.reduce((s, d) => s + d.amount * PER_MONTH[d.freq], 0);
+    const variable = avgVariable(scopedTxns());
+    const nextMonth = fc[1] ? fc[1].total : 0;
+    const sorted = active.slice().sort((a, b) => a.nextDate.localeCompare(b.nextDate));
+    const done = dues.filter((d) => !d.active);
+    const byCat = {};
+    for (const d of active) byCat[d.categoryId] = (byCat[d.categoryId] || 0) + d.amount * PER_MONTH[d.freq];
+    return `
+      <div class="card">
+        <h3>ملخص المستحقات <button class="link" data-act="newDue">+ مستحق</button></h3>
+        <div class="tiles four">
+          <div class="tile"><div class="t">متأخر</div><div class="v ${overdue ? "neg" : ""}">${money(overdue)}</div></div>
+          <div class="tile"><div class="t">خلال ٧ أيام</div><div class="v">${money(sum(today, in7))}</div></div>
+          <div class="tile"><div class="t">خلال ٣٠ يوماً</div><div class="v">${money(sum(today, in30))}</div></div>
+          <div class="tile"><div class="t">باقي هذا الشهر</div><div class="v">${money(remainingThisMonth(active))}</div></div>
+        </div>
+        <div class="small muted" style="margin-top:10px">الالتزامات الثابتة تعادل <b class="num">${esc(fmt(monthly))}</b> شهرياً و<b class="num">${esc(fmt(monthly * 12))}</b> سنوياً.</div>
+      </div>
+      <div class="card">
+        <h3>توقّع الشهر القادم <span class="small muted">${esc(mName(fc[1] ? fc[1].month : new Date()))}</span></h3>
+        <div class="tiles">
+          <div class="tile"><div class="t">مستحقات ثابتة</div><div class="v">${money(nextMonth, { short: true })}</div></div>
+          <div class="tile"><div class="t">مصروف متغيّر*</div><div class="v">${money(variable, { short: true })}</div></div>
+          <div class="tile"><div class="t">الإجمالي المتوقع</div><div class="v neg">${money(nextMonth + variable, { short: true })}</div></div>
+        </div>
+        <div class="tiny muted" style="margin-top:6px">* متوسط ما صرفته خارج المستحقات في آخر ٣ أشهر مكتملة.</div>
+      </div>
+      <div class="card"><h3>المستحقات لـ ١٢ شهراً قادمة <span class="small muted">${money(fc.reduce((s, m) => s + m.total, 0))}</span></h3>
+        ${barChart(fc.map((m) => ({ label: mShort(m.month), a: m.total })), { colorA: "var(--warn)", every: 2 })}
+        <details class="raw"><summary>تفاصيل كل شهر</summary>${fc.filter((m) => m.items.length).map((m) => `<div style="margin-top:8px"><b>${esc(mName(m.month))}</b> — ${money(m.total)}<div class="tiny">${m.items.map((x) => `${esc(x.d.name)} (${esc(dShort(fromKey(x.k)))}): ${esc(fmt(x.d.amount))}`).join(" · ")}</div></div>`).join("") || "<div>لا شيء</div>"}</details>
+      </div>
+      <div class="card"><h3>كل المستحقات النشطة <span class="small muted">${active.length}</span></h3>
+        ${sorted.length ? `<div class="list">${sorted.map((d) => dueRow(d)).join("")}</div>` : `<div class="empty small"><div class="e">📅</div>لا مستحقات بعد. اختر قالباً سريعاً:</div><div class="chips">${DUE_TEMPLATES.map((t, i) => `<button class="chip" data-act="dueTpl" data-i="${i}">${cat(t[1]).icon} ${esc(t[0])}</button>`).join("")}</div>`}
+      </div>
+      ${Object.keys(byCat).length ? `<div class="card"><h3>الالتزامات الشهرية حسب التصنيف</h3>${catBars(byCat)}</div>` : ""}
+      ${done.length ? `<div class="card"><h3>منتهية / مدفوعة لمرة واحدة</h3><div class="list">${done.map((d) => `<button class="item" data-act="editDue" data-id="${d.id}"><span class="ic">${cat(d.categoryId).icon}</span><span class="main"><div class="t1">${esc(d.name)}</div><div class="t2">دُفع ${d.lastPaid ? esc(dShort(d.lastPaid)) : ""}</div></span><span class="amt muted">${money(d.amount)}</span></button>`).join("")}</div></div>` : ""}`;
+  }
+
+  /* ───── الحسابات ───── */
+  function renderAccounts() {
+    const groups = [["personal", "الحسابات الشخصية"], ["company", "حسابات الشركة"]].filter(([o]) => inScope(o));
+    const mk = monthKey(new Date());
+    return groups.map(([o, title]) => {
+      const accs = state.accounts.filter((a) => a.owner === o && !a.archived);
+      const total = accs.reduce((s, a) => s + balanceOf(a), 0);
+      return `<div class="card"><h3>${title} <span class="small">${money(total)}</span></h3>
+        ${accs.map((a) => {
+          const spent = state.txns.filter((t) => t.accountId === a.id && t.type === "expense" && monthKey(t.date) === mk).reduce((s, t) => s + t.amount, 0);
+          const src = a.anchor && a.anchor.src === "sms" ? `آخر رصيد من البنك ${dShort(a.anchor.date)}` : a.anchor ? `رصيد مُدخل ${dShort(a.anchor.date)}` : "";
+          return `<button class="acc-card" style="background:linear-gradient(135deg, ${a.color}, color-mix(in srgb, ${a.color} 60%, #000))" data-act="editAcc" data-id="${a.id}">
+            <div class="row between"><span class="n">${esc(a.name)}</span><span class="m">${esc(a.bank || "")} · ${ACC_KINDS[a.kind] || ""}</span></div>
+            <div class="b">${money(balanceOf(a))}</div>
+            <div class="row between m"><span>${(a.digits || []).length ? "•••• " + esc(a.digits.join(" · ")) : "بدون أرقام — لن تُربط الرسائل تلقائياً"}</span><span>صُرف هذا الشهر ${esc(fmt(spent))}</span></div>
+            ${src ? `<div class="m" style="margin-top:2px">${esc(src)}</div>` : ""}
+          </button>`;
+        }).join("") || `<div class="empty small">لا حسابات</div>`}
+        <button class="btn block ghost" data-act="newAcc" data-owner="${o}">+ حساب ${o === "company" ? "للشركة" : "شخصي"}</button></div>`;
+    }).join("") + `<div class="card small muted">💡 الرصيد يتحدّث تلقائياً عندما تحتوي رسالة البنك على «الرصيد». للتصحيح اليدوي افتح الحساب واضغط «تعديل الرصيد».</div>`;
+  }
+
+  /* ───── الإعدادات ───── */
+  function renderMore() {
+    const s = state.settings;
+    const hasDemo = state.accounts.some((a) => a.demo) || state.txns.some((t) => t.demo) || state.dues.some((d) => d.demo);
+    return `
+      <div class="card"><h3>رسائل البنوك</h3>
+        <div class="btns"><button class="btn primary" data-act="sms">📩 لصق رسائل</button><button class="btn" data-act="go" data-view="guide">⚡ الربط التلقائي</button></div>
+        <label class="check" style="margin-top:12px"><input type="checkbox" data-set="autoSms" ${s.autoSms ? "checked" : ""}/> إضافة الرسائل المفهومة مباشرة دون شاشة مراجعة</label>
+        <div class="field" style="margin-top:12px"><label>الحساب الافتراضي (عند عدم التعرّف على أرقام الرسالة)</label>
+          <select class="input" data-set="defaultAccountId"><option value="">— اسألني —</option>${state.accounts.map((a) => `<option value="${a.id}" ${s.defaultAccountId === a.id ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select></div>
+      </div>
+      <div class="card"><h3>التصنيفات والقواعد</h3><div class="list">
+        <button class="item" data-act="go" data-view="cats"><span class="ic">🗂️</span><span class="main"><div class="t1">التصنيفات والميزانيات</div><div class="t2">${state.categories.length} تصنيف — أضف ميزانية شهرية لأي تصنيف</div></span>‹</button>
+        <button class="item" data-act="go" data-view="rules"><span class="ic">🧠</span><span class="main"><div class="t1">قواعد التجّار المحفوظة</div><div class="t2">${state.rules.length} قاعدة — يتعلّمها التطبيق عندما تغيّر تصنيف تاجر</div></span>‹</button>
+      </div></div>
+      <div class="card"><h3>المظهر والتنبيهات</h3>
+        <div class="field"><label>السمة</label><div class="seg full">${[["auto", "تلقائي"], ["light", "فاتح"], ["dark", "داكن"]].map(([k, l]) => `<button class="${s.theme === k ? "on" : ""}" data-act="theme" data-v="${k}">${l}</button>`).join("")}</div></div>
+        <div class="field"><label>الأرقام</label><div class="seg full"><button class="${s.digits !== "arab" ? "on" : ""}" data-act="digits" data-v="latn">123</button><button class="${s.digits === "arab" ? "on" : ""}" data-act="digits" data-v="arab">١٢٣</button></div></div>
+        <button class="btn block" data-act="notify">🔔 ${typeof Notification !== "undefined" && Notification.permission === "granted" ? "التنبيهات مفعّلة — اختبار" : "تفعيل تنبيهات المستحقات"}</button>
+      </div>
+      <div class="card"><h3>النسخ الاحتياطي</h3>
+        <p class="small muted" style="margin:0 0 10px">بياناتك محفوظة على هذا الجهاز فقط ولا تُرسل لأي خادم. صدّر نسخة احتياطية بانتظام.</p>
+        <div class="btns"><button class="btn" data-act="export">⬇️ تصدير JSON</button><button class="btn" data-act="exportCsv">📊 تصدير CSV</button><button class="btn" data-act="import">⬆️ استيراد</button></div>
+        ${hasDemo ? `<button class="btn block danger" style="margin-top:10px" data-act="clearDemo">حذف البيانات التجريبية</button>` : ""}
+        <button class="btn block danger" style="margin-top:10px" data-act="wipe">مسح كل البيانات</button>
+      </div>
+      <div class="tiny muted" style="text-align:center;margin:16px 0">الميزان · ${state.txns.length} عملية · ${state.dues.length} مستحق · ${state.accounts.length} حساب</div>`;
+  }
+  function renderCats() {
+    const sec = (kind, title) => `<div class="card"><h3>${title} <button class="link" data-act="newCat" data-kind="${kind}">+ تصنيف</button></h3><div class="list">
+      ${state.categories.filter((c) => c.kind === kind).map((c) => `<button class="item" data-act="editCat" data-id="${c.id}"><span class="ic">${c.icon}</span><span class="main"><div class="t1">${esc(c.name)}</div>${c.budget ? `<div class="t2">ميزانية شهرية ${esc(fmt(c.budget))}</div>` : ""}</span>‹</button>`).join("")}</div></div>`;
+    return `<div class="month-nav"><button class="btn sm ghost" data-act="go" data-view="more">→ رجوع</button><div class="m">التصنيفات</div><span></span></div>` + sec("expense", "تصنيفات المصاريف") + sec("income", "تصنيفات الدخل");
+  }
+  function renderRules() {
+    return `<div class="month-nav"><button class="btn sm ghost" data-act="go" data-view="more">→ رجوع</button><div class="m">قواعد التجّار</div><span></span></div>
+      <div class="card"><p class="small muted" style="margin-top:0">عند تغيير تصنيف عملية من تاجر معيّن يحفظ التطبيق ذلك ويطبّقه على رسائله القادمة.</p>
+      ${state.rules.length ? `<div class="list">${state.rules.map((r, i) => `<div class="item"><span class="ic">${cat(r.categoryId).icon}</span><span class="main"><div class="t1">${esc(r.label || r.key)}</div><div class="t2">← ${esc(cat(r.categoryId).name)}</div></span><button class="btn sm danger" data-act="delRule" data-i="${i}">حذف</button></div>`).join("")}</div>` : `<div class="empty small">لا قواعد بعد</div>`}</div>`;
+  }
+  function renderGuide() {
+    const url = location.href.split(/[?#]/)[0];
+    return `<div class="month-nav"><button class="btn sm ghost" data-act="go" data-view="more">→ رجوع</button><div class="m">الربط التلقائي برسائل البنك</div><span></span></div>
+      <div class="card"><h3>لماذا عن طريق الرسائل؟</h3><p class="small" style="margin:0">الربط المباشر بالحسابات البنكية في السعودية (المصرفية المفتوحة) متاح فقط لجهات مرخّصة من البنك المركزي، لذلك يعتمد الميزان على رسائل البنك التي تصلك مع كل عملية — وهي تغطي كل حساباتك (الشخصية والشركة) بلا استثناء، وبياناتك لا تغادر جوالك.</p></div>
+      <div class="card"><h3>🤖 أندرويد — مشاركة الرسالة (الأسهل)</h3><ol class="steps small">
+        <li>ثبّت الميزان من Chrome: القائمة ⋮ ← «تثبيت التطبيق».</li>
+        <li>في تطبيق الرسائل اضغط مطوّلاً على رسالة البنك ← <b>مشاركة</b> ← اختر <b>الميزان</b>.</li>
+        <li>تظهر العملية مصنّفة وجاهزة؛ اضغط «إضافة». (يمكن تحديد عدة رسائل ومشاركتها معاً)</li></ol></div>
+      <div class="card"><h3>🤖 أندرويد — تلقائي بالكامل</h3><ol class="steps small">
+        <li>ثبّت تطبيق أتمتة مثل <b>MacroDroid</b> أو <b>Tasker</b>.</li>
+        <li>المشغّل: «استلام رسالة SMS» من مرسلين مثل <code class="k">AlRajhiBank</code>، <code class="k">SNB-AlAhli</code>، <code class="k">STCBank</code>.</li>
+        <li>الإجراء: «فتح رابط» بالصيغة:<br><code class="k">${esc(url)}?auto=1&amp;sms=[نص الرسالة]</code><br>(استخدم متغير نص الرسالة مع ترميز URL).</li>
+        <li>يفتح الميزان ويضيف العملية مباشرة ثم يمكنك إغلاقه.</li></ol></div>
+      <div class="card"><h3>🍎 آيفون — اختصارات Shortcuts</h3>
+        <p class="small muted" style="margin-top:0">آيفون لا يسمح لأي تطبيق بقراءة الرسائل، لكن تطبيق «الاختصارات» يستطيع تمريرها:</p><ol class="steps small">
+        <li>الاختصارات ← <b>الأتمتة</b> ← جديد ← <b>رسالة</b> ← المرسل: البنك (أو «الرسالة تحتوي: مبلغ») ← «تشغيل فوراً».</li>
+        <li>الإجراءات: «الحصول على الحافظة» ← «نص»: <code class="k">[الحافظة]</code> ثم سطر فارغ ثم <code class="k">[محتوى الرسالة]</code> ← «نسخ إلى الحافظة».</li>
+        <li>عند فتح الميزان اضغط <b>📩 لصق رسائل</b> ← «قراءة الحافظة»؛ تُضاف كل الرسائل المتراكمة، والمكرر يُتجاهل تلقائياً.</li>
+        <li>بديل: إجراء «فتح عنوان URL» بالرابط <code class="k">${esc(url)}?sms=[محتوى الرسالة]</code> — يعمل إذا كنت تستخدم الميزان من Safari مباشرة (التطبيق المثبّت على الشاشة الرئيسية في آيفون له تخزين منفصل عن Safari).</li></ol></div>
+      <div class="card"><h3>✍️ يدوياً</h3><p class="small" style="margin:0">انسخ رسالة أو عدة رسائل (افصل بينها بسطر فارغ) والصقها في «📩 لصق رسائل». يتعرف التطبيق على صيغ الراجحي، الأهلي، الرياض، الإنماء، ساب، البلاد، STC Bank وغيرها بالعربية والإنجليزية، ويتجاهل رموز التحقق والعمليات المرفوضة.</p></div>`;
+  }
+
+  /* ═══════════════ النوافذ ═══════════════ */
+  let sheetCtx = null;
+  function openSheet(html, ctx = {}) {
+    closeSheet(true);
+    const bg = document.createElement("div"); bg.className = "sheet-bg";
+    const sh = document.createElement("div"); sh.className = "sheet";
+    sh.innerHTML = `<div class="wrap"><div class="grab"></div>${html}</div>`;
+    bg.addEventListener("click", () => closeSheet());
+    document.body.append(bg, sh);
+    requestAnimationFrame(() => { bg.classList.add("show"); sh.classList.add("show"); });
+    sheetCtx = Object.assign(ctx, { bg, sh });
+    document.body.style.overflow = "hidden";
+    return sh;
+  }
+  function closeSheet(instant) {
+    if (!sheetCtx) return;
+    const { bg, sh } = sheetCtx; sheetCtx = null;
+    document.body.style.overflow = "";
+    if (instant) { bg.remove(); sh.remove(); return; }
+    bg.classList.remove("show"); sh.classList.remove("show");
+    setTimeout(() => { bg.remove(); sh.remove(); }, 260);
+  }
+  let toastTimer;
+  function toast(msg, action) {
+    const el = $("#toast");
+    el.innerHTML = `<span>${esc(msg)}</span>${action ? `<button>${esc(action.label)}</button>` : ""}`;
+    if (action) el.querySelector("button").onclick = () => { el.classList.remove("show"); action.fn(); };
+    el.classList.add("show");
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => el.classList.remove("show"), action ? 5000 : 2600);
+  }
+  const accOptions = (sel, allowNone) => (allowNone ? `<option value="">— بدون —</option>` : "") +
+    [["personal", "شخصي"], ["company", "الشركة"]].map(([o, l]) => {
+      const list = state.accounts.filter((a) => a.owner === o && (!a.archived || a.id === sel));
+      return list.length ? `<optgroup label="${l}">${list.map((a) => `<option value="${a.id}" ${sel === a.id ? "selected" : ""}>${esc(a.name)}${(a.digits || []).length ? " •" + esc(a.digits[0]) : ""}</option>`).join("")}</optgroup>` : "";
+    }).join("");
+  const catGrid = (kind, sel) => `<div class="cat-grid">${state.categories.filter((c) => c.kind === kind).map((c) => `<button type="button" class="cat-opt ${sel === c.id ? "on" : ""}" data-cat="${c.id}"><span class="e">${c.icon}</span>${esc(c.name)}</button>`).join("")}</div>`;
+
+  /* ───── نموذج العملية ───── */
+  function txnForm(t) {
+    const isNew = !t;
+    t = t ? { ...t } : { type: "expense", amount: "", accountId: state.settings.defaultAccountId || (scopedAccounts()[0] || state.accounts[0] || {}).id || "", categoryId: "", merchant: "", note: "", date: new Date().toISOString() };
+    const prevCat = t.categoryId, prevAmount = t.amount, hadDue = !!t.dueId;
+    const sh = openSheet(`
+      <h2>${isNew ? "عملية جديدة" : "تعديل العملية"} ${t.source === "sms" ? '<span class="badge sms">من رسالة</span>' : ""}</h2>
+      <div class="seg full" id="tType">${[["expense", "مصروف"], ["income", "دخل"], ["transfer", "تحويل بين حساباتي"]].map(([k, l]) => `<button type="button" data-v="${k}" class="${t.type === k ? "on" : ""}">${l}</button>`).join("")}</div>
+      <div class="field" style="margin-top:12px"><input class="input amount-input" id="tAmt" inputmode="decimal" placeholder="0.00" value="${t.amount === "" ? "" : esc(t.amount)}" /></div>
+      <div class="grid2">
+        <div class="field"><label id="accLbl">الحساب</label><select class="input" id="tAcc">${accOptions(t.accountId, true)}</select></div>
+        <div class="field" id="toWrap"><label>إلى حساب</label><select class="input" id="tTo">${accOptions(t.toAccountId, true)}</select></div>
+        <div class="field" id="dateWrap"><label>التاريخ والوقت</label><input class="input" type="datetime-local" id="tDate" value="${localInput(t.date)}" /></div>
+      </div>
+      <div class="field" id="merchWrap"><label>التاجر / الوصف</label><input class="input" id="tMerch" value="${esc(t.merchant)}" placeholder="مثال: بنده، إيجار الشقة…" /></div>
+      <div class="field" id="catWrap"><label>التصنيف</label><div id="catBox"></div></div>
+      <label class="check field" id="learnWrap"><input type="checkbox" id="tLearn" checked /> تذكّر هذا التصنيف لهذا التاجر</label>
+      <div class="field" id="dueWrap"><label>دفعة لمستحق (يُقدَّم موعده تلقائياً)</label><select class="input" id="tDue"><option value="">— لا —</option>${state.dues.filter((d) => d.active || d.id === t.dueId).map((d) => `<option value="${d.id}" ${t.dueId === d.id ? "selected" : ""}>${esc(d.name)} · ${esc(relDays(d.nextDate))}</option>`).join("")}</select></div>
+      <div class="field"><label>ملاحظة</label><input class="input" id="tNote" value="${esc(t.note || "")}" /></div>
+      ${t.raw ? `<details class="raw"><summary>نص الرسالة الأصلية</summary><pre>${esc(t.raw)}</pre></details>` : ""}
+      <div class="btns" style="margin-top:14px">${!isNew ? `<button class="btn danger" id="tDel">حذف</button>` : ""}<button class="btn primary" id="tSave" style="flex:2">حفظ</button></div>`);
+    let type = t.type, catId = t.categoryId;
+    const sync = () => {
+      $("#toWrap", sh).style.display = type === "transfer" ? "" : "none";
+      $("#catWrap", sh).style.display = $("#learnWrap", sh).style.display = type === "transfer" ? "none" : "";
+      $("#dueWrap", sh).style.display = type === "expense" && (isNew || !t.dueId) ? "" : "none";
+      $("#accLbl", sh).textContent = type === "transfer" ? "من حساب" : "الحساب";
+      if (type !== "transfer" && cat(catId).kind !== type) catId = type === "income" ? "other_income" : "";
+      $("#catBox", sh).innerHTML = type === "transfer" ? "" : catGrid(type, catId);
+    };
+    sync();
+    if (isNew) setTimeout(() => $("#tAmt", sh).focus(), 280);
+    $("#tType", sh).onclick = (e) => { const b = e.target.closest("button"); if (!b) return; type = b.dataset.v; $$("#tType button", sh).forEach((x) => x.classList.toggle("on", x === b)); sync(); };
+    $("#catBox", sh).onclick = (e) => { const b = e.target.closest("[data-cat]"); if (!b) return; catId = b.dataset.cat; $$(".cat-opt", sh).forEach((x) => x.classList.toggle("on", x === b)); };
+    $("#tMerch", sh).addEventListener("change", () => { if (!catId && type === "expense") { const g = guessCategory({ merchant: $("#tMerch", sh).value, kind: "expense" }); if (g !== "other") { catId = g; sync(); } } });
+    $("#tDue", sh).addEventListener("change", (e) => { const d = state.dues.find((x) => x.id === e.target.value); if (d) { if (!$("#tAmt", sh).value) $("#tAmt", sh).value = d.amount; if (!$("#tMerch", sh).value) $("#tMerch", sh).value = d.name; catId = d.categoryId; if (d.accountId) $("#tAcc", sh).value = d.accountId; sync(); } });
+    if (!isNew) $("#tDel", sh).onclick = () => {
+      if (!confirm("حذف هذه العملية؟")) return;
+      const idx = state.txns.findIndex((x) => x.id === t.id); const removed = state.txns.splice(idx, 1)[0];
+      save(); closeSheet(); render(); toast("حُذفت العملية", { label: "تراجع", fn: () => { state.txns.push(removed); save(); render(); } });
+    };
+    $("#tSave", sh).onclick = () => {
+      const amount = parseAmount($("#tAmt", sh).value);
+      if (!(amount > 0)) { $("#tAmt", sh).focus(); return toast("أدخل مبلغاً صحيحاً"); }
+      const out = Object.assign(t, { type, amount: Math.round(amount * 100) / 100, accountId: $("#tAcc", sh).value, toAccountId: type === "transfer" ? $("#tTo", sh).value : "",
+        merchant: $("#tMerch", sh).value.trim(), note: $("#tNote", sh).value.trim(), date: new Date($("#tDate", sh).value || Date.now()).toISOString() });
+      if (type === "transfer") { if (!out.accountId || !out.toAccountId || out.accountId === out.toAccountId) return toast("اختر حسابين مختلفين"); out.categoryId = ""; }
+      else out.categoryId = catId || (type === "income" ? "other_income" : guessCategory({ merchant: out.merchant, kind: type }));
+      if (out.approx && out.amount !== prevAmount) out.approx = false;
+      if (type !== "transfer" && out.merchant && $("#tLearn", sh).checked && (out.categoryId !== prevCat || isNew) && out.categoryId !== "other") learnRule(out.merchant, out.categoryId);
+      if (isNew) { out.id = uid(); out.source = "manual"; state.txns.push(out); } else { const i = state.txns.findIndex((x) => x.id === out.id); state.txns[i] = out; }
+      const dueSel = $("#tDue", sh).value;
+      if (dueSel && type === "expense" && !hadDue) {
+        const d = state.dues.find((x) => x.id === dueSel);
+        if (d && out.dueId !== d.id) { payDue(d, { txn: out }); if (!d.match && out.merchant && out.merchant !== d.name) d.match = out.merchant; }
+      }
+      save(); closeSheet(); render(); toast(isNew ? "أُضيفت العملية" : "حُفظ التعديل");
+    };
+  }
+
+  /* ───── نموذج المستحق ───── */
+  function dueForm(d, tpl) {
+    const isNew = !d;
+    d = d ? { ...d } : { name: tpl ? tpl[0] : "", amount: "", categoryId: tpl ? tpl[1] : "bills", owner: state.settings.scope === "company" || (tpl && tpl[1] === "business") ? "company" : "personal",
+      accountId: "", freq: tpl ? tpl[2] : "monthly", nextDate: todayKey(), remindDays: 3, match: "", note: "", active: true };
+    const sh = openSheet(`
+      <h2>${isNew ? "مستحق جديد" : "تعديل المستحق"}</h2>
+      <div class="field"><label>الاسم</label><input class="input" id="dName" value="${esc(d.name)}" placeholder="مثال: إيجار الشقة، اشتراك يوتيوب" /></div>
+      <div class="grid2">
+        <div class="field"><label>المبلغ</label><input class="input" id="dAmt" inputmode="decimal" value="${esc(d.amount)}" placeholder="0.00" /></div>
+        <div class="field"><label>التكرار</label><select class="input" id="dFreq">${Object.entries(FREQS).map(([k, l]) => `<option value="${k}" ${d.freq === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+        <div class="field"><label>تاريخ الاستحقاق القادم</label><input class="input" type="date" id="dDate" value="${esc(d.nextDate)}" /></div>
+        <div class="field"><label>التنبيه قبل (أيام)</label><input class="input" id="dRem" inputmode="numeric" value="${esc(d.remindDays ?? 3)}" /></div>
+      </div>
+      <div class="field"><label>يخص</label><div class="seg full" id="dOwner"><button type="button" data-v="personal" class="${d.owner !== "company" ? "on" : ""}">شخصي</button><button type="button" data-v="company" class="${d.owner === "company" ? "on" : ""}">الشركة</button></div></div>
+      <div class="field"><label>يُدفع من حساب</label><select class="input" id="dAcc">${accOptions(d.accountId, true)}</select></div>
+      <div class="field"><label>التصنيف</label><div id="dCat">${catGrid("expense", d.categoryId)}</div></div>
+      <div class="field"><label>كلمة للتعرّف عليه في رسائل البنك (اختياري)</label><input class="input" id="dMatch" value="${esc(d.match || "")}" placeholder="مثال: YOUTUBE أو ejar — افصل بفاصلة" />
+        <div class="tiny muted" style="margin-top:4px">عند وصول رسالة تحتوي هذه الكلمة قرب موعد الاستحقاق يُسجَّل المستحق مدفوعاً ويُقدَّم موعده تلقائياً.</div></div>
+      <div class="field"><label>ملاحظة</label><input class="input" id="dNote" value="${esc(d.note || "")}" /></div>
+      ${!isNew && !d.active ? `<label class="check field"><input type="checkbox" id="dReact" /> إعادة تفعيله</label>` : ""}
+      ${!isNew && d.active ? `<div class="btns" style="margin-bottom:8px"><button class="btn sm" id="dPay">✓ تسجيل دفعة الآن</button><button class="btn sm ghost" id="dSkip">تخطّي هذه المرة</button></div>` : ""}
+      ${!isNew ? `<div class="small muted field">الدفعات المسجّلة: ${state.txns.filter((t) => t.dueId === d.id).length}${d.lastPaid ? " · آخر دفعة " + esc(dShort(d.lastPaid)) : ""}</div>` : ""}
+      <div class="btns" style="margin-top:6px">${!isNew ? `<button class="btn danger" id="dDel">حذف</button>` : ""}<button class="btn primary" id="dSave" style="flex:2">حفظ</button></div>`);
+    let owner = d.owner, catId = d.categoryId;
+    $("#dOwner", sh).onclick = (e) => { const b = e.target.closest("button"); if (!b) return; owner = b.dataset.v; $$("#dOwner button", sh).forEach((x) => x.classList.toggle("on", x === b)); };
+    $("#dCat", sh).onclick = (e) => { const b = e.target.closest("[data-cat]"); if (!b) return; catId = b.dataset.cat; $$(".cat-opt", sh).forEach((x) => x.classList.toggle("on", x === b)); };
+    if (isNew && !tpl) setTimeout(() => $("#dName", sh).focus(), 280);
+    const collect = () => {
+      const amount = parseAmount($("#dAmt", sh).value);
+      const name = $("#dName", sh).value.trim();
+      if (!name) { toast("أدخل اسم المستحق"); return null; }
+      if (!(amount > 0)) { toast("أدخل مبلغاً صحيحاً"); return null; }
+      const nextDate = $("#dDate", sh).value || todayKey();
+      return Object.assign(d, { name, amount, freq: $("#dFreq", sh).value, nextDate, day: d.nextDate === nextDate && d.day ? d.day : fromKey(nextDate).getDate(),
+        remindDays: Math.max(0, parseInt(SmsParser.normalize($("#dRem", sh).value)) || 0), owner, accountId: $("#dAcc", sh).value, categoryId: catId || "other",
+        match: $("#dMatch", sh).value.trim(), note: $("#dNote", sh).value.trim(), active: d.active || !!($("#dReact", sh) || {}).checked });
+    };
+    const store = (x) => { if (isNew) { x.id = uid(); x.createdAt = new Date().toISOString(); state.dues.push(x); } else { const i = state.dues.findIndex((y) => y.id === x.id); state.dues[i] = x; } return state.dues.find((y) => y.id === x.id); };
+    $("#dSave", sh).onclick = () => { const x = collect(); if (!x) return; store(x); save(); closeSheet(); render(); toast(isNew ? "أُضيف المستحق" : "حُفظ التعديل"); };
+    if (!isNew) {
+      $("#dDel", sh).onclick = () => { if (!confirm("حذف هذا المستحق؟ (العمليات المدفوعة تبقى)")) return; state.dues = state.dues.filter((x) => x.id !== d.id); state.txns.forEach((t) => { if (t.dueId === d.id) t.dueId = ""; }); save(); closeSheet(); render(); };
+      if ($("#dPay", sh)) $("#dPay", sh).onclick = () => { const x = collect(); if (!x) return; payDue(store(x)); save(); closeSheet(); render(); toast("سُجّلت الدفعة"); };
+      if ($("#dSkip", sh)) $("#dSkip", sh).onclick = () => { const x = collect(); if (!x) return; const r = store(x); if (r.freq === "once") r.active = false; else r.nextDate = addFreq(r.nextDate, r.freq, r.day); save(); closeSheet(); render(); toast("تم التخطّي"); };
+    }
+  }
+  function quickPay(id) {
+    const d = state.dues.find((x) => x.id === id); if (!d) return;
+    const sh = openSheet(`<h2>تسجيل دفعة: ${esc(d.name)}</h2>
+      <div class="field"><label>المبلغ المدفوع</label><input class="input amount-input" id="pAmt" inputmode="decimal" value="${esc(d.amount)}" /></div>
+      <div class="field"><label>من حساب</label><select class="input" id="pAcc">${accOptions(d.accountId || state.settings.defaultAccountId, true)}</select></div>
+      <div class="small muted field">سيُسجَّل مصروف في «${esc(cat(d.categoryId).name)}» ويُنقل الاستحقاق ${d.freq === "once" ? "إلى المنتهية" : "إلى " + esc(dShort(fromKey(addFreq(d.nextDate, d.freq, d.day))))}.</div>
+      <button class="btn primary block" id="pOk">تأكيد الدفع</button>`);
+    const prevDate = d.nextDate, wasActive = d.active;
+    $("#pOk", sh).onclick = () => {
+      const amount = parseAmount($("#pAmt", sh).value); if (!(amount > 0)) return toast("أدخل مبلغاً صحيحاً");
+      const t = payDue(d, { amount, accountId: $("#pAcc", sh).value }); save(); closeSheet(); render();
+      toast("سُجّلت الدفعة", { label: "تراجع", fn: () => { state.txns = state.txns.filter((x) => x.id !== t.id); d.active = wasActive; d.nextDate = prevDate; save(); render(); } });
+    };
+  }
+
+  /* ───── نموذج الحساب ───── */
+  function accForm(a, owner) {
+    const isNew = !a;
+    a = a ? { ...a } : { name: "", owner: owner || (state.settings.scope === "company" ? "company" : "personal"), kind: "bank", bank: "", digits: [], color: ACC_COLORS[state.accounts.length % ACC_COLORS.length] };
+    const bal = isNew ? "" : Math.round(balanceOf(a) * 100) / 100;
+    const sh = openSheet(`
+      <h2>${isNew ? "حساب جديد" : "تعديل الحساب"}</h2>
+      <div class="field"><label>اسم الحساب</label><input class="input" id="aName" value="${esc(a.name)}" placeholder="مثال: الراجحي الشخصي، حساب الشركة" /></div>
+      <div class="field"><label>يخص</label><div class="seg full" id="aOwner"><button type="button" data-v="personal" class="${a.owner !== "company" ? "on" : ""}">شخصي</button><button type="button" data-v="company" class="${a.owner === "company" ? "on" : ""}">الشركة</button></div></div>
+      <div class="grid2">
+        <div class="field"><label>النوع</label><select class="input" id="aKind">${Object.entries(ACC_KINDS).map(([k, l]) => `<option value="${k}" ${a.kind === k ? "selected" : ""}>${l}</option>`).join("")}</select></div>
+        <div class="field"><label>البنك / الجهة</label><select class="input" id="aBank"><option value="">—</option>${BANKS.map((b) => `<option ${a.bank === b ? "selected" : ""}>${b}</option>`).join("")}</select></div>
+      </div>
+      <div class="field"><label>آخر أرقام البطاقة/الحساب كما تظهر في الرسائل</label><input class="input" id="aDigits" inputmode="numeric" value="${esc((a.digits || []).join(", "))}" placeholder="مثال: 4123, 5544" style="direction:ltr;text-align:right" />
+        <div class="tiny muted" style="margin-top:4px">أضف رقم البطاقة ورقم الحساب معاً إن اختلفا (افصل بفاصلة). بهذا تُنسب كل رسالة لحسابها الصحيح.</div></div>
+      <div class="field"><label>${isNew ? "الرصيد الحالي" : "الرصيد الحالي (عدّله لمطابقة البنك)"}</label><input class="input" id="aBal" inputmode="decimal" value="${esc(bal)}" placeholder="0.00" />
+        <div class="tiny muted" style="margin-top:4px">للبطاقة الائتمانية: أدخل المبلغ المستحق بالسالب (مثل ‎-1200).</div></div>
+      <div class="field"><label>اللون</label><div class="chips" id="aColor">${ACC_COLORS.map((c) => `<button type="button" data-c="${c}" style="width:34px;height:34px;border-radius:10px;border:3px solid ${a.color === c ? "var(--text)" : "transparent"};background:${c}"></button>`).join("")}</div></div>
+      <div class="btns" style="margin-top:14px">${!isNew ? `<button class="btn danger" id="aDel">حذف</button>` : ""}<button class="btn primary" id="aSave" style="flex:2">حفظ</button></div>`);
+    let ow = a.owner, color = a.color;
+    $("#aOwner", sh).onclick = (e) => { const b = e.target.closest("button"); if (!b) return; ow = b.dataset.v; $$("#aOwner button", sh).forEach((x) => x.classList.toggle("on", x === b)); };
+    $("#aColor", sh).onclick = (e) => { const b = e.target.closest("[data-c]"); if (!b) return; color = b.dataset.c; $$("#aColor button", sh).forEach((x) => (x.style.borderColor = x === b ? "var(--text)" : "transparent")); };
+    if (isNew) setTimeout(() => $("#aName", sh).focus(), 280);
+    $("#aSave", sh).onclick = () => {
+      const name = $("#aName", sh).value.trim(); if (!name) return toast("أدخل اسم الحساب");
+      const digits = SmsParser.normalize($("#aDigits", sh).value).split(/[^\d]+/).filter((x) => x.length >= 3).map((x) => x.slice(-4));
+      const clash = digits.find((x) => state.accounts.some((o) => o.id !== a.id && (o.digits || []).includes(x)));
+      if (clash) return toast(`الرقم ${clash} مستخدم في حساب آخر`);
+      Object.assign(a, { name, owner: ow, kind: $("#aKind", sh).value, bank: $("#aBank", sh).value, digits, color });
+      const balIn = $("#aBal", sh).value.trim();
+      const newBal = balIn === "" ? 0 : parseAmount(balIn);
+      if (isNew) { a.id = uid(); a.anchor = { amount: isFinite(newBal) ? newBal : 0, date: new Date().toISOString(), src: "manual" }; state.accounts.push(a); if (!state.settings.defaultAccountId) state.settings.defaultAccountId = a.id; }
+      else {
+        if (isFinite(newBal) && Math.abs(newBal - bal) > 0.004) a.anchor = { amount: newBal, date: new Date().toISOString(), src: "manual" };
+        const i = state.accounts.findIndex((x) => x.id === a.id); state.accounts[i] = a;
+      }
+      save(); closeSheet(); render(); toast(isNew ? "أُضيف الحساب" : "حُفظ الحساب");
+    };
+    if (!isNew) $("#aDel", sh).onclick = () => {
+      const n = state.txns.filter((t) => t.accountId === a.id || t.toAccountId === a.id).length;
+      if (!confirm(n ? `للحساب ${n} عملية. حذف الحساب وعملياته؟` : "حذف الحساب؟")) return;
+      state.txns = state.txns.filter((t) => t.accountId !== a.id && t.toAccountId !== a.id);
+      state.accounts = state.accounts.filter((x) => x.id !== a.id);
+      state.dues.forEach((d) => { if (d.accountId === a.id) d.accountId = ""; });
+      if (state.settings.defaultAccountId === a.id) state.settings.defaultAccountId = (state.accounts[0] || {}).id || "";
+      save(); closeSheet(); render();
+    };
+  }
+
+  /* ───── نموذج التصنيف ───── */
+  function catForm(c, kind) {
+    const isNew = !c;
+    c = c ? { ...c } : { name: "", icon: kind === "income" ? "💵" : "🏷️", kind: kind || "expense", budget: 0 };
+    const used = !isNew && (state.txns.some((t) => t.categoryId === c.id) || state.dues.some((d) => d.categoryId === c.id));
+    const sh = openSheet(`<h2>${isNew ? "تصنيف جديد" : "تعديل التصنيف"}</h2>
+      <div class="grid2" style="grid-template-columns:80px 1fr"><div class="field"><label>رمز</label><input class="input" id="cIcon" value="${esc(c.icon)}" style="text-align:center;font-size:22px" /></div>
+      <div class="field"><label>الاسم</label><input class="input" id="cName" value="${esc(c.name)}" /></div></div>
+      ${c.kind === "expense" ? `<div class="field"><label>ميزانية شهرية (اختياري)</label><input class="input" id="cBudget" inputmode="decimal" value="${c.budget || ""}" placeholder="0" /></div>` : ""}
+      <div class="btns">${!isNew ? `<button class="btn danger" id="cDel">حذف</button>` : ""}<button class="btn primary" id="cSave" style="flex:2">حفظ</button></div>`);
+    $("#cSave", sh).onclick = () => {
+      const name = $("#cName", sh).value.trim(); if (!name) return toast("أدخل الاسم");
+      c.name = name; c.icon = $("#cIcon", sh).value.trim() || "🏷️";
+      if ($("#cBudget", sh)) { const b = parseAmount($("#cBudget", sh).value || "0"); c.budget = b > 0 ? b : 0; }
+      if (isNew) { c.id = uid(); state.categories.push(c); } else { const i = state.categories.findIndex((x) => x.id === c.id); state.categories[i] = c; }
+      save(); closeSheet(); render();
+    };
+    if (!isNew) $("#cDel", sh).onclick = () => {
+      const fallback = c.kind === "income" ? "other_income" : "other";
+      if (c.id === fallback) return toast("لا يمكن حذف هذا التصنيف");
+      if (!confirm(used ? `العمليات والمستحقات في هذا التصنيف ستنتقل إلى «${cat(fallback).name}». متابعة؟` : "حذف التصنيف؟")) return;
+      state.txns.forEach((t) => { if (t.categoryId === c.id) t.categoryId = fallback; });
+      state.dues.forEach((d) => { if (d.categoryId === c.id) d.categoryId = fallback; });
+      state.rules = state.rules.filter((r) => r.categoryId !== c.id);
+      state.categories = state.categories.filter((x) => x.id !== c.id);
+      save(); closeSheet(); render();
+    };
+  }
+
+  /* ═══════════════ استيراد الرسائل ═══════════════ */
+  function buildCandidates(text, sender) {
+    const msgs = SmsParser.splitMessages(text);
+    const seen = new Set(state.txns.map((t) => t.hash).filter(Boolean));
+    const out = [];
+    for (const m of msgs) {
+      const p = SmsParser.parse(m, { sender });
+      const c = { p, include: false, note: "" };
+      if (p.kind === "ignore" || !p.ok) { c.note = p.reason || "لم تُفهم"; out.push(c); continue; }
+      const date = p.date || new Date();
+      c.date = date.toISOString();
+      // تحديد الحساب من أرقام الرسالة
+      const order = p.kind === "income" ? [...p.digits.dst, ...p.digits.any] : [...p.digits.src, ...p.digits.any];
+      let a = null, unknown = "";
+      for (const d of order) { a = accountByDigits(d); if (a) break; }
+      if (!a && order.length) unknown = order[0];
+      if (!a && p.bank) { const byBank = state.accounts.filter((x) => x.bank === p.bank); if (byBank.length === 1 && !unknown) a = byBank[0]; }
+      c.accountId = a ? a.id : unknown ? "new:" + unknown : state.settings.defaultAccountId || "";
+      if (p.kind === "balance") {
+        c.type = "balance"; c.include = !!a; c.note = a ? "تحديث رصيد الحساب" : "رسالة رصيد — اختر الحساب";
+        out.push(c); continue;
+      }
+      c.type = p.kind; c.amount = p.amount; c.merchant = p.merchant; c.toAccountId = "";
+      // تحويل بين حسابين لي
+      const other = (p.kind === "expense" ? p.digits.dst : p.digits.src).map(accountByDigits).find((x) => x && (!a || x.id !== a.id));
+      if (other && p.isTransfer) {
+        if (p.kind === "expense") { c.type = "transfer"; c.toAccountId = other.id; }
+        else { c.type = "transfer"; c.toAccountId = c.accountId; c.accountId = other.id; }
+      }
+      c.categoryId = c.type === "transfer" ? "" : guessCategory({ ...p, kind: c.type });
+      c.guess = c.categoryId;
+      c.include = true;
+      if (seen.has(p.hash) || out.some((x) => x.p.hash === p.hash && x.include)) { c.include = false; c.note = "مكررة — مسجّلة من قبل"; }
+      else {
+        // الطرف الآخر لتحويل مسجّل مسبقاً (رسالة الخصم من حساب ورسالة الإيداع في الآخر)
+        const twin = state.txns.find((t) => t.type === "transfer" && Math.abs(t.amount - c.amount) < 0.01 && Math.abs(new Date(t.date) - date) < 2 * 864e5 &&
+          ((c.type === "income" && t.toAccountId === c.accountId) || (c.type === "expense" && t.accountId === c.accountId)));
+        if (twin) { c.include = false; c.note = "يبدو أنها الطرف الآخر لتحويل مسجّل"; }
+      }
+      if (c.type === "expense") { const d = matchDue(p, c.merchant, date); if (d) { c.dueId = d.id; c.categoryId = d.categoryId; c.note = `دفعة «${d.name}»`; } }
+      out.push(c);
+    }
+    return out;
+  }
+  function commitCandidates(cands) {
+    const created = {};
+    let n = 0, bal = 0;
+    for (const c of cands) {
+      if (!c.include) continue;
+      for (const k of ["accountId", "toAccountId"]) {
+        if (c[k] && c[k].startsWith("new:")) {
+          const dg = c[k].slice(4);
+          if (!created[dg]) {
+            const a = { id: uid(), name: `${c.p.bank || "حساب"} •${dg}`, owner: "personal", kind: "bank", bank: c.p.bank || "", digits: [dg], color: ACC_COLORS[state.accounts.length % ACC_COLORS.length], anchor: { amount: 0, date: new Date(0).toISOString(), src: "manual" } };
+            state.accounts.push(a); created[dg] = a.id;
+            if (!state.settings.defaultAccountId) state.settings.defaultAccountId = a.id;
+          }
+          c[k] = created[dg];
+        }
+      }
+      const a = acc(c.accountId);
+      if (c.type === "balance") { if (a && c.p.balance != null) { setAnchor(a, c.p.balance, c.date); a.anchor.src = "sms"; bal++; } continue; }
+      const t = { id: uid(), type: c.type, amount: c.amount, accountId: c.accountId, toAccountId: c.toAccountId || "", categoryId: c.categoryId, merchant: c.merchant || "",
+        note: "", date: c.date, source: "sms", raw: c.p.raw, hash: c.p.hash };
+      if (c.p.approx) Object.assign(t, { approx: true, currency: c.p.currency, originalAmount: c.p.originalAmount });
+      state.txns.push(t); n++;
+      if (c.dueId) { const d = state.dues.find((x) => x.id === c.dueId); if (d && d.active) payDue(d, { txn: t }); }
+      if (c.categoryId && c.guess && c.categoryId !== c.guess && t.merchant) learnRule(t.merchant, c.categoryId);
+      if (a && c.p.balance != null) {
+        const holder = c.type === "transfer" && c.p.kind === "income" ? acc(c.toAccountId) : a;
+        if (holder) { setAnchor(holder, c.p.balance, c.date); holder.anchor.src = "sms"; }
+      }
+    }
+    save();
+    return { n, bal, created: Object.keys(created).length };
+  }
+  function smsSheet(prefill, opts = {}) {
+    if (prefill && (opts.auto || state.settings.autoSms)) {
+      const cands = buildCandidates(prefill, opts.sender);
+      const ready = cands.filter((c) => c.include && c.accountId);
+      if (ready.length && ready.length === cands.filter((c) => c.include).length) {
+        const r = commitCandidates(cands);
+        render();
+        return toast(`أُضيفت ${r.n} عملية${r.bal ? " وحُدّث الرصيد" : ""}`, { label: "عرض", fn: () => go("txns") });
+      }
+    }
+    const sh = openSheet(`
+      <h2>لصق رسائل البنك <button class="btn sm ghost" data-act="go" data-view="guide" id="gLink">⚡ تلقائي</button></h2>
+      <div class="field"><textarea class="input" id="smsText" placeholder="الصق رسالة أو عدة رسائل هنا (افصل بينها بسطر فارغ)…">${esc(prefill || "")}</textarea></div>
+      <div class="btns"><button class="btn" id="smsClip">📋 قراءة الحافظة</button><button class="btn primary" id="smsParse">تحليل</button></div>
+      <div id="smsOut" style="margin-top:14px"></div>`);
+    $("#gLink", sh).addEventListener("click", () => closeSheet());
+    let cands = [];
+    const draw = () => {
+      const box = $("#smsOut", sh);
+      if (!cands.length) { box.innerHTML = ""; return; }
+      const okN = cands.filter((c) => c.include).length;
+      box.innerHTML = cands.map((c, i) => {
+        if (!c.type) return `<div class="cand off"><div class="row between"><span class="badge">${esc(c.note)}</span></div><div class="tiny muted ellipsis" style="margin-top:6px">${esc(c.p.text.replace(/\n/g, " · "))}</div></div>`;
+        const isBal = c.type === "balance";
+        const sign = c.type === "income" ? "+" : c.type === "expense" ? "−" : "";
+        const accSel = `<select class="input" data-i="${i}" data-k="accountId"><option value="">— اختر الحساب —</option>${c.accountId && c.accountId.startsWith("new:") ? `<option value="${c.accountId}" selected>➕ حساب جديد •${esc(c.accountId.slice(4))}</option>` : ""}${accOptions(c.accountId)}</select>`;
+        return `<div class="cand ${c.include ? "" : "off"}">
+          <div class="top"><input type="checkbox" data-i="${i}" data-k="include" ${c.include ? "checked" : ""} style="width:20px;height:20px;accent-color:var(--accent)"/>
+            <div class="grow"><div class="bold ellipsis">${isBal ? "💳 رصيد الحساب" : esc(c.merchant || (c.type === "transfer" ? "تحويل بين حساباتي" : "بدون اسم تاجر"))}</div>
+            <div class="tiny muted">${esc(dShort(c.date))} · ${esc(tShort(c.date))}${c.p.bank ? " · " + esc(c.p.bank) : ""}${c.note ? ` · <span class="badge ${/مكرر|الطرف/.test(c.note) ? "warn" : "sms"}">${esc(c.note)}</span>` : ""}</div></div>
+            <div class="amt ${c.type === "income" ? "pos" : ""}">${isBal ? money(c.p.balance) : money(c.amount, { abs: true, prefix: sign })}${c.p.approx ? `<div class="tiny muted">${esc(c.p.originalAmount)} ${esc(c.p.currency)}</div>` : ""}</div></div>
+          <div class="grid2" style="margin-top:10px">${accSel}
+            ${isBal ? "" : c.type === "transfer" ? `<select class="input" data-i="${i}" data-k="toAccountId">${accOptions(c.toAccountId, true)}</select>` :
+              `<select class="input" data-i="${i}" data-k="categoryId">${state.categories.filter((x) => x.kind === c.type).map((x) => `<option value="${x.id}" ${x.id === c.categoryId ? "selected" : ""}>${x.icon} ${esc(x.name)}</option>`).join("")}</select>`}</div>
+          ${isBal ? "" : `<div class="chips" style="margin-top:8px">${[["expense", "مصروف"], ["income", "دخل"], ["transfer", "تحويل لي"]].map(([k, l]) => `<button class="chip ${c.type === k ? "on" : ""}" data-i="${i}" data-type="${k}" style="padding:3px 10px;font-size:12px">${l}</button>`).join("")}</div>`}
+          ${c.p.balance != null && !isBal ? `<div class="tiny muted" style="margin-top:6px">الرصيد بعد العملية: ${money(c.p.balance)} — سيُحدَّث رصيد الحساب</div>` : ""}
+        </div>`;
+      }).join("") + `<button class="btn primary block" id="smsAdd" ${okN ? "" : "disabled"} style="margin-top:4px">إضافة ${okN} ${okN === 1 ? "عملية" : "عمليات"}</button>`;
+      const add = $("#smsAdd", sh);
+      if (add) add.onclick = () => {
+        if (cands.some((c) => c.include && !c.accountId)) return toast("اختر الحساب لكل عملية محددة");
+        if (cands.some((c) => c.include && c.type === "transfer" && (!c.toAccountId || c.toAccountId === c.accountId))) return toast("اختر حساب الوجهة للتحويل");
+        const r = commitCandidates(cands);
+        closeSheet(); render();
+        toast(`أُضيفت ${r.n} عملية${r.created ? ` وأُنشئ ${r.created} حساب جديد` : ""}${r.bal ? " وحُدّث الرصيد" : ""}`, { label: "عرض", fn: () => go("txns") });
+      };
+    };
+    const run = () => { cands = buildCandidates($("#smsText", sh).value, opts.sender); draw(); if (!cands.length) toast("الصق نص الرسالة أولاً"); };
+    $("#smsParse", sh).onclick = run;
+    $("#smsClip", sh).onclick = async () => {
+      try { const t = await navigator.clipboard.readText(); if (!t.trim()) return toast("الحافظة فارغة"); $("#smsText", sh).value = t; run(); }
+      catch (e) { toast("لم يُسمح بقراءة الحافظة — الصق يدوياً"); $("#smsText", sh).focus(); }
+    };
+    $("#smsOut", sh).addEventListener("change", (e) => {
+      const el = e.target, i = +el.dataset.i, k = el.dataset.k; if (!k) return;
+      const c = cands[i];
+      if (k === "include") c.include = el.checked; else c[k] = el.value;
+      if (k === "include" && el.checked && !c.accountId) toast("اختر الحساب");
+      draw();
+    });
+    $("#smsOut", sh).addEventListener("click", (e) => {
+      const b = e.target.closest("[data-type]"); if (!b) return;
+      const c = cands[+b.dataset.i]; c.type = b.dataset.type;
+      if (c.type === "transfer") { c.categoryId = ""; }
+      else { c.toAccountId = ""; if (cat(c.categoryId).kind !== c.type) c.categoryId = c.guess = guessCategory({ ...c.p, kind: c.type }); }
+      draw();
+    });
+    if (prefill) run(); else setTimeout(() => $("#smsText", sh).focus(), 280);
+  }
+
+  /* ═══════════════ إجراءات عامة ═══════════════ */
+  function addMenu() {
+    const sh = openSheet(`<h2>إضافة</h2><div class="list">
+      <button class="item" data-x="txn"><span class="ic">✍️</span><span class="main"><div class="t1">عملية يدوية</div><div class="t2">مصروف أو دخل أو تحويل بين حساباتك</div></span></button>
+      <button class="item" data-x="sms"><span class="ic">📩</span><span class="main"><div class="t1">لصق رسالة بنكية</div><div class="t2">يستخرج المبلغ والتاجر والتصنيف تلقائياً</div></span></button>
+      <button class="item" data-x="due"><span class="ic">📅</span><span class="main"><div class="t1">مستحق قادم</div><div class="t2">إيجار، فاتورة، قسط، اشتراك، تأمين…</div></span></button>
+      <button class="item" data-x="acc"><span class="ic">🏦</span><span class="main"><div class="t1">حساب أو بطاقة</div><div class="t2">شخصي أو للشركة</div></span></button></div>`);
+    sh.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-x]"); if (!b) return;
+      ({ txn: () => txnForm(), sms: () => smsSheet(), due: () => dueForm(), acc: () => accForm() })[b.dataset.x]();
+    });
+  }
+  function download(name, text, type) {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type }));
+    a.download = name; document.body.append(a); a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+  }
+  function exportCsv() {
+    const rows = [["التاريخ", "النوع", "المبلغ", "الحساب", "يخص", "إلى حساب", "التصنيف", "التاجر/الوصف", "ملاحظة", "المصدر"]];
+    for (const t of state.txns.slice().sort((a, b) => new Date(a.date) - new Date(b.date))) {
+      rows.push([localInput(t.date).replace("T", " "), { expense: "مصروف", income: "دخل", transfer: "تحويل" }[t.type], t.amount, accName(t.accountId), ownerOfTxn(t) === "company" ? "الشركة" : "شخصي",
+        t.toAccountId ? accName(t.toAccountId) : "", t.type === "transfer" ? "" : cat(t.categoryId).name, t.merchant, t.note, t.source === "sms" ? "رسالة" : t.source === "due" ? "مستحق" : "يدوي"]);
+    }
+    download(`mizan-${todayKey()}.csv`, "﻿" + rows.map((r) => r.map((v) => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n"), "text/csv;charset=utf-8");
+  }
+  function applyTheme() {
+    const t = state.settings.theme;
+    if (t === "auto") document.documentElement.removeAttribute("data-theme"); else document.documentElement.setAttribute("data-theme", t);
+  }
+
+  function loadDemo() {
+    const now = new Date();
+    const mk = (n, o, k, bank, digits, color, bal) => ({ id: uid(), name: n, owner: o, kind: k, bank, digits, color, demo: true, anchor: { amount: bal, date: new Date(now.getFullYear(), now.getMonth() - 3, 1).toISOString(), src: "manual" } });
+    const a1 = mk("الراجحي الشخصي", "personal", "bank", "الراجحي", ["4123", "5544"], ACC_COLORS[0], 3200);
+    const a2 = mk("بطاقة الأهلي", "personal", "credit", "الأهلي", ["8899"], ACC_COLORS[1], 0);
+    const a3 = mk("حساب الشركة", "company", "bank", "الإنماء", ["7001"], ACC_COLORS[2], 52000);
+    const a4 = mk("STC Bank", "personal", "wallet", "STC Bank", ["3310"], ACC_COLORS[5], 2400);
+    state.accounts.push(a1, a2, a3, a4);
+    const pool = [
+      ["PANDA", "grocery", a1, 120, 380], ["BARNS COFFEE", "food", a1, 14, 38], ["HUNGERSTATION", "food", a4, 45, 120], ["ALDREES PETROLEUM", "car", a1, 60, 110],
+      ["NAHDI PHARMACY", "health", a2, 35, 220], ["AMAZON.SA", "shopping", a2, 80, 450], ["UBER", "car", a4, 18, 55], ["TAMIMI MARKETS", "grocery", a1, 90, 300],
+      ["ALBAIK", "food", a4, 25, 70], ["JARIR BOOKSTORE", "edu", a2, 40, 260], ["AWS", "business", a3, 180, 420], ["OFFICE SUPPLIES", "business", a3, 90, 600],
+    ];
+    let seed = 7; const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
+    for (let m = 3; m >= 0; m--) {
+      const days = m === 0 ? now.getDate() : new Date(now.getFullYear(), now.getMonth() - m + 1, 0).getDate();
+      state.txns.push({ id: uid(), type: "income", amount: 18500, accountId: a1.id, categoryId: "salary", merchant: "راتب", date: new Date(now.getFullYear(), now.getMonth() - m, 1, 9).toISOString(), source: "sms", demo: true });
+      state.txns.push({ id: uid(), type: "income", amount: 30000 + Math.round(rnd() * 15000), accountId: a3.id, categoryId: "biz_income", merchant: "عميل — مشروع", date: new Date(now.getFullYear(), now.getMonth() - m, 5, 11).toISOString(), source: "manual", demo: true });
+      for (let i = 0; i < (m === 0 ? Math.max(4, days) : 26); i++) {
+        const p = pool[Math.floor(rnd() * pool.length)];
+        const d = new Date(now.getFullYear(), now.getMonth() - m, 1 + Math.floor(rnd() * days), 8 + Math.floor(rnd() * 13), Math.floor(rnd() * 60));
+        if (d > now) continue;
+        state.txns.push({ id: uid(), type: "expense", amount: Math.round((p[3] + rnd() * (p[4] - p[3])) * 100) / 100, accountId: p[2].id, categoryId: p[1], merchant: p[0], date: d.toISOString(), source: rnd() > 0.3 ? "sms" : "manual", demo: true });
+      }
+    }
+    const due = (name, amount, categoryId, freq, offset, owner = "personal", accountId = a1.id, match = "") => {
+      const nd = new Date(now); nd.setDate(nd.getDate() + offset);
+      state.dues.push({ id: uid(), name, amount, categoryId, owner, accountId, freq, nextDate: dateKey(nd), day: nd.getDate(), remindDays: 3, match, note: "", active: true, demo: true });
+    };
+    due("إيجار الشقة", 32000, "housing", "semiannual", 41, "personal", a1.id, "ejar");
+    due("فاتورة الكهرباء", 380, "bills", "monthly", 6);
+    due("باقة الجوال STC", 230, "bills", "monthly", 2, "personal", a1.id, "stc");
+    due("قسط السيارة", 2150, "car", "monthly", 12);
+    due("تأمين السيارة", 2900, "car", "yearly", 75);
+    due("التأمين الطبي للعائلة", 6400, "health", "yearly", 120);
+    due("YouTube Premium", 26.99, "subs", "monthly", 9, "personal", a2.id, "youtube");
+    due("ChatGPT Plus", 75, "subs", "monthly", -1, "personal", a2.id, "openai");
+    due("iCloud+", 10.99, "subs", "monthly", 17, "personal", a2.id, "apple.com");
+    due("إيجار مكتب الشركة", 45000, "business", "yearly", 58, "company", a3.id);
+    due("رواتب الموظفين", 16000, "business", "monthly", 24, "company", a3.id);
+    due("اشتراك Notion للفريق", 180, "subs", "monthly", 4, "company", a3.id, "notion");
+    state.settings.defaultAccountId = a1.id;
+    save(); render(); toast("أُضيفت بيانات تجريبية");
+  }
+
+  /* ═══════════════ التنبيهات ═══════════════ */
+  async function notifyDues(force) {
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+    const today = todayKey();
+    const due = state.dues.filter((d) => d.active && (dueStatus(d) === "overdue" || dueStatus(d) === "soon") && (force || state.settings.notified[d.id] !== today));
+    if (!due.length) { if (force) toast("لا مستحقات قريبة الآن"); return; }
+    const body = due.slice(0, 4).map((d) => `${d.name}: ${fmt(d.amount)} — ${relDays(d.nextDate)}`).join("\n");
+    const title = `الميزان · ${due.length} مستحق${due.length > 1 ? "ات" : ""} قريبة`;
+    try {
+      const reg = navigator.serviceWorker && (await navigator.serviceWorker.getRegistration());
+      if (reg) await reg.showNotification(title, { body, icon: "./icons/icon-192.png", badge: "./icons/icon-192.png", tag: "mizan-dues", lang: "ar", dir: "rtl" });
+      else new Notification(title, { body, icon: "./icons/icon-192.png" });
+    } catch (e) {}
+    due.forEach((d) => (state.settings.notified[d.id] = today));
+    save();
+  }
+
+  /* ═══════════════ الأحداث ═══════════════ */
+  document.addEventListener("click", (e) => {
+    const el = e.target.closest("[data-act]"); if (!el) return;
+    const act = el.dataset.act, id = el.dataset.id;
+    const A = {
+      go: () => { if (sheetCtx) closeSheet(); go(el.dataset.view); },
+      add: addMenu, sms: () => smsSheet(), demo: loadDemo,
+      newAcc: () => accForm(null, el.dataset.owner), editAcc: () => accForm(acc(id)),
+      newDue: () => dueForm(), editDue: () => dueForm(state.dues.find((d) => d.id === id)), payDue: () => quickPay(id),
+      dueTpl: () => dueForm(null, DUE_TEMPLATES[+el.dataset.i]),
+      editTxn: () => txnForm(state.txns.find((t) => t.id === id)),
+      newCat: () => catForm(null, el.dataset.kind), editCat: () => catForm(cat(id)),
+      delRule: () => { state.rules.splice(+el.dataset.i, 1); save(); render(); },
+      month: () => { const d = fromKey(ui.month + "-01"); d.setMonth(d.getMonth() + +el.dataset.d); ui.month = monthKey(d); render(); },
+      txTab: () => { ui.txTab = el.dataset.v; render(); },
+      fAcc: () => { ui.fAcc = id; render(); },
+      theme: () => { state.settings.theme = el.dataset.v; applyTheme(); save(); render(); },
+      digits: () => { state.settings.digits = el.dataset.v; save(); render(); },
+      notify: async () => {
+        if (typeof Notification === "undefined") return toast("المتصفح لا يدعم التنبيهات — ثبّت التطبيق أولاً");
+        const p = Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
+        if (p === "granted") { notifyDues(true); render(); } else toast("لم يُسمح بالتنبيهات");
+      },
+      export: () => download(`mizan-backup-${todayKey()}.json`, JSON.stringify(state, null, 1), "application/json"),
+      exportCsv, import: () => $("#importFile").click(),
+      clearDemo: () => {
+        if (!confirm("حذف كل البيانات التجريبية؟")) return;
+        const ids = new Set(state.accounts.filter((a) => a.demo).map((a) => a.id));
+        state.accounts = state.accounts.filter((a) => !a.demo); state.dues = state.dues.filter((d) => !d.demo);
+        state.txns = state.txns.filter((t) => !t.demo && !ids.has(t.accountId));
+        if (ids.has(state.settings.defaultAccountId)) state.settings.defaultAccountId = (state.accounts[0] || {}).id || "";
+        save(); go("home");
+      },
+      wipe: () => { if (!confirm("مسح كل البيانات نهائياً؟ صدّر نسخة احتياطية أولاً.")) return; if (!confirm("متأكد؟ لا يمكن التراجع.")) return; state = defaults(); save(); applyTheme(); go("home"); },
+    };
+    if (A[act]) { e.preventDefault(); A[act](); }
+  });
+  $("#scopeSeg").addEventListener("click", (e) => { const b = e.target.closest("[data-scope]"); if (!b) return; state.settings.scope = b.dataset.scope; ui.fAcc = ""; save(); render(); });
+  document.addEventListener("input", (e) => {
+    if (e.target.id === "q") { ui.q = e.target.value; const pos = e.target.selectionStart; render(); const q = $("#q"); q.focus(); q.setSelectionRange(pos, pos); }
+  });
+  document.addEventListener("change", (e) => {
+    const el = e.target;
+    if (el.id === "fCat") { ui.fCat = el.value; render(); }
+    if (el.dataset.set) { state.settings[el.dataset.set] = el.type === "checkbox" ? el.checked : el.value; save(); }
+  });
+  $("#importFile").addEventListener("change", async (e) => {
+    const f = e.target.files[0]; if (!f) return;
+    try {
+      const s = JSON.parse(await f.text());
+      if (!s || !s.v || !Array.isArray(s.txns)) throw new Error();
+      if (!confirm(`استيراد ${s.txns.length} عملية و${(s.dues || []).length} مستحق؟ ستُستبدل البيانات الحالية.`)) return;
+      localStorage.setItem(LS_KEY, JSON.stringify(s)); state = load(); applyTheme(); go("home"); toast("تم الاستيراد");
+    } catch (err) { toast("الملف غير صالح"); }
+    e.target.value = "";
+  });
+  window.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSheet(); });
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { render(); notifyDues(); } });
+
+  /* ═══════════════ التشغيل ═══════════════ */
+  applyTheme();
+  render();
+  // رسالة مشاركة من تطبيق الرسائل (Share Target) أو رابط أتمتة ?sms=
+  (function handleIncoming() {
+    const q = new URLSearchParams(location.search);
+    const text = [q.get("sms"), q.get("title"), q.get("text"), q.get("url")].filter(Boolean).join("\n").trim();
+    if (q.has("view")) go(q.get("view"));
+    if (text) { history.replaceState(null, "", location.pathname); setTimeout(() => smsSheet(text, { auto: q.get("auto") === "1", sender: q.get("sender") || "" }), 150); }
+    else if (q.get("action") === "sms") { history.replaceState(null, "", location.pathname); setTimeout(() => smsSheet(), 150); }
+    else if (q.get("action") === "add") { history.replaceState(null, "", location.pathname); setTimeout(() => txnForm(), 150); }
+  })();
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("./sw.js").catch(() => {});
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+  setTimeout(() => notifyDues(), 1500);
+  </script>
+</body>
+</html>
