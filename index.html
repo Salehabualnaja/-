@@ -923,8 +923,15 @@
     .chtree-prog.plain { border-inline-start-color: var(--border-strong); }
     .chtree-proghead { display: flex; align-items: center; gap: 7px; font-size: 12.5px; font-weight: 800; color: color-mix(in srgb, var(--accent-ink) 85%, var(--text)); padding: 9px 11px; cursor: pointer; }
     .chtree-prog.plain .chtree-proghead { color: var(--muted); }
-    .chtree-progbody { padding: 9px; }
+    .chtree-progbody { padding: 9px; display: flex; flex-direction: column; gap: 8px; }
     .chtree-prog.col .chtree-progbody { display: none; }
+    /* مجموعة مشروع داخل برنامج: مهامها معروضة مباشرةً (لا نافذة) */
+    .chtree-proj { border: 1px solid var(--border); border-radius: 10px; background: var(--panel); overflow: hidden; }
+    .chtree-projhead { display: flex; align-items: center; gap: 7px; font-size: 12px; font-weight: 800; color: var(--text); padding: 8px 10px; background: color-mix(in srgb, var(--accent) 6%, var(--panel)); cursor: pointer; }
+    .chtree-proj.col .chtree-projhead .cx-chev { transform: rotate(-90deg); }
+    .chtree-projbody { padding: 8px; }
+    .chtree-proj.col .chtree-projbody { display: none; }
+    .chtree-projbody .ch-task:last-child { margin-bottom: 0; }
 
     /* ═══ المؤقت اليومي (ثلاثة أبعاد + إجمالي) ═══ */
     #timerDlg { width: 480px; max-width: 96vw; max-height: 94dvh; overflow: hidden; padding: 0; border: none; border-radius: 20px; }
@@ -1299,7 +1306,7 @@
         <div id="chFavGrid" class="chbox-grid"></div>
       </div>
       <div class="chproj-wrap" id="chProjWrap">
-        <div class="chproj-title">🗂️ كل المجالات <span class="chproj-hint">رؤية كلية · اضغط الصندوق لعرض مهامه</span></div>
+        <div class="chproj-title">🗂️ كل المهام <span class="chproj-hint">مرتّبة حسب البرنامج والمشروع · المهام معروضة مباشرةً</span></div>
         <div id="chProjTree" class="chtree"></div>
       </div>
     </section>
@@ -4955,6 +4962,7 @@
     // حالة الطيّ لشجرة صفحة المهام (مستقلة عن صفحة الإدخال)
     const chTreeDoms = new Set();   // معرّفات المجالات المفتوحة
     const chTreeProgs = new Set();  // معرّفات البرامج المفتوحة
+    const chTreeProjsClosed = new Set(); // مجموعات المشاريع المطويّة (المشاريع مفتوحة افتراضياً لعرض مهامها)
     // ترتيب المهام: احترام الترتيب اليدوي (ترتيب المصفوفة) مع إبقاء المنجَز أسفل
     const chSortTasks = (arr) => arr.slice().sort((a, b) => (a.done - b.done));
     const chValidProj = (c) => c.projectId && state.plans.some(p => p.id === c.projectId);
@@ -5019,23 +5027,34 @@
         e.textContent = "لا مشاريع أو مهام بعد.\nأضِف مشروعاً من صفحة الإدخال، أو اكتب مهمة في الأعلى.";
         tree.append(e); return;
       }
-      const mkGrid = () => { const g = document.createElement("div"); g.className = "chbox-grid"; return g; };
+      // مجموعة مشروع/مهام عامة: تعرض صفوف المهام مباشرةً (مفتوحة افتراضياً)
+      const chTaskSubgroup = (parentBody, key, titleHtml, tasks, projId) => {
+        if (!tasks.length) return;
+        const open = !chTreeProjsClosed.has(key);
+        const sec = document.createElement("div"); sec.className = "chtree-proj" + (open ? "" : " col");
+        if (projId) sec.dataset.proj = projId;
+        const head = document.createElement("div"); head.className = "chtree-projhead";
+        const undone = tasks.filter(t => !t.done).length;
+        head.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + titleHtml + "</span><span class='cx-count'>" + toArDigits(undone) + " مهمة</span>";
+        head.onclick = () => { if (chTreeProjsClosed.has(key)) chTreeProjsClosed.delete(key); else chTreeProjsClosed.add(key); sec.classList.toggle("col"); };
+        const body = document.createElement("div"); body.className = "chtree-projbody";
+        for (const c of chSortTasks(tasks)) body.append(chTaskRow(c, true));
+        sec.append(head, body); parentBody.append(sec);
+        makeReorderable(body, ".ch-task[data-cid]", ".ch-grip", "cid", ids => reorderChallengesSubset(ids));
+      };
       const buildProg = (parent, key, name, plain, plans, direct) => {
         if (!plans.length && !direct.length) return;
         const psec = document.createElement("div"); psec.className = "chtree-prog" + (plain ? " plain" : "") + (chTreeProgs.has(key) ? "" : " col");
         if (key.indexOf("prog:") === 0) psec.dataset.prog = key.slice(5); // البرامج الحقيقية فقط قابلة للسحب
-        const progTaskN = direct.length + plans.reduce((s, p) => s + state.challenges.filter(c => c.projectId === p.id).length, 0);
+        const progTaskN = direct.filter(c => !c.done).length + plans.reduce((s, p) => s + state.challenges.filter(c => c.projectId === p.id && !c.done).length, 0);
         const ph = document.createElement("div"); ph.className = "chtree-proghead";
         ph.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + name + "</span><span class='cx-count'>" + toArDigits(plans.length) + " مشروع · " + toArDigits(progTaskN) + " مهمة</span>";
         ph.onclick = () => { if (chTreeProgs.has(key)) chTreeProgs.delete(key); else chTreeProgs.add(key); psec.classList.toggle("col"); };
         const pbody = document.createElement("div"); pbody.className = "chtree-progbody";
-        const grid = mkGrid();
-        if (direct.length) grid.append(buildChBox("📁", "مهام البرنامج", direct.length, chMaxTaskTs(direct), true,
-          () => openProjTasks({ kind: "progdirect", id: key.slice(5), title: "📁 مهام البرنامج — " + name.replace(/^📁\s*(★\s*)?/, "") })));
-        for (const p of plans.slice().sort(chFavFirst)) grid.append(buildProjBox(p));
-        pbody.append(grid);
-        makeReorderable(grid, ".chbox[data-proj]", null, "proj", ids => reorderPlansSubset(ids)); // سحب صناديق المشاريع
+        if (direct.length) chTaskSubgroup(pbody, "pdirect:" + key, "📁 مهام البرنامج", direct, null);
+        for (const p of plans.slice().sort(chFavFirst)) chTaskSubgroup(pbody, "proj:" + p.id, (p.favorite ? "★ " : "") + "📄 " + escapeHtml(p.name), state.challenges.filter(c => c.projectId === p.id), p.id);
         psec.append(ph, pbody); parent.append(psec);
+        makeReorderable(pbody, ".chtree-proj[data-proj]", ".chtree-projhead", "proj", ids => reorderPlansSubset(ids)); // سحب المشاريع
       };
       const buildDom = (domKey, icon, name, plans, domTasks) => {
         if (!domTasks.length) return; // لا نُظهر مجالاً بلا مهام (المشاريع الفارغة مخفيّة)
@@ -5044,18 +5063,14 @@
         const progList = state.programs.filter(pr =>
           plansT.some(p => p.programId === pr.id) || domTasks.some(c => c.programId === pr.id && !chValidProj(c))).slice().sort(chFavFirst);
         const noProg = plansT.filter(p => !programOf(p));
+        const undoneN = domTasks.filter(c => !c.done).length;
         const sec = document.createElement("div"); sec.className = "chtree-dom" + (chTreeDoms.has(domKey) ? "" : " col");
         if (domKey !== "__nodom__") sec.dataset.dom = domKey;
         const head = document.createElement("div"); head.className = "chtree-domhead";
-        head.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + icon + " " + escapeHtml(name) + "</span><span class='cx-count'>" + toArDigits(plansT.length) + " مشروع · " + toArDigits(domTasks.length) + " مهمة</span>";
+        head.innerHTML = "<span class='cx-chev'>▾</span><span class='cx-nm'>" + icon + " " + escapeHtml(name) + "</span><span class='cx-count'>" + toArDigits(plansT.length) + " مشروع · " + toArDigits(undoneN) + " مهمة</span>";
         head.onclick = () => { if (chTreeDoms.has(domKey)) chTreeDoms.delete(domKey); else chTreeDoms.add(domKey); sec.classList.toggle("col"); };
         const body = document.createElement("div"); body.className = "chtree-dombody";
-        if (general.length) {
-          const g = mkGrid();
-          g.append(buildChBox("🗒️", "مهام عامة", general.length, chMaxTaskTs(general), true,
-            () => openProjTasks({ kind: "general", domainId: (domKey === "__nodom__" ? "" : domKey), title: "🗒️ مهام عامة — " + name })));
-          body.append(g);
-        }
+        if (general.length) chTaskSubgroup(body, "general:" + domKey, "🗒️ مهام عامة", general, null);
         for (const pr of progList) {
           const pl = plansT.filter(p => p.programId === pr.id);
           const direct = domTasks.filter(c => c.programId === pr.id && !chValidProj(c));
