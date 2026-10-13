@@ -1232,6 +1232,10 @@
     .tl-year-dot { position: relative; z-index: 2; flex: none; width: 58px; height: 58px; margin-inline-start: 11px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 15px; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-ink)); box-shadow: 0 4px 14px rgba(180,83,9,.4), 0 0 0 5px var(--bg); font-variant-numeric: tabular-nums; }
     .tl-year.past .tl-year-dot { filter: grayscale(.5); opacity: .72; }
     .tl-year-meta { font-size: 12px; color: var(--muted); font-weight: 800; }
+    .tl-month { position: relative; display: flex; align-items: center; gap: 7px; margin: 14px 0 7px; padding-inline-start: 62px; min-height: 20px; }
+    .tl-month::before { content: ""; position: absolute; inset-inline-start: 34px; width: 15px; height: 15px; border-radius: 50%; background: var(--panel); border: 3px solid var(--accent); box-shadow: 0 0 0 4px var(--bg); z-index: 2; }
+    .tl-month-nm { font-size: 12px; font-weight: 900; color: var(--accent-ink); background: var(--accent-soft); border-radius: 20px; padding: 3px 12px; }
+    .tl-month-cnt { font-size: 10px; font-weight: 800; color: var(--muted); }
     .tl-item { position: relative; margin: 0 0 12px; padding-inline-start: 74px; opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s ease; }
     .tl-item.tl-in { opacity: 1; transform: none; }
     .tl-node { position: absolute; inset-inline-start: 30px; top: 18px; z-index: 2; width: 23px; height: 23px; border-radius: 50%; background: var(--accent); border: 3px solid var(--bg); box-shadow: 0 0 0 2px var(--accent); display: grid; place-items: center; font-size: 11px; color: #fff; }
@@ -4582,6 +4586,12 @@
       t.innerHTML = "<div class='tl-today-line'></div><div class='tl-today-badge'>اليوم · " + fmtDayShort(Date.now()) + "</div>";
       return t;
     }
+    function tlMonthMarker(m, n) {
+      const el = document.createElement("div"); el.className = "tl-month";
+      el.innerHTML = "<span class='tl-month-nm'>" + AR_MONTHS[m] + "</span>"
+        + (n ? "<span class='tl-month-cnt'>" + toArDigits(n) + "</span>" : "");
+      return el;
+    }
     function tlItem(p, ms, now) {
       const pct = Math.round(goalProgress(p) * 100);
       const done = isComplete(p);
@@ -4650,8 +4660,11 @@
           + (yrItems.length ? (toArDigits(yrItems.length) + " محطّة") : "لا محطّات") + "</div>";
         body.append(yr);
         if (!yrItems.length) { const e = document.createElement("div"); e.className = "tl-empty-year"; e.textContent = "— لا محطّات في هذه السنة —"; body.append(e); }
+        let lastMonth = -1;
         for (const x of yrItems) {
+          const mo = new Date(x.ms).getMonth();
           if (!todayPlaced && x.ms >= now) { body.append(tlTodayMarker()); todayPlaced = true; }
+          if (mo !== lastMonth) { lastMonth = mo; const yrN = yrItems.filter(z => new Date(z.ms).getMonth() === mo).length; body.append(tlMonthMarker(mo, yrN)); }
           const el = tlItem(x.p, x.ms, now); body.append(el); items.push(el);
         }
         if (!todayPlaced && y === todayY) { body.append(tlTodayMarker()); todayPlaced = true; }
