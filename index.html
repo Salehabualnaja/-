@@ -385,6 +385,13 @@
     .prog-head .upd-ago { margin-inline-start: 2px; }
     .gstar { flex: none; background: none; border: none; cursor: pointer; font-size: 18px; line-height: 1; padding: 4px; color: var(--dial-gold); }
     /* لوحة إدخال التقدّم — أزرار كبيرة وحقل قابل للتحرير */
+    .gtasks { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+    .gtasks .gt-lbl { flex: none; font-size: 11.5px; font-weight: 800; color: var(--accent-ink); white-space: nowrap; }
+    .gtasks .gt-bar { flex: 1; min-width: 40px; height: 8px; border-radius: 20px; background: var(--track); overflow: hidden; }
+    .gtasks .gt-fill { height: 100%; border-radius: 20px; background: var(--accent); transition: width .4s ease; }
+    .gtasks .gt-fill.done { background: var(--run); }
+    .gtasks .gt-go { flex: none; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--accent-ink); font-family: inherit; font-weight: 800; font-size: 11.5px; border-radius: 9px; padding: 7px 11px; cursor: pointer; white-space: nowrap; }
+    .gtasks .gt-go:active { transform: scale(.95); }
     .gprogress { display: flex; align-items: center; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
     .gprogress .gp-btn { width: 42px; height: 42px; flex: none; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--accent); border-radius: 12px; font-size: 26px; font-weight: 800; line-height: 1; cursor: pointer; font-family: inherit; display: grid; place-items: center; transition: background .12s, transform .1s; }
     .gprogress .gp-btn:hover { background: var(--accent-soft); }
@@ -670,6 +677,7 @@
     .seg button.active { background: var(--accent); color: #fff; }
     .seg button + button { border-inline-start: 1px solid var(--border-strong); }
     .seg3 button { font-size: 13px; padding: 10px 0; }
+    .seg4 button { font-size: 12px; padding: 10px 2px; }
 
     .loghdr { display: flex; justify-content: space-between; align-items: center; margin: 20px 0 8px; }
     .loghdr h4 { margin: 0; font-size: 11px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; font-weight: 700; }
@@ -1819,9 +1827,10 @@
         </div>
         <div>
           <label>النوع</label>
-          <div class="seg seg3">
+          <div class="seg seg4">
             <button type="button" id="itemTHours" class="active">⏱️ ساعات</button>
             <button type="button" id="itemTPoints">⭐ نقاط</button>
+            <button type="button" id="itemTTasks">✅ مهام</button>
             <button type="button" id="itemTHabit">🔁 عادة</button>
           </div>
         </div>
@@ -1838,6 +1847,7 @@
           <label>المُنجَز حالياً</label>
           <input id="itemCurrent" type="text" inputmode="decimal" class="numfield numfield-lg" min="0" step="1" placeholder="0" />
         </div>
+        <p id="itemTasksHint" class="set-desc" style="margin:2px 0 0" hidden>نسبة الإنجاز تُحسب تلقائياً من المهام: المنجَز ÷ إجمالي مهام المشروع. أضِف المهام وأكمِلها من صفحة «المهام».</p>
         <div id="itemHabitDaysRow" hidden>
           <label>مدة الاستمرار المستهدفة (أيام)</label>
           <input id="itemHabitDays" type="text" inputmode="numeric" class="numfield numfield-lg" min="0" step="1" placeholder="21" />
@@ -2420,8 +2430,12 @@
       const base = g.current || 0;
       return g.type === "hours" ? base + sessionHoursTotal(g) : base;
     }
-    // تقدّم المشروع 0..1
+    // مهام المشروع (من صفحة المهام) — تُستخدم لمشاريع نوع «مهام»
+    function projectTasks(id) { return state.challenges.filter(c => c.projectId === id); }
+    function projectTasksDone(id) { return projectTasks(id).filter(c => c.done).length; }
+    // تقدّم المشروع 0..1 — آلية موحّدة: ساعات/نقاط حسب المستهدف، ومهام حسب نسبة المنجَز
     function goalProgress(g) {
+      if (g.type === "tasks") { const n = projectTasks(g.id).length; return n ? projectTasksDone(g.id) / n : 0; }
       if (g.target && g.target > 0) return Math.max(0, Math.min(1, goalCurrent(g) / g.target));
       return g.done ? 1 : 0;
     }
@@ -3307,7 +3321,7 @@
 
     function domainName(id) { const d = DOMAINS.find(x => x.id === id); return d ? d.name : ""; }
     function domainIcon(id) { const d = DOMAINS.find(x => x.id === id); return d ? d.icon : "🎯"; }
-    function typeLabel(t) { return t === "points" ? "⭐ نقاط" : "⏱️ ساعات"; }
+    function typeLabel(t) { return t === "points" ? "⭐ نقاط" : t === "tasks" ? "✅ مهام" : "⏱️ ساعات"; }
 
     // بطاقات المفضلة (تُعرض في صفحة المشاريع) — مشاريع وعادات قابلة للتعديل وإدخال التقدّم
     // رأس قسم مجال قابل للطيّ (مشترك بين عرض المجالات والمفضلة والتذكيرات)
@@ -3346,7 +3360,8 @@
       hole.textContent = complete ? "✓" : (toArDigits(pct) + "٪"); ring.append(hole);
       const nm = document.createElement("div"); nm.className = "fav-nm"; nm.textContent = g.name;
       const sub = document.createElement("div"); sub.className = "fav-sub";
-      if (hasTarget) sub.textContent = fmtNum(goalCurrent(g)) + " / " + fmtNum(g.target) + (g.type === "hours" ? " س" : " نقطة");
+      if (g.type === "tasks") { const l = projectTasks(g.id); sub.textContent = "✅ " + toArDigits(l.filter(c => c.done).length) + " / " + toArDigits(l.length) + " مهمة"; }
+      else if (hasTarget) sub.textContent = fmtNum(goalCurrent(g)) + " / " + fmtNum(g.target) + (g.type === "hours" ? " س" : " نقطة");
       else sub.textContent = typeLabel(g.type);
       top.append(ring, nm, sub);
       top.onclick = () => openItem(g);
@@ -3378,6 +3393,13 @@
         const plus = document.createElement("button"); plus.className = "fav-pbtn"; plus.textContent = "+";
         plus.onclick = (e) => { e.stopPropagation(); setCur((g.current || 0) + 1); };
         ctrl.append(minus, val, plus);
+        card.append(ctrl);
+      } else if (g.type === "tasks") {
+        const btn = document.createElement("button"); btn.className = "fav-tbtn";
+        btn.style.background = "var(--accent)";
+        btn.textContent = "📋 المهام";
+        btn.onclick = (e) => { e.stopPropagation(); gotoProjectTasks(g); };
+        const ctrl = document.createElement("div"); ctrl.className = "fav-ctrl"; ctrl.append(btn);
         card.append(ctrl);
       }
       return card;
@@ -3455,6 +3477,17 @@
       const totalMs = Math.max(0, goalCurrent(g) * 3600000); // الإجمالي بما فيه الجلسة الجارية
       return "⏱️ " + fmtClock(totalMs) + " · " + line;
     }
+    // الانتقال إلى صفحة المهام مع فتح مجموعة المشروع المحدَّد
+    function gotoProjectTasks(g) {
+      appMode = "challenges";
+      const dom = planDomain(g) || "__nodom__";
+      chTreeDoms.add(dom);
+      const prog = programOf(g);
+      chTreeProgs.add(prog ? ("prog:" + prog.id) : ("__np__:" + dom));
+      chTreeProjsClosed.delete("proj:" + g.id);
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === "challenges"));
+      saveUI(); render(); window.scrollTo(0, 0);
+    }
     function buildGoalRow(g) {
       const complete = isComplete(g);
       const hasTarget = g.target && g.target > 0;
@@ -3465,8 +3498,13 @@
       const check = document.createElement("button");
       check.className = "gcheck" + (complete ? " done" : "");
       check.textContent = complete ? "✓" : "";
-      check.title = "تبديل الإكمال";
-      check.onclick = () => { toggleComplete(g); touchDomain(planDomain(g)); save(); refreshViews(); };
+      if (g.type === "tasks") {
+        check.title = "الإنجاز حسب المهام — إدارة المهام";
+        check.onclick = () => gotoProjectTasks(g);
+      } else {
+        check.title = "تبديل الإكمال";
+        check.onclick = () => { toggleComplete(g); touchDomain(planDomain(g)); save(); refreshViews(); };
+      }
 
       const main = document.createElement("div");
       main.className = "gtitle";
@@ -3515,6 +3553,19 @@
         of.textContent = "من " + fmtNum(g.target) + " نقطة · " + toArDigits(pct) + "٪";
         gp.append(minus, val, plus, of);
         main.append(gp);
+      } else if (g.type === "tasks") {
+        const list = projectTasks(g.id);
+        const done = list.filter(c => c.done).length;
+        const pct = Math.round(goalProgress(g) * 100);
+        const gt = document.createElement("div"); gt.className = "gtasks";
+        const bar = document.createElement("div"); bar.className = "gt-bar";
+        const fill = document.createElement("div"); fill.className = "gt-fill" + (complete ? " done" : ""); fill.style.width = Math.min(100, pct) + "%"; bar.append(fill);
+        const lbl = document.createElement("span"); lbl.className = "gt-lbl";
+        lbl.textContent = list.length ? ("✅ " + toArDigits(done) + " / " + toArDigits(list.length) + " مهمة · " + toArDigits(pct) + "٪") : "لا مهام بعد";
+        const go = document.createElement("button"); go.className = "gt-go"; go.textContent = "📋 المهام"; go.title = "إدارة مهام المشروع";
+        go.onclick = (e) => { e.stopPropagation(); gotoProjectTasks(g); };
+        gt.append(lbl, bar, go);
+        main.append(gt);
       }
 
       // قائمة الثلاث نقاط: مفضلة · تنبيه · تعديل · حذف
@@ -4806,7 +4857,9 @@
     const itemHabitStart = document.getElementById("itemHabitStart");
     const itemTHours = document.getElementById("itemTHours");
     const itemTPoints = document.getElementById("itemTPoints");
+    const itemTTasks = document.getElementById("itemTTasks");
     const itemTHabit = document.getElementById("itemTHabit");
+    const itemTasksHint = document.getElementById("itemTasksHint");
     const itemFav = document.getElementById("itemFav");
     const itemFavText = document.getElementById("itemFavText");
     const itemDlgTitleEl = document.getElementById("itemDlgTitle");
@@ -4857,15 +4910,18 @@
     function setNiType(t) {
       niType = t;
       const habit = t === "habit";
+      const tasks = t === "tasks";
       itemTHours.classList.toggle("active", t === "hours");
       itemTPoints.classList.toggle("active", t === "points");
+      itemTTasks.classList.toggle("active", tasks);
       itemTHabit.classList.toggle("active", habit);
       itemProgramRow.hidden = false; // البرنامج مطلوب لكل الأنواع (بما فيها العادة)
-      itemTargetRow.hidden = habit;
-      itemCurrentRow.hidden = habit;
-      itemDatesRow.hidden = habit;
+      itemTargetRow.hidden = habit || tasks; // نوع «مهام» بلا مستهدف رقمي
+      itemCurrentRow.hidden = habit || tasks;
+      itemDatesRow.hidden = habit; // المهام تبقى لها مدة (للخط الزمني)
       itemFav.hidden = false; // المفضلة متاحة للمشاريع والعادات والبرامج
       itemHabitDaysRow.hidden = !habit;
+      if (itemTasksHint) itemTasksHint.hidden = !tasks;
       itemNameLabel.textContent = habit ? "اسم العادة" : "اسم المشروع";
       itemName.placeholder = habit ? "مثال: قراءة وِرد القرآن" : "مثال: قراءة 12 كتاباً";
       itemTargetLabel.textContent = t === "points" ? "النقاط المستهدفة" : "الساعات المستهدفة";
@@ -4873,6 +4929,7 @@
     function setNiFav(v) { niFav = v; itemFav.classList.toggle("on", v); itemFav.querySelector(".fav-star").textContent = v ? "★" : "☆"; itemFavText.textContent = v ? "مضاف إلى المفضلة" : "إضافة إلى المفضلة"; }
     itemTHours.onclick = () => setNiType("hours");
     itemTPoints.onclick = () => setNiType("points");
+    itemTTasks.onclick = () => setNiType("tasks");
     itemTHabit.onclick = () => setNiType("habit");
     itemFav.onclick = () => setNiFav(!niFav);
 
