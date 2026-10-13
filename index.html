@@ -1212,8 +1212,55 @@
     .prog-projects { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
     .prog-add { width: 100%; margin: 2px 0 0; border: 1.5px dashed var(--border-strong); background: var(--panel); color: var(--accent); font-family: inherit; font-weight: 700; font-size: 13.5px; padding: 10px 0; border-radius: 12px; cursor: pointer; grid-column: 1 / -1; }
 
+    /* ═══ الخط الزمني للمشاريع ═══ */
+    .tl-open-btn { width: 100%; display: flex; align-items: center; gap: 12px; margin: 12px 0 4px; padding: 14px 16px; border: none; border-radius: 16px; cursor: pointer; font-family: inherit; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-ink)); box-shadow: 0 8px 22px rgba(180,83,9,.30); text-align: start; }
+    .tl-open-btn:active { transform: scale(.99); }
+    .tlo-ic { font-size: 24px; flex: none; }
+    .tlo-body { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+    .tlo-title { font-weight: 900; font-size: 15px; }
+    .tlo-sub { font-size: 11.5px; opacity: .92; font-weight: 700; }
+    .tlo-go { font-size: 24px; font-weight: 900; opacity: .85; }
+    .tl-head { text-align: center; margin-bottom: 10px; }
+    .tl-head-t { font-size: 19px; font-weight: 900; color: var(--accent-ink); }
+    .tl-head-s { font-size: 12px; color: var(--muted); font-weight: 700; margin-top: 3px; }
+    .tl-scope { display: flex; gap: 8px; background: var(--panel-2); padding: 4px; border-radius: 12px; margin-bottom: 8px; }
+    .tl-scope button { flex: 1; border: none; background: transparent; color: var(--muted); font-family: inherit; font-weight: 800; font-size: 13px; padding: 8px 0; border-radius: 9px; cursor: pointer; }
+    .tl-scope button.active { background: var(--panel); color: var(--accent-ink); box-shadow: var(--shadow); }
+    .tl-body { position: relative; margin-inline: -16px; padding: 6px 16px 48px; }
+    .tl-body::before { content: ""; position: absolute; inset-block: 6px 48px; inset-inline-start: 40px; width: 3px; border-radius: 3px; background: linear-gradient(var(--accent-soft), var(--accent) 12%, var(--accent) 88%, var(--accent-soft)); }
+    .tl-year { position: relative; display: flex; align-items: center; gap: 12px; margin: 22px 0 14px; }
+    .tl-year-dot { position: relative; z-index: 2; flex: none; width: 58px; height: 58px; margin-inline-start: 11px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 15px; color: #fff; background: linear-gradient(135deg, var(--accent), var(--accent-ink)); box-shadow: 0 4px 14px rgba(180,83,9,.4), 0 0 0 5px var(--bg); font-variant-numeric: tabular-nums; }
+    .tl-year.past .tl-year-dot { filter: grayscale(.5); opacity: .72; }
+    .tl-year-meta { font-size: 12px; color: var(--muted); font-weight: 800; }
+    .tl-item { position: relative; margin: 0 0 12px; padding-inline-start: 74px; opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s ease; }
+    .tl-item.tl-in { opacity: 1; transform: none; }
+    .tl-node { position: absolute; inset-inline-start: 30px; top: 18px; z-index: 2; width: 23px; height: 23px; border-radius: 50%; background: var(--accent); border: 3px solid var(--bg); box-shadow: 0 0 0 2px var(--accent); display: grid; place-items: center; font-size: 11px; color: #fff; }
+    .tl-node.done { background: var(--run); box-shadow: 0 0 0 2px var(--run); }
+    .tl-node.over { background: var(--danger); box-shadow: 0 0 0 2px var(--danger); }
+    .tl-connect { position: absolute; inset-inline-start: 41px; top: 28px; width: 31px; height: 2px; background: var(--border-strong); z-index: 1; }
+    .tl-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 11px 13px; box-shadow: var(--shadow); border-inline-start: 4px solid var(--accent); }
+    .tl-card.done { border-inline-start-color: var(--run); }
+    .tl-card.over { border-inline-start-color: var(--danger); }
+    .tl-date { font-size: 11px; font-weight: 800; color: var(--accent-ink); }
+    .tl-nm { font-size: 14px; font-weight: 800; margin: 3px 0 2px; line-height: 1.3; }
+    .tl-dom { font-size: 11px; color: var(--muted); font-weight: 700; }
+    .tl-prog { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+    .tl-bar { flex: 1; height: 7px; border-radius: 20px; background: var(--track); overflow: hidden; }
+    .tl-fill { height: 100%; border-radius: 20px; background: var(--accent); transition: width .6s ease; }
+    .tl-fill.done { background: var(--run); }
+    .tl-pct { font-size: 11px; font-weight: 900; color: var(--accent-ink); min-width: 34px; text-align: end; font-variant-numeric: tabular-nums; }
+    .tl-status { font-size: 10.5px; font-weight: 800; margin-top: 6px; }
+    .tl-status.over { color: var(--danger); }
+    .tl-status.done { color: var(--run); }
+    .tl-status.soon { color: var(--accent-ink); }
+    .tl-today { position: relative; height: 26px; margin: 16px 0; }
+    .tl-today-line { position: absolute; inset-inline-start: 30px; inset-inline-end: 0; top: 12px; height: 2px; background: repeating-linear-gradient(90deg, var(--danger), var(--danger) 6px, transparent 6px, transparent 12px); }
+    .tl-today-badge { position: absolute; inset-inline-start: 18px; top: 0; z-index: 2; background: var(--danger); color: #fff; font-size: 10.5px; font-weight: 900; border-radius: 20px; padding: 3px 11px; box-shadow: 0 0 0 4px var(--bg); }
+    .tl-empty-year { padding-inline-start: 74px; font-size: 11.5px; color: var(--muted); margin-bottom: 8px; }
+    .tl-unscheduled-h { margin: 28px 0 10px; font-weight: 900; font-size: 14px; color: var(--muted); }
+
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+    @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .tl-item { opacity: 1; transform: none; } }
   </style>
 </head>
 <body>
@@ -1252,6 +1299,12 @@
         <div class="pb-sub" id="sub2030">0 من 0 مشروع مكتمل</div>
       </div>
 
+      <button class="tl-open-btn" id="openTimeline" type="button">
+        <span class="tlo-ic">🗓️</span>
+        <span class="tlo-body"><span class="tlo-title">الخط الزمني للمشاريع</span><span class="tlo-sub">محطّات إنجازك من 2024 إلى 2030</span></span>
+        <span class="tlo-go">›</span>
+      </button>
+
       <div id="perfWrap"></div>
 
       <div id="balanceWrap"></div>
@@ -1261,6 +1314,20 @@
 
       <div class="section-title">تفصيل حسب المجال</div>
       <div id="statsByDomain" class="sbd-wrap"></div>
+    </section>
+
+    <!-- ═══ الخط الزمني للمشاريع (صفحة فرعية من الإحصاءات) ═══ -->
+    <section id="timelineSection" hidden>
+      <button class="back-btn" id="timelineBack">‹ رجوع إلى الإحصاءات</button>
+      <div class="tl-head">
+        <div class="tl-head-t">🗓️ الخط الزمني للمشاريع</div>
+        <div class="tl-head-s" id="tlHeadSub">محطّات إنجازك عبر السنوات</div>
+      </div>
+      <div class="tl-scope" id="tlScope">
+        <button data-tlscope="all" class="active">كل المشاريع</button>
+        <button data-tlscope="fav">⭐ المفضلة</button>
+      </div>
+      <div id="timelineBody" class="tl-body"></div>
     </section>
 
     <!-- ═══ قسم الأهداف ═══ -->
@@ -2192,6 +2259,7 @@
       challengesSection: document.getElementById("challengesSection"),
       settingsSection: document.getElementById("settingsSection"),
       domainSection: document.getElementById("domainSection"),
+      timelineSection: document.getElementById("timelineSection"),
       statsTabs: document.getElementById("statsTabs"),
       domainsGrid: document.getElementById("domainsGrid"),
       statsByDomain: document.getElementById("statsByDomain"),
@@ -2234,6 +2302,7 @@
       els.remindersSection.hidden = appMode !== "reminders";
       els.settingsSection.hidden = appMode !== "settings";
       els.domainSection.hidden = appMode !== "domain";
+      els.timelineSection.hidden = appMode !== "timeline";
       els.appTitle.textContent = "📖 الصحيفة";
       document.querySelectorAll("#statsTabs button").forEach(b => b.classList.toggle("active", b.dataset.stab === statsTab));
 
@@ -2257,6 +2326,9 @@
       } else if (appMode === "domain") {
         els.dayLabel.textContent = "تفاصيل المجال";
         renderDomainPage();
+      } else if (appMode === "timeline") {
+        els.dayLabel.textContent = "الخط الزمني — محطّات المشاريع";
+        renderTimeline();
       }
       updateExpandBtn();
     }
@@ -2305,6 +2377,7 @@
       else if (appMode === "reminders") renderReminders();
       else if (appMode === "settings") renderSettings();
       else if (appMode === "domain") renderDomainPage();
+      else if (appMode === "timeline") renderTimeline();
       checkCelebration();
     }
 
@@ -4485,6 +4558,110 @@
       document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === "stats"));
       saveUI(); render(); window.scrollTo(0, 0);
     };
+
+    // ---------- الخط الزمني للمشاريع ----------
+    let tlScope = "all";
+    let _tlIO = null;
+    function openTimeline() {
+      appMode = "timeline";
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
+      saveUI(); render(); window.scrollTo(0, 0);
+    }
+    document.getElementById("openTimeline").onclick = openTimeline;
+    document.getElementById("timelineBack").onclick = () => {
+      appMode = "stats"; statsTab = "plan";
+      try { localStorage.setItem(STATS_TAB_KEY, statsTab); } catch (_) {}
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === "stats"));
+      saveUI(); render(); window.scrollTo(0, 0);
+    };
+    document.querySelectorAll("#tlScope button").forEach(btn => {
+      btn.onclick = () => { tlScope = btn.dataset.tlscope; renderTimeline(); };
+    });
+    function tlTodayMarker() {
+      const t = document.createElement("div"); t.className = "tl-today";
+      t.innerHTML = "<div class='tl-today-line'></div><div class='tl-today-badge'>اليوم · " + fmtDayShort(Date.now()) + "</div>";
+      return t;
+    }
+    function tlItem(p, ms, now) {
+      const pct = Math.round(goalProgress(p) * 100);
+      const done = isComplete(p);
+      const over = !done && ms != null && ms < now;
+      const wrap = document.createElement("div"); wrap.className = "tl-item";
+      const node = document.createElement("div"); node.className = "tl-node" + (done ? " done" : over ? " over" : "");
+      node.textContent = done ? "✓" : "";
+      const conn = document.createElement("div"); conn.className = "tl-connect";
+      const card = document.createElement("div"); card.className = "tl-card" + (done ? " done" : over ? " over" : "");
+      const dom = planDomain(p);
+      const domTxt = (dom && DOMAINS.some(d => d.id === dom)) ? (domainIcon(dom) + " " + domainName(dom)) : "📄 بلا مجال";
+      const dateTxt = ms != null ? ("📅 " + fmtDayLong(ms)) : "📅 غير محدّد";
+      let status = "", scls = "";
+      if (done) { status = "✓ مكتمل"; scls = "done"; }
+      else if (ms == null) { status = "بلا موعد إنجاز"; scls = ""; }
+      else if (over) { status = "متأخّر " + toArDigits(Math.ceil((now - ms) / DAY_MS)) + " يوم"; scls = "over"; }
+      else { const d = Math.ceil((ms - now) / DAY_MS); status = (d <= 0) ? "ينتهي اليوم" : ("متبقّي " + toArDigits(d) + " يوم"); scls = "soon"; }
+      card.innerHTML =
+        "<div class='tl-date'>" + dateTxt + "</div>" +
+        "<div class='tl-nm'>" + (p.favorite ? "★ " : "") + escapeHtml(p.name) + "</div>" +
+        "<div class='tl-dom'>" + escapeHtml(domTxt) + " · " + typeLabel(p.type) + "</div>" +
+        "<div class='tl-prog'><div class='tl-bar'><div class='tl-fill" + (done ? " done" : "") + "' style='width:" + Math.min(100, pct) + "%'></div></div><span class='tl-pct'>" + toArDigits(pct) + "٪</span></div>" +
+        "<div class='tl-status " + scls + "'>" + status + "</div>";
+      card.style.cursor = "pointer";
+      card.onclick = () => openItem(p);
+      wrap.append(node, conn, card);
+      return wrap;
+    }
+    function tlObserve(items) {
+      if (_tlIO) { _tlIO.disconnect(); _tlIO = null; }
+      if (!("IntersectionObserver" in window)) { items.forEach(el => el.classList.add("tl-in")); return; }
+      _tlIO = new IntersectionObserver((entries) => {
+        for (const en of entries) { if (en.isIntersecting) { en.target.classList.add("tl-in"); _tlIO.unobserve(en.target); } }
+      }, { rootMargin: "0px 0px -6% 0px", threshold: 0.06 });
+      for (const el of items) _tlIO.observe(el);
+      requestAnimationFrame(() => items.slice(0, 7).forEach(el => el.classList.add("tl-in")));
+    }
+    function renderTimeline() {
+      const body = document.getElementById("timelineBody");
+      if (!body) return;
+      const fav = tlScope === "fav";
+      document.querySelectorAll("#tlScope button").forEach(b => b.classList.toggle("active", b.dataset.tlscope === tlScope));
+      const plans = state.plans.filter(p => !fav || p.favorite);
+      const scheduled = plans.filter(p => p.endDate).map(p => ({ p, ms: dateInputToDayStart(p.endDate) }))
+        .filter(x => isFinite(x.ms)).sort((a, b) => a.ms - b.ms);
+      const unscheduled = plans.filter(p => !p.endDate);
+      const sub = document.getElementById("tlHeadSub");
+      if (sub) sub.textContent = toArDigits(scheduled.length) + " مشروع مجدول · " + toArDigits(plans.filter(p => isComplete(p)).length) + " مكتمل";
+      body.replaceChildren();
+      if (!scheduled.length && !unscheduled.length) {
+        const e = document.createElement("div"); e.className = "ch-empty"; e.style.whiteSpace = "pre-line";
+        e.textContent = "لا مشاريع بعد.\nأضِف مشروعاً وحدّد تاريخ إنجازه (المدة) ليظهر على الخط الزمني.";
+        body.append(e); return;
+      }
+      const now = Date.now();
+      const todayY = new Date(now).getFullYear();
+      const years = scheduled.map(x => new Date(x.ms).getFullYear());
+      let minY = 2024, maxY = 2030;
+      if (years.length) { minY = Math.min(2024, ...years); maxY = Math.max(2030, ...years); }
+      const items = [];
+      let todayPlaced = false;
+      for (let y = minY; y <= maxY; y++) {
+        const yrItems = scheduled.filter(x => new Date(x.ms).getFullYear() === y);
+        const yr = document.createElement("div"); yr.className = "tl-year" + (y < todayY ? " past" : "");
+        yr.innerHTML = "<div class='tl-year-dot'>" + toArDigits(y) + "</div><div class='tl-year-meta'>"
+          + (yrItems.length ? (toArDigits(yrItems.length) + " محطّة") : "لا محطّات") + "</div>";
+        body.append(yr);
+        if (!yrItems.length) { const e = document.createElement("div"); e.className = "tl-empty-year"; e.textContent = "— لا محطّات في هذه السنة —"; body.append(e); }
+        for (const x of yrItems) {
+          if (!todayPlaced && x.ms >= now) { body.append(tlTodayMarker()); todayPlaced = true; }
+          const el = tlItem(x.p, x.ms, now); body.append(el); items.push(el);
+        }
+        if (!todayPlaced && y === todayY) { body.append(tlTodayMarker()); todayPlaced = true; }
+      }
+      if (unscheduled.length) {
+        const h = document.createElement("div"); h.className = "tl-unscheduled-h"; h.textContent = "🕓 مشاريع بلا تاريخ إنجاز (" + toArDigits(unscheduled.length) + ")"; body.append(h);
+        for (const p of unscheduled.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created))) { const el = tlItem(p, null, now); body.append(el); items.push(el); }
+      }
+      tlObserve(items);
+    }
 
     // ---------- نافذة البرنامج ----------
     const programDlg = document.getElementById("programDlg");
