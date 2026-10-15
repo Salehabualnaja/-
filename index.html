@@ -1338,7 +1338,6 @@
       <button data-stab="plan" class="active">الخطة</button>
       <button data-stab="followup">المتابعة</button>
       <button data-stab="timer">المؤقتات</button>
-      <button data-stab="habits">العادات</button>
     </div>
 
     <!-- ═══ قسم الخطة (الصفحة الرئيسية) ═══ -->
@@ -1980,7 +1979,7 @@
     let currentView = readUI(UI_VIEW_KEY, ["today", "week", "month", "quarter", "year"], "today");
     let appMode = readUI(UI_MODE_KEY, ["stats", "projects", "settings", "reminders", "challenges"], "stats");
     const STATS_TAB_KEY = "ptt.ui.statstab";
-    let statsTab = readUI(STATS_TAB_KEY, ["plan", "timer", "habits", "followup"], "plan");
+    let statsTab = readUI(STATS_TAB_KEY, ["plan", "timer", "followup"], "plan");
     const STATS_SCOPE_KEY = "ptt.ui.statsscope";
     let statsScope = readUI(STATS_SCOPE_KEY, ["all", "fav"], "all"); // نطاق الإحصاءات: كل المشاريع أو المفضلة فقط
     let _favScope = false; // يُفعَّل أثناء رسم لوحة الإحصاءات ليُقصر التجميع على المفضلة
@@ -2379,7 +2378,7 @@
       els.statsTabs.hidden = !isStats;
       els.planSection.hidden = !(isStats && statsTab === "plan");
       els.timerSection.hidden = !(isStats && statsTab === "timer");
-      els.habitsSection.hidden = !(isStats && statsTab === "habits");
+      els.habitsSection.hidden = true; // أُزيل تبويب العادات من الإحصاءات
       els.followupSection.hidden = !(isStats && statsTab === "followup");
       els.challengesSection.hidden = appMode !== "challenges";
       els.projectsSection.hidden = appMode !== "projects";
@@ -2392,10 +2391,9 @@
       document.querySelectorAll("#statsTabs button").forEach(b => b.classList.toggle("active", b.dataset.stab === statsTab));
 
       if (isStats) {
-        if (statsTab === "plan") renderPlan();
-        else if (statsTab === "timer") renderTimer();
+        if (statsTab === "timer") renderTimer();
         else if (statsTab === "followup") renderFollowup();
-        else { els.dayLabel.textContent = "العادات — تابِع استمراريتك اليومية 🔥"; renderHabits(); }
+        else renderPlan();
       } else if (appMode === "challenges") {
         els.dayLabel.textContent = "";
         renderChallenges();
@@ -2460,10 +2458,9 @@
     // إعادة رسم ما هو ظاهر حالياً بعد أي تعديل
     function refreshViews() {
       if (appMode === "stats") {
-        if (statsTab === "plan") renderPlan();
-        else if (statsTab === "timer") renderTimer();
+        if (statsTab === "timer") renderTimer();
         else if (statsTab === "followup") renderFollowup();
-        else renderHabits();
+        else renderPlan();
       } else if (appMode === "challenges") renderChallenges();
       else if (appMode === "projects") renderProjects();
       else if (appMode === "reminders") renderReminders();
@@ -2935,10 +2932,10 @@
 
     // ═══ صفحة المتابعة: أيّ المشاريع أولى بالبدء (بناءً على المتأخرات) ═══
     function goFollowupHabits() {
-      statsTab = "habits"; appMode = "stats";
-      try { localStorage.setItem(STATS_TAB_KEY, "habits"); } catch (_) {}
-      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === "stats"));
-      saveUI(); render();
+      // أُزيل تبويب العادات من الإحصاءات؛ ننتقل إلى صفحة الإدخال حيث تُدار العادات وتُعلَّم يومياً
+      appMode = "projects";
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === "projects"));
+      saveUI(); render(); window.scrollTo(0, 0);
     }
     function fuStatusCard(tk, now, hEnd, label) {
       const status = document.createElement("div"); status.className = "track-card";
