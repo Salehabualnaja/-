@@ -1,6 +1,6 @@
 /* Service Worker — مؤقت المشاريع
    يخزّن ملفات التطبيق ليعمل بدون اتصال بالإنترنت. */
-const CACHE = "ptt-cache-v150";
+const CACHE = "ptt-cache-v151";
 const ASSETS = [
   "./",
   "./index.html",
@@ -28,12 +28,27 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
+  const req = e.request;
+  let path = "";
+  try { path = new URL(req.url).pathname; } catch (_) {}
+  const isHTML = req.mode === "navigate" || path.endsWith("/") || path.endsWith("/index.html") || path === "/index.html";
+  if (isHTML) {
+    // الصفحة: الشبكة أولاً ليصل التحديث فوراً، والكاش احتياطٌ عند انقطاع الاتصال
+    e.respondWith(
+      fetch(req).then((res) => {
+        if (res && res.status === 200) { const copy = res.clone(); caches.open(CACHE).then((c) => c.put("./index.html", copy)).catch(() => {}); }
+        return res;
+      }).catch(() => caches.match(req).then((c) => c || caches.match("./index.html")))
+    );
+    return;
+  }
+  // بقية الملفات: من الكاش أولاً مع تحديثها في الخلفية
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const network = fetch(e.request).then((res) => {
+    caches.match(req).then((cached) => {
+      const network = fetch(req).then((res) => {
         if (res && res.status === 200 && res.type === "basic") {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
         }
         return res;
       }).catch(() => cached);

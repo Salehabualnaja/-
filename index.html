@@ -6583,9 +6583,19 @@
 
     // ---------- PWA: تسجيل الـ Service Worker وزر التثبيت ----------
     if ("serviceWorker" in navigator) {
+      // عند تفعيل نسخة جديدة من الـ SW، أعد التحميل مرة واحدة ليظهر التحديث فوراً
+      let _swReloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (_swReloaded) return; _swReloaded = true; location.reload();
+      });
       window.addEventListener("load", () => {
         navigator.serviceWorker.register("./sw.js")
-          .then(() => registerBackgroundReminders())
+          .then((reg) => {
+            registerBackgroundReminders();
+            try { reg.update(); } catch (_) {}
+            // تحقّق من وجود تحديث كلما عاد المستخدم إلى التطبيق
+            document.addEventListener("visibilitychange", () => { if (!document.hidden) { try { reg.update(); } catch (_) {} } });
+          })
           .catch(() => {});
       });
     }
