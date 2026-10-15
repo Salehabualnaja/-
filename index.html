@@ -1271,6 +1271,41 @@
     .tl-empty-year { padding-inline-start: 74px; font-size: 11.5px; color: var(--muted); margin-bottom: 8px; }
     .tl-unscheduled-h { margin: 28px 0 10px; font-weight: 900; font-size: 14px; color: var(--muted); }
 
+    /* ═══ صفحة ضبط المشاريع ═══ */
+    .su-open-btn { background: linear-gradient(135deg, var(--accent-ink), #5b3310); }
+    .su-body { display: flex; flex-direction: column; gap: 14px; }
+    .su-domh { display: flex; align-items: center; justify-content: space-between; font-weight: 900; font-size: 14px; color: var(--accent-ink); border-bottom: 2px solid var(--accent-soft); padding: 4px 2px 8px; margin-top: 6px; }
+    .su-domh .su-domc { font-size: 11px; color: var(--muted); font-weight: 800; }
+    .su-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 11px 12px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 9px; }
+    .su-card.behind { border-inline-start: 4px solid var(--danger); }
+    .su-card.ontrack { border-inline-start: 4px solid var(--run); }
+    .su-card.done { border-inline-start: 4px solid var(--run); opacity: .9; }
+    .su-top { display: flex; align-items: baseline; gap: 7px; }
+    .su-nm { flex: 1; min-width: 0; font-size: 14px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .su-prog { font-size: 10.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .su-seg { display: flex; border: 1px solid var(--border-strong); border-radius: 9px; overflow: hidden; }
+    .su-seg button { flex: 1; border: none; background: var(--panel-2); color: var(--muted); font-family: inherit; font-weight: 800; font-size: 12px; padding: 8px 2px; cursor: pointer; }
+    .su-seg button.on { background: var(--accent); color: #fff; }
+    .su-seg button + button { border-inline-start: 1px solid var(--border-strong); }
+    .su-dates { display: flex; gap: 7px; }
+    .su-date { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .su-date label { font-size: 10px; color: var(--muted); font-weight: 800; }
+    .su-date input { width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 7px 8px; font-size: 12px; font-family: inherit; box-sizing: border-box; }
+    .su-trackbar { position: relative; height: 10px; border-radius: 20px; background: var(--track); overflow: hidden; }
+    .su-trackfill { height: 100%; border-radius: 20px; background: var(--accent); transition: width .4s ease; }
+    .su-trackfill.ok { background: var(--run); }
+    .su-trackfill.bad { background: var(--danger); }
+    .su-exp { position: absolute; top: -2px; width: 3px; height: 14px; background: var(--accent-ink); border-radius: 2px; box-shadow: 0 0 0 1px var(--bg); z-index: 2; }
+    .su-trackrow { display: flex; align-items: center; gap: 8px; }
+    .su-trackrow .su-trackbar { flex: 1; }
+    .su-statl { font-size: 10.5px; font-weight: 900; white-space: nowrap; }
+    .su-statl.ok { color: var(--run); }
+    .su-statl.bad { color: var(--danger); }
+    .su-statl.neutral { color: var(--muted); }
+    .su-reqline { font-size: 10.5px; color: var(--muted); font-weight: 700; }
+    .su-reqline b { color: var(--accent-ink); }
+    .su-empty { font-size: 12.5px; color: var(--muted); text-align: center; padding: 24px 10px; }
+
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     @media (prefers-reduced-motion: reduce) { * { transition: none !important; } .tl-item { opacity: 1; transform: none; } }
   </style>
@@ -1317,6 +1352,12 @@
         <span class="tlo-go">›</span>
       </button>
 
+      <button class="tl-open-btn su-open-btn" id="openSetup" type="button">
+        <span class="tlo-ic">⚙️</span>
+        <span class="tlo-body"><span class="tlo-title">ضبط المشاريع</span><span class="tlo-sub">النوع والمدة · هل أنجزت المطلوب حتى اليوم؟</span></span>
+        <span class="tlo-go">›</span>
+      </button>
+
       <div id="perfWrap"></div>
 
       <div id="balanceWrap"></div>
@@ -1340,6 +1381,21 @@
         <button data-tlscope="fav">⭐ المفضلة</button>
       </div>
       <div id="timelineBody" class="tl-body"></div>
+    </section>
+
+    <!-- ═══ ضبط المشاريع (صفحة فرعية من الإحصاءات) ═══ -->
+    <section id="setupSection" hidden>
+      <button class="back-btn" id="setupBack">‹ رجوع إلى الإحصاءات</button>
+      <div class="tl-head">
+        <div class="tl-head-t">⚙️ ضبط المشاريع</div>
+        <div class="tl-head-s" id="suHeadSub">اضبط النوع والمدة بسرعة · والمطلوب حتى اليوم</div>
+      </div>
+      <div class="tl-scope" id="suScope">
+        <button data-suscope="all" class="active">الكل</button>
+        <button data-suscope="nodate">بلا مدة</button>
+        <button data-suscope="behind">متأخّرة</button>
+      </div>
+      <div id="setupBody" class="su-body"></div>
     </section>
 
     <!-- ═══ قسم الأهداف ═══ -->
@@ -2274,6 +2330,7 @@
       settingsSection: document.getElementById("settingsSection"),
       domainSection: document.getElementById("domainSection"),
       timelineSection: document.getElementById("timelineSection"),
+      setupSection: document.getElementById("setupSection"),
       statsTabs: document.getElementById("statsTabs"),
       domainsGrid: document.getElementById("domainsGrid"),
       statsByDomain: document.getElementById("statsByDomain"),
@@ -2317,6 +2374,7 @@
       els.settingsSection.hidden = appMode !== "settings";
       els.domainSection.hidden = appMode !== "domain";
       els.timelineSection.hidden = appMode !== "timeline";
+      els.setupSection.hidden = appMode !== "setup";
       els.appTitle.textContent = "📖 الصحيفة";
       document.querySelectorAll("#statsTabs button").forEach(b => b.classList.toggle("active", b.dataset.stab === statsTab));
 
@@ -2343,6 +2401,9 @@
       } else if (appMode === "timeline") {
         els.dayLabel.textContent = "الخط الزمني — محطّات المشاريع";
         renderTimeline();
+      } else if (appMode === "setup") {
+        els.dayLabel.textContent = "ضبط المشاريع — النوع والمدة والمطلوب اليوم";
+        renderSetup();
       }
       updateExpandBtn();
     }
@@ -2392,6 +2453,7 @@
       else if (appMode === "settings") renderSettings();
       else if (appMode === "domain") renderDomainPage();
       else if (appMode === "timeline") renderTimeline();
+      else if (appMode === "setup") renderSetup();
       checkCelebration();
     }
 
@@ -4725,6 +4787,148 @@
         for (const p of unscheduled.slice().sort((a, b) => (isComplete(a) - isComplete(b)) || (b.created - a.created))) { const el = tlItem(p, null, now); body.append(el); items.push(el); }
       }
       tlObserve(items);
+    }
+
+    // ---------- ضبط المشاريع (النوع/المدة + المطلوب حتى اليوم) ----------
+    let suScope = "all";
+    function openSetup() {
+      appMode = "setup";
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
+      saveUI(); render(); window.scrollTo(0, 0);
+    }
+    document.getElementById("openSetup").onclick = openSetup;
+    document.getElementById("setupBack").onclick = () => {
+      appMode = "stats"; statsTab = "plan";
+      try { localStorage.setItem(STATS_TAB_KEY, statsTab); } catch (_) {}
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === "stats"));
+      saveUI(); render(); window.scrollTo(0, 0);
+    };
+    document.querySelectorAll("#suScope button").forEach(btn => { btn.onclick = () => { suScope = btn.dataset.suscope; renderSetup(); }; });
+
+    function suStatus(g, now) {
+      if (isComplete(g)) return { cls: "ok", label: "مكتمل ✓", kind: "done" };
+      if (!g.endDate) return { cls: "neutral", label: "بلا مدة", kind: "nodate" };
+      const a = goalProgress(g), e = expectedProgress(g, now);
+      if (e <= 0.0001) return { cls: "neutral", label: "لم يبدأ", kind: "notstarted" };
+      const gap = a - e;
+      if (gap >= -0.02) return { cls: "ok", label: "على المسار ✓", kind: "ontrack" };
+      if (gap >= -0.15) return { cls: "bad", label: "متأخّر قليلاً", kind: "slight" };
+      return { cls: "bad", label: "متأخّر", kind: "behind" };
+    }
+    // ما هو المطلوب إنجازه حتى اليوم بوحدة المشروع
+    function suReqText(g, now) {
+      const exp = Math.min(1, expectedProgress(g, now));
+      if (g.type === "tasks") { const total = projectTasks(g.id).length; return { need: Math.ceil(total * exp), have: projectTasksDone(g.id), total, unit: "مهمة" }; }
+      if (g.type === "hours") { const total = g.target || 0; return { need: Math.round(total * exp * 10) / 10, have: Math.round(goalCurrent(g) * 10) / 10, total, unit: "س" }; }
+      const total = g.target || 0; return { need: Math.ceil(total * exp), have: Math.round(goalCurrent(g)), total, unit: "نقطة" };
+    }
+    function suDateField(lbl, val, onSet) {
+      const w = document.createElement("div"); w.className = "su-date";
+      const l = document.createElement("label"); l.textContent = lbl;
+      const i = document.createElement("input"); i.type = "date"; i.value = val || "";
+      i.onchange = () => onSet(i.value);
+      w.append(l, i); return w;
+    }
+    function suTrackRow(actual, expected, st, hasExp) {
+      const row = document.createElement("div"); row.className = "su-trackrow";
+      const bar = document.createElement("div"); bar.className = "su-trackbar";
+      const fill = document.createElement("div");
+      fill.className = "su-trackfill" + ((st.kind === "done" || st.kind === "ontrack") ? " ok" : (st.kind === "behind" || st.kind === "slight") ? " bad" : "");
+      fill.style.width = Math.round(Math.min(1, actual) * 100) + "%"; bar.append(fill);
+      if (hasExp && expected > 0 && expected < 1) { const exp = document.createElement("div"); exp.className = "su-exp"; exp.style.insetInlineStart = "calc(" + Math.round(expected * 100) + "% - 1px)"; exp.title = "المطلوب اليوم"; bar.append(exp); }
+      const lab = document.createElement("span"); lab.className = "su-statl " + st.cls; lab.textContent = st.label;
+      row.append(bar, lab); return row;
+    }
+    function suPlanCard(g) {
+      const now = Date.now();
+      const st = suStatus(g, now);
+      const a = goalProgress(g), e = Math.min(1, expectedProgress(g, now));
+      const card = document.createElement("div");
+      card.className = "su-card" + (st.kind === "done" ? " done" : st.kind === "ontrack" ? " ontrack" : (st.kind === "behind" || st.kind === "slight") ? " behind" : "");
+      const top = document.createElement("div"); top.className = "su-top";
+      const nm = document.createElement("span"); nm.className = "su-nm"; nm.textContent = (g.favorite ? "★ " : "") + g.name;
+      const prog = programOf(g); const pr = document.createElement("span"); pr.className = "su-prog"; pr.textContent = prog ? ("📁 " + prog.name) : "🗂️ بلا برنامج";
+      top.append(nm, pr); card.append(top);
+      const seg = document.createElement("div"); seg.className = "su-seg";
+      [["hours", "⏱️ ساعات"], ["points", "⭐ نقاط"], ["tasks", "✅ مهام"]].forEach(([t, lbl]) => {
+        const bx = document.createElement("button"); bx.className = (g.type === t ? "on" : ""); bx.textContent = lbl;
+        bx.onclick = () => { if (g.type !== t) { g.type = t; touchDomain(planDomain(g)); save(); renderSetup(); } };
+        seg.append(bx);
+      });
+      card.append(seg);
+      const dates = document.createElement("div"); dates.className = "su-dates";
+      dates.append(suDateField("من", g.startDate, v => { g.startDate = v || ""; save(); renderSetup(); }));
+      dates.append(suDateField("إلى (الإنجاز)", g.endDate, v => { g.endDate = v || ""; save(); renderSetup(); }));
+      card.append(dates);
+      card.append(suTrackRow(a, e, st, !!g.endDate));
+      const req = document.createElement("div"); req.className = "su-reqline";
+      if (!g.endDate) req.textContent = "حدّد تاريخ الإنجاز لتعرف المطلوب حتى اليوم.";
+      else { const r = suReqText(g, now); req.innerHTML = "حتى اليوم المطلوب ≈ <b>" + toArDigits(r.need) + "</b> من " + toArDigits(r.total) + " " + r.unit + " · أنجزت <b>" + toArDigits(r.have) + "</b> (" + toArDigits(Math.round(a * 100)) + "٪ مقابل مطلوب " + toArDigits(Math.round(e * 100)) + "٪)"; }
+      card.append(req);
+      return card;
+    }
+    function suHabitCard(h) {
+      const now = Date.now();
+      const a = habitProgress(h), e = Math.min(1, habitExpected(h, now));
+      const tgt = h.targetDays || 0;
+      let st;
+      if (tgt <= 0) st = { cls: "neutral", label: "عادة مفتوحة", kind: "open" };
+      else if (a >= 1) st = { cls: "ok", label: "بلغت المدة ✓", kind: "done" };
+      else { const gap = a - e; st = gap >= -0.02 ? { cls: "ok", label: "على المسار ✓", kind: "ontrack" } : gap >= -0.15 ? { cls: "bad", label: "متأخّر قليلاً", kind: "slight" } : { cls: "bad", label: "متأخّر", kind: "behind" }; }
+      const card = document.createElement("div");
+      card.className = "su-card" + (st.kind === "done" ? " done" : st.kind === "ontrack" ? " ontrack" : (st.kind === "behind" || st.kind === "slight") ? " behind" : "");
+      const top = document.createElement("div"); top.className = "su-top";
+      const nm = document.createElement("span"); nm.className = "su-nm"; nm.textContent = "🔁 " + (h.favorite ? "★ " : "") + h.name;
+      const prog = habitProgramOf(h); const pr = document.createElement("span"); pr.className = "su-prog"; pr.textContent = prog ? ("📁 " + prog.name) : "عادة";
+      top.append(nm, pr); card.append(top);
+      const dates = document.createElement("div"); dates.className = "su-dates";
+      const wd = document.createElement("div"); wd.className = "su-date";
+      const wl = document.createElement("label"); wl.textContent = "مدة الاستمرار (أيام)";
+      const wi = document.createElement("input"); wi.type = "text"; wi.inputMode = "numeric"; wi.value = tgt ? toArDigits(tgt) : "";
+      wi.onchange = () => { let n = parseInt(wi.value.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)), 10); if (!isFinite(n) || n < 0) n = 0; h.targetDays = n; save(); renderSetup(); };
+      wd.append(wl, wi); dates.append(wd);
+      dates.append(suDateField("البداية", h.startDate, v => { h.startDate = v || ""; save(); renderSetup(); }));
+      card.append(dates);
+      card.append(suTrackRow(a, e, st, tgt > 0));
+      const req = document.createElement("div"); req.className = "su-reqline";
+      if (tgt <= 0) req.textContent = "عادة مفتوحة — حدّد مدة استمرار لمعرفة المطلوب.";
+      else req.innerHTML = "الاسترايك الحالي <b>" + toArDigits(habitStreak(h)) + "</b> من " + toArDigits(tgt) + " يوم (" + toArDigits(Math.round(a * 100)) + "٪ مقابل مطلوب " + toArDigits(Math.round(e * 100)) + "٪)";
+      card.append(req);
+      return card;
+    }
+    function renderSetup() {
+      const body = document.getElementById("setupBody"); if (!body) return;
+      document.querySelectorAll("#suScope button").forEach(b => b.classList.toggle("active", b.dataset.suscope === suScope));
+      const now = Date.now();
+      const planMatch = (g) => { if (suScope === "nodate") return !g.endDate; if (suScope === "behind") { const k = suStatus(g, now).kind; return k === "behind" || k === "slight"; } return true; };
+      const habitMatch = (h) => {
+        if (suScope === "nodate") return !(h.targetDays > 0);
+        if (suScope === "behind") { if (!(h.targetDays > 0) || habitProgress(h) >= 1) return false; return (habitProgress(h) - habitExpected(h, now)) < -0.02; }
+        return true;
+      };
+      const doms = (typeof domainsOrdered === "function" ? domainsOrdered() : DOMAINS);
+      const known = new Set(doms.map(d => d.id));
+      const groups = doms.map(d => ({ id: d.id, icon: d.icon, name: d.name })).concat([{ id: "__nodom__", icon: "📌", name: "بلا مجال" }]);
+      const frag = document.createDocumentFragment();
+      for (const d of groups) {
+        const plans = state.plans.filter(g => (d.id === "__nodom__" ? !known.has(planDomain(g)) : planDomain(g) === d.id) && planMatch(g))
+          .sort((a, b) => _byName((programOf(a) || {}).name, (programOf(b) || {}).name) || _byName(a.name, b.name));
+        const habits = state.habits.filter(h => (d.id === "__nodom__" ? !known.has(habitDomain(h)) : habitDomain(h) === d.id) && habitMatch(h));
+        if (!plans.length && !habits.length) continue;
+        const hd = document.createElement("div"); hd.className = "su-domh";
+        hd.innerHTML = "<span>" + d.icon + " " + escapeHtml(d.name) + "</span><span class='su-domc'>" + toArDigits(plans.length + habits.length) + "</span>";
+        frag.append(hd);
+        for (const g of plans) frag.append(suPlanCard(g));
+        for (const hb of habits) frag.append(suHabitCard(hb));
+      }
+      if (!frag.childNodes.length) {
+        const e = document.createElement("div"); e.className = "su-empty";
+        e.textContent = suScope === "nodate" ? "كل المشاريع لها مدة محدّدة ✓" : suScope === "behind" ? "لا مشاريع متأخّرة عن المطلوب ✓" : "لا مشاريع بعد — أضِفها من صفحة الإدخال.";
+        frag.append(e);
+      }
+      body.replaceChildren(frag);
+      const sub = document.getElementById("suHeadSub");
+      if (sub) sub.textContent = suScope === "nodate" ? "مشاريع بلا مدة — حدّد تاريخ الإنجاز" : suScope === "behind" ? "مشاريع متأخّرة عن المطلوب حتى اليوم" : "اضبط النوع والمدة · والمطلوب حتى اليوم";
     }
 
     // ---------- نافذة البرنامج ----------
