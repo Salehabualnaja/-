@@ -1279,9 +1279,10 @@
     .su-domsec.collapsed .dom-section-head { padding-bottom: 10px; }
     .su-domsec .dsh-pct { background: var(--accent-soft); border-radius: 20px; padding: 1px 9px; }
     .su-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 11px 12px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 9px; }
-    .su-card.behind { border-inline-start: 4px solid var(--danger); }
-    .su-card.ontrack { border-inline-start: 4px solid var(--run); }
-    .su-card.done { border-inline-start: 4px solid var(--run); opacity: .9; }
+    .su-card { border-inline-start: 4px solid var(--border-strong); }
+    .su-card.su-green { border-inline-start-color: var(--run); background: color-mix(in srgb, var(--run) 7%, var(--panel)); }
+    .su-card.su-red { border-inline-start-color: var(--danger); background: color-mix(in srgb, var(--danger) 7%, var(--panel)); }
+    .su-card.su-gray { border-inline-start-color: var(--muted); background: color-mix(in srgb, var(--muted) 8%, var(--panel)); }
     .su-top { display: flex; align-items: center; gap: 7px; }
     .su-nm { flex: 1; min-width: 0; font-size: 14px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .su-nameinput { flex: 1; min-width: 0; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 7px 9px; font-size: 14px; font-weight: 800; font-family: inherit; }
@@ -4821,15 +4822,27 @@
     };
     document.querySelectorAll("#suScope button").forEach(btn => { btn.onclick = () => { suScope = btn.dataset.suscope; renderSetup(); }; });
 
+    // الحالة بثلاثة ألوان: أخضر (متقدّم/على المسار) · رمادي (لم تبدأ) · أحمر (متأخّر)
     function suStatus(g, now) {
-      if (isComplete(g)) return { cls: "ok", label: "مكتمل ✓", kind: "done" };
-      if (!g.endDate) return { cls: "neutral", label: "بلا مدة", kind: "nodate" };
+      if (isComplete(g)) return { color: "green", label: "مكتمل ✓" };
+      if (!g.endDate) return { color: "gray", label: "بلا مدة — حدّد تاريخ الإنجاز" };
       const a = goalProgress(g), e = expectedProgress(g, now);
-      if (e <= 0.0001) return { cls: "neutral", label: "لم يبدأ", kind: "notstarted" };
+      if (e <= 0.0001) return { color: "gray", label: "لم تبدأ بعد" };
       const gap = a - e;
-      if (gap >= -0.02) return { cls: "ok", label: "على المسار ✓", kind: "ontrack" };
-      if (gap >= -0.15) return { cls: "bad", label: "متأخّر قليلاً", kind: "slight" };
-      return { cls: "bad", label: "متأخّر", kind: "behind" };
+      if (gap >= 0.12) return { color: "green", label: "متقدّم 🚀" };
+      if (gap >= -0.02) return { color: "green", label: "على المسار ✓" };
+      return { color: "red", label: "متأخّر" };
+    }
+    // الحالة للعادة بنفس المخطّط اللوني
+    function suHabitStatus(h, now) {
+      const tgt = h.targetDays || 0;
+      if (tgt <= 0) return { color: "gray", label: "عادة مفتوحة" };
+      const a = habitProgress(h), e = Math.min(1, habitExpected(h, now));
+      if (a >= 1) return { color: "green", label: "بلغت المدة ✓" };
+      const gap = a - e;
+      if (gap >= 0.12) return { color: "green", label: "متقدّم 🚀" };
+      if (gap >= -0.02) return { color: "green", label: "على المسار ✓" };
+      return { color: "red", label: "متأخّر" };
     }
     // ما هو المطلوب إنجازه حتى اليوم بوحدة المشروع
     function suReqText(g, now) {
@@ -4850,10 +4863,10 @@
       const row = document.createElement("div"); row.className = "su-trackrow";
       const bar = document.createElement("div"); bar.className = "su-trackbar";
       const fill = document.createElement("div");
-      fill.className = "su-trackfill" + ((st.kind === "done" || st.kind === "ontrack") ? " ok" : (st.kind === "behind" || st.kind === "slight") ? " bad" : "");
+      fill.className = "su-trackfill" + (st.color === "green" ? " ok" : st.color === "red" ? " bad" : "");
       fill.style.width = Math.round(Math.min(1, actual) * 100) + "%"; bar.append(fill);
       if (hasExp && expected > 0 && expected < 1) { const exp = document.createElement("div"); exp.className = "su-exp"; exp.style.insetInlineStart = "calc(" + Math.round(expected * 100) + "% - 1px)"; exp.title = "المطلوب اليوم"; bar.append(exp); }
-      const lab = document.createElement("span"); lab.className = "su-statl " + st.cls; lab.textContent = st.label;
+      const lab = document.createElement("span"); lab.className = "su-statl " + (st.color === "green" ? "ok" : st.color === "red" ? "bad" : "neutral"); lab.textContent = st.label;
       row.append(bar, lab); return row;
     }
     function suPlanCard(g) {
@@ -4861,7 +4874,7 @@
       const st = suStatus(g, now);
       const a = goalProgress(g), e = Math.min(1, expectedProgress(g, now));
       const card = document.createElement("div");
-      card.className = "su-card" + (st.kind === "done" ? " done" : st.kind === "ontrack" ? " ontrack" : (st.kind === "behind" || st.kind === "slight") ? " behind" : "");
+      card.className = "su-card su-" + st.color;
       const top = document.createElement("div"); top.className = "su-top";
       const prog = programOf(g);
       const fav = document.createElement("button"); fav.className = "su-fav" + (g.favorite ? " on" : ""); fav.textContent = g.favorite ? "★" : "☆"; fav.title = "المفضلة";
@@ -4912,12 +4925,9 @@
       const now = Date.now();
       const a = habitProgress(h), e = Math.min(1, habitExpected(h, now));
       const tgt = h.targetDays || 0;
-      let st;
-      if (tgt <= 0) st = { cls: "neutral", label: "عادة مفتوحة", kind: "open" };
-      else if (a >= 1) st = { cls: "ok", label: "بلغت المدة ✓", kind: "done" };
-      else { const gap = a - e; st = gap >= -0.02 ? { cls: "ok", label: "على المسار ✓", kind: "ontrack" } : gap >= -0.15 ? { cls: "bad", label: "متأخّر قليلاً", kind: "slight" } : { cls: "bad", label: "متأخّر", kind: "behind" }; }
+      const st = suHabitStatus(h, now);
       const card = document.createElement("div");
-      card.className = "su-card" + (st.kind === "done" ? " done" : st.kind === "ontrack" ? " ontrack" : (st.kind === "behind" || st.kind === "slight") ? " behind" : "");
+      card.className = "su-card su-" + st.color;
       const top = document.createElement("div"); top.className = "su-top";
       const nm = document.createElement("span"); nm.className = "su-nm"; nm.textContent = "🔁 " + (h.favorite ? "★ " : "") + h.name;
       const prog = habitProgramOf(h); const pr = document.createElement("span"); pr.className = "su-prog"; pr.textContent = prog ? ("📁 " + prog.name) : "عادة";
@@ -4941,12 +4951,8 @@
       const body = document.getElementById("setupBody"); if (!body) return;
       document.querySelectorAll("#suScope button").forEach(b => b.classList.toggle("active", b.dataset.suscope === suScope));
       const now = Date.now();
-      const planMatch = (g) => { if (suScope === "nodate") return !g.endDate; if (suScope === "behind") { const k = suStatus(g, now).kind; return k === "behind" || k === "slight"; } return true; };
-      const habitMatch = (h) => {
-        if (suScope === "nodate") return !(h.targetDays > 0);
-        if (suScope === "behind") { if (!(h.targetDays > 0) || habitProgress(h) >= 1) return false; return (habitProgress(h) - habitExpected(h, now)) < -0.02; }
-        return true;
-      };
+      const planMatch = (g) => { if (suScope === "nodate") return !g.endDate; if (suScope === "behind") return suStatus(g, now).color === "red"; return true; };
+      const habitMatch = (h) => { if (suScope === "nodate") return !(h.targetDays > 0); if (suScope === "behind") return suHabitStatus(h, now).color === "red"; return true; };
       const doms = (typeof domainsOrdered === "function" ? domainsOrdered() : DOMAINS);
       const known = new Set(doms.map(d => d.id));
       const groups = doms.map(d => ({ id: d.id, icon: d.icon, name: d.name })).concat([{ id: "__nodom__", icon: "📌", name: "بلا مجال" }]);
