@@ -1273,9 +1273,11 @@
 
     /* ═══ صفحة ضبط المشاريع ═══ */
     .su-open-btn { background: linear-gradient(135deg, var(--accent-ink), #5b3310); }
-    .su-body { display: flex; flex-direction: column; gap: 14px; }
-    .su-domh { display: flex; align-items: center; justify-content: space-between; font-weight: 900; font-size: 14px; color: var(--accent-ink); border-bottom: 2px solid var(--accent-soft); padding: 4px 2px 8px; margin-top: 6px; }
-    .su-domh .su-domc { font-size: 11px; color: var(--muted); font-weight: 800; }
+    .su-body { display: flex; flex-direction: column; gap: 12px; }
+    .su-domsec { display: flex; flex-direction: column; gap: 11px; margin-bottom: 4px; }
+    .su-domsec .dom-section-head { margin-bottom: 0; }
+    .su-domsec.collapsed .dom-section-head { padding-bottom: 10px; }
+    .su-domsec .dsh-pct { background: var(--accent-soft); border-radius: 20px; padding: 1px 9px; }
     .su-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 11px 12px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 9px; }
     .su-card.behind { border-inline-start: 4px solid var(--danger); }
     .su-card.ontrack { border-inline-start: 4px solid var(--run); }
@@ -1362,12 +1364,6 @@
         <span class="tlo-go">›</span>
       </button>
 
-      <button class="tl-open-btn su-open-btn" id="openSetup" type="button">
-        <span class="tlo-ic">⚙️</span>
-        <span class="tlo-body"><span class="tlo-title">ضبط المشاريع</span><span class="tlo-sub">النوع والمدة · هل أنجزت المطلوب حتى اليوم؟</span></span>
-        <span class="tlo-go">›</span>
-      </button>
-
       <div id="perfWrap"></div>
 
       <div id="balanceWrap"></div>
@@ -1395,7 +1391,7 @@
 
     <!-- ═══ ضبط المشاريع (صفحة فرعية من الإحصاءات) ═══ -->
     <section id="setupSection" hidden>
-      <button class="back-btn" id="setupBack">‹ رجوع إلى الإحصاءات</button>
+      <button class="back-btn" id="setupBack">‹ رجوع إلى الإعدادات</button>
       <div class="tl-head">
         <div class="tl-head-t">⚙️ ضبط المشاريع</div>
         <div class="tl-head-s" id="suHeadSub">اضبط النوع والمدة بسرعة · والمطلوب حتى اليوم</div>
@@ -1514,6 +1510,12 @@
 
     <!-- ═══ قسم الإعدادات ═══ -->
     <section id="settingsSection" hidden>
+      <div class="set-group">
+        <div class="set-title">⚙️ ضبط المشاريع</div>
+        <p class="set-desc">اضبط نوع كل مشروع (ساعات/نقاط/مهام/عادة) ومدّته ومستهدفه بسرعة، واعرف المطلوب منك حتى اليوم — مرتّبة ضمن قوائم المجالات.</p>
+        <button class="ok set-btn" id="openSetup">فتح ضبط المشاريع ›</button>
+      </div>
+
       <div class="set-group">
         <div class="set-title">✨ العبارة المتصدِّرة</div>
         <p class="set-desc">تظهر في أعلى صفحة الإحصاءات لتحفيزك.</p>
@@ -2428,6 +2430,10 @@
         const domKeys = DOMAINS.map(d => d.id).concat("__nodom__");
         const progKeys = state.programs.map(p => "prog:" + p.id).concat(domKeys.map(k => "__np__:" + k));
         return { doms: chTreeDoms, progs: chTreeProgs, domKeys, progKeys, render: renderChallenges };
+      }
+      if (appMode === "setup") {
+        const domKeys = DOMAINS.map(d => d.id).concat("__nodom__");
+        return { doms: suDoms, progs: new Set(), domKeys, progKeys: [], render: renderSetup };
       }
       return null;
     }
@@ -4801,6 +4807,7 @@
 
     // ---------- ضبط المشاريع (النوع/المدة + المطلوب حتى اليوم) ----------
     let suScope = "all";
+    const suDoms = new Set(); // المجالات المفتوحة في صفحة الضبط (قوائم منسدلة)
     function openSetup() {
       appMode = "setup";
       document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
@@ -4808,9 +4815,8 @@
     }
     document.getElementById("openSetup").onclick = openSetup;
     document.getElementById("setupBack").onclick = () => {
-      appMode = "stats"; statsTab = "plan";
-      try { localStorage.setItem(STATS_TAB_KEY, statsTab); } catch (_) {}
-      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === "stats"));
+      appMode = "settings";
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
       saveUI(); render(); window.scrollTo(0, 0);
     };
     document.querySelectorAll("#suScope button").forEach(btn => { btn.onclick = () => { suScope = btn.dataset.suscope; renderSetup(); }; });
@@ -4950,11 +4956,15 @@
           .sort((a, b) => _byName((programOf(a) || {}).name, (programOf(b) || {}).name) || _byName(a.name, b.name));
         const habits = state.habits.filter(h => (d.id === "__nodom__" ? !known.has(habitDomain(h)) : habitDomain(h) === d.id) && habitMatch(h));
         if (!plans.length && !habits.length) continue;
-        const hd = document.createElement("div"); hd.className = "su-domh";
-        hd.innerHTML = "<span>" + d.icon + " " + escapeHtml(d.name) + "</span><span class='su-domc'>" + toArDigits(plans.length + habits.length) + "</span>";
-        frag.append(hd);
-        for (const g of plans) frag.append(suPlanCard(g));
-        for (const hb of habits) frag.append(suHabitCard(hb));
+        const open = suDoms.has(d.id);
+        const sec = document.createElement("div"); sec.className = "dom-section su-domsec" + (open ? "" : " collapsed");
+        const head = document.createElement("div"); head.className = "dom-section-head";
+        head.innerHTML = "<span class='dsh-nm'><span class='dsh-chev'>▾</span> " + d.icon + " " + escapeHtml(d.name) + "</span><span class='dsh-pct'>" + toArDigits(plans.length + habits.length) + "</span>";
+        head.onclick = () => { if (suDoms.has(d.id)) suDoms.delete(d.id); else suDoms.add(d.id); sec.classList.toggle("collapsed"); updateExpandBtn(); };
+        sec.append(head);
+        for (const g of plans) sec.append(suPlanCard(g));
+        for (const hb of habits) sec.append(suHabitCard(hb));
+        frag.append(sec);
       }
       if (!frag.childNodes.length) {
         const e = document.createElement("div"); e.className = "su-empty";
