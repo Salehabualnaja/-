@@ -1280,9 +1280,19 @@
     .su-card.behind { border-inline-start: 4px solid var(--danger); }
     .su-card.ontrack { border-inline-start: 4px solid var(--run); }
     .su-card.done { border-inline-start: 4px solid var(--run); opacity: .9; }
-    .su-top { display: flex; align-items: baseline; gap: 7px; }
+    .su-top { display: flex; align-items: center; gap: 7px; }
     .su-nm { flex: 1; min-width: 0; font-size: 14px; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .su-prog { font-size: 10.5px; color: var(--muted); font-weight: 700; white-space: nowrap; }
+    .su-nameinput { flex: 1; min-width: 0; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 7px 9px; font-size: 14px; font-weight: 800; font-family: inherit; }
+    .su-fav { flex: none; border: none; background: none; font-size: 18px; color: var(--muted); cursor: pointer; padding: 0; line-height: 1; }
+    .su-fav.on { color: var(--dial-gold); }
+    .su-del { flex: none; border: none; background: none; font-size: 15px; cursor: pointer; opacity: .7; padding: 2px; }
+    .su-del:active { transform: scale(.9); }
+    .su-prog { font-size: 10.5px; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .su-nums { display: flex; gap: 7px; }
+    .su-num { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+    .su-num label { font-size: 10px; color: var(--muted); font-weight: 800; }
+    .su-num input { width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 8px; font-size: 14px; font-weight: 800; font-family: inherit; box-sizing: border-box; text-align: center; font-variant-numeric: tabular-nums; }
+    .su-taskline { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 800; color: var(--accent-ink); }
     .su-seg { display: flex; border: 1px solid var(--border-strong); border-radius: 9px; overflow: hidden; }
     .su-seg button { flex: 1; border: none; background: var(--panel-2); color: var(--muted); font-family: inherit; font-weight: 800; font-size: 12px; padding: 8px 2px; cursor: pointer; }
     .su-seg button.on { background: var(--accent); color: #fff; }
@@ -4822,6 +4832,7 @@
       if (g.type === "hours") { const total = g.target || 0; return { need: Math.round(total * exp * 10) / 10, have: Math.round(goalCurrent(g) * 10) / 10, total, unit: "س" }; }
       const total = g.target || 0; return { need: Math.ceil(total * exp), have: Math.round(goalCurrent(g)), total, unit: "نقطة" };
     }
+    function suParseNum(v) { v = (v || "").replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)); let n = parseFloat(v); if (!isFinite(n) || n < 0) n = 0; return n; }
     function suDateField(lbl, val, onSet) {
       const w = document.createElement("div"); w.className = "su-date";
       const l = document.createElement("label"); l.textContent = lbl;
@@ -4846,9 +4857,15 @@
       const card = document.createElement("div");
       card.className = "su-card" + (st.kind === "done" ? " done" : st.kind === "ontrack" ? " ontrack" : (st.kind === "behind" || st.kind === "slight") ? " behind" : "");
       const top = document.createElement("div"); top.className = "su-top";
-      const nm = document.createElement("span"); nm.className = "su-nm"; nm.textContent = (g.favorite ? "★ " : "") + g.name;
-      const prog = programOf(g); const pr = document.createElement("span"); pr.className = "su-prog"; pr.textContent = prog ? ("📁 " + prog.name) : "🗂️ بلا برنامج";
-      top.append(nm, pr); card.append(top);
+      const prog = programOf(g);
+      const fav = document.createElement("button"); fav.className = "su-fav" + (g.favorite ? " on" : ""); fav.textContent = g.favorite ? "★" : "☆"; fav.title = "المفضلة";
+      fav.onclick = () => { g.favorite = !g.favorite; save(); renderSetup(); };
+      const nmIn = document.createElement("input"); nmIn.className = "su-nameinput"; nmIn.type = "text"; nmIn.value = g.name; nmIn.title = "اسم المشروع";
+      nmIn.onchange = () => { const v = nmIn.value.trim(); if (v) { g.name = v; touchDomain(planDomain(g)); save(); } };
+      const del = document.createElement("button"); del.className = "su-del"; del.textContent = "🗑️"; del.title = "حذف المشروع";
+      del.onclick = () => { if (confirm("حذف المشروع «" + g.name + "»؟")) { const d = planDomain(g); state.plans = state.plans.filter(x => x.id !== g.id); touchDomain(d); save(); renderSetup(); } };
+      top.append(fav, nmIn, del); card.append(top);
+      const pr = document.createElement("div"); pr.className = "su-prog"; pr.textContent = prog ? ("📁 " + prog.name) : "🗂️ بلا برنامج"; card.append(pr);
       const seg = document.createElement("div"); seg.className = "su-seg";
       [["hours", "⏱️ ساعات"], ["points", "⭐ نقاط"], ["tasks", "✅ مهام"]].forEach(([t, lbl]) => {
         const bx = document.createElement("button"); bx.className = (g.type === t ? "on" : ""); bx.textContent = lbl;
@@ -4856,6 +4873,24 @@
         seg.append(bx);
       });
       card.append(seg);
+      if (g.type === "hours" || g.type === "points") {
+        const unit = g.type === "hours" ? "ساعة" : "نقطة";
+        const nums = document.createElement("div"); nums.className = "su-nums";
+        const mkNum = (lbl, val, on) => {
+          const w = document.createElement("div"); w.className = "su-num";
+          const l = document.createElement("label"); l.textContent = lbl;
+          const i = document.createElement("input"); i.type = "text"; i.inputMode = "decimal"; i.value = fmtNum(val || 0);
+          i.onchange = () => on(i.value); w.append(l, i); return w;
+        };
+        nums.append(mkNum("المستهدف (" + unit + ")", g.target || 0, v => { g.target = suParseNum(v); g.done = g.target > 0 ? (goalCurrent(g) >= g.target) : g.done; touchDomain(planDomain(g)); save(); renderSetup(); }));
+        nums.append(mkNum("المنجَز", g.current || 0, v => { g.current = suParseNum(v); if (g.type === "points") g.ptsAt = Date.now(); delete g._prevCurrent; g.done = g.target > 0 ? (goalCurrent(g) >= g.target) : g.done; touchDomain(planDomain(g)); save(); renderSetup(); }));
+        card.append(nums);
+      } else if (g.type === "tasks") {
+        const l = projectTasks(g.id); const row = document.createElement("div"); row.className = "su-taskline";
+        const s = document.createElement("span"); s.textContent = "✅ " + toArDigits(l.filter(c => c.done).length) + " / " + toArDigits(l.length) + " مهمة منجَزة";
+        const go = document.createElement("button"); go.className = "gt-go"; go.textContent = "📋 المهام"; go.onclick = () => gotoProjectTasks(g);
+        row.append(s, go); card.append(row);
+      }
       const dates = document.createElement("div"); dates.className = "su-dates";
       dates.append(suDateField("من", g.startDate, v => { g.startDate = v || ""; save(); renderSetup(); }));
       dates.append(suDateField("إلى (الإنجاز)", g.endDate, v => { g.endDate = v || ""; save(); renderSetup(); }));
