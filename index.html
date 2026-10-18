@@ -4926,12 +4926,12 @@
       if (isHabit) {
         if (toType === "habit") return;
         const d = habitDomain(item);
-        const np = { id: uid(), name: item.name, programId: item.programId || "", domainId: "", type: toType, target: 0, current: 0, done: false, startDate: item.startDate || "", endDate: "", favorite: !!item.favorite, sessions: [], created: item.created || now };
+        const np = { id: uid(), name: item.name, programId: item.programId || "", domainId: item.domainId || "", type: toType, target: 0, current: 0, done: false, startDate: item.startDate || "", endDate: "", favorite: !!item.favorite, sessions: [], created: item.created || now };
         state.habits = state.habits.filter(x => x.id !== item.id);
         state.plans.push(np); touchDomain(d); touchDomain(planDomain(np));
       } else if (toType === "habit") {
         const d = planDomain(item);
-        const nh = { id: uid(), name: item.name, programId: item.programId || "", domainId: "", targetDays: 0, startDate: item.startDate || "", favorite: !!item.favorite, created: item.created || now, log: {} };
+        const nh = { id: uid(), name: item.name, programId: item.programId || "", domainId: item.domainId || "", targetDays: 0, startDate: item.startDate || "", favorite: !!item.favorite, created: item.created || now, log: {} };
         state.plans = state.plans.filter(x => x.id !== item.id);
         state.habits.push(nh); touchDomain(d); touchDomain(habitDomain(nh));
       } else if (item.type !== toType) { item.type = toType; touchDomain(planDomain(item)); }
@@ -5066,10 +5066,14 @@
       const groups = doms.map(d => ({ id: d.id, icon: d.icon, name: d.name })).concat([{ id: "__nodom__", icon: "📌", name: "بلا مجال" }]);
       const frag = document.createDocumentFragment();
       for (const d of groups) {
-        const plans = state.plans.filter(g => (d.id === "__nodom__" ? !known.has(planDomain(g)) : planDomain(g) === d.id) && planMatch(g))
-          .sort((a, b) => _byName((programOf(a) || {}).name, (programOf(b) || {}).name) || _byName(a.name, b.name));
+        const plans = state.plans.filter(g => (d.id === "__nodom__" ? !known.has(planDomain(g)) : planDomain(g) === d.id) && planMatch(g));
         const habits = state.habits.filter(h => (d.id === "__nodom__" ? !known.has(habitDomain(h)) : habitDomain(h) === d.id) && habitMatch(h));
         if (!plans.length && !habits.length) continue;
+        // ترتيب موحّد للمشاريع والعادات معاً (بالبرنامج ثم الاسم) حتى لا يقفز الكرت
+        // إلى الأسفل عند تحويل نوعه إلى «عادة» — يبقى في مكانه حسب اسمه.
+        const combined = plans.map(g => ({ kind: "plan", item: g, prog: (programOf(g) || {}).name || "", nm: g.name }))
+          .concat(habits.map(h => ({ kind: "habit", item: h, prog: (habitProgramOf(h) || {}).name || "", nm: h.name })))
+          .sort((a, b) => _byName(a.prog, b.prog) || _byName(a.nm, b.nm));
         const open = suDoms.has(d.id);
         const sec = document.createElement("div"); sec.className = "dom-section su-domsec" + (open ? "" : " collapsed");
         if (d.id !== "__nodom__") sec.dataset.dom = d.id;
@@ -5077,8 +5081,7 @@
         head.innerHTML = "<span class='dsh-nm'><span class='dsh-chev'>▾</span> " + d.icon + " " + escapeHtml(d.name) + "</span><span class='dsh-pct'>" + toArDigits(plans.length + habits.length) + "</span>";
         head.onclick = () => { if (suDoms.has(d.id)) suDoms.delete(d.id); else suDoms.add(d.id); sec.classList.toggle("collapsed"); updateExpandBtn(); };
         sec.append(head);
-        for (const g of plans) sec.append(suPlanCard(g));
-        for (const hb of habits) sec.append(suHabitCard(hb));
+        for (const c of combined) sec.append(c.kind === "plan" ? suPlanCard(c.item) : suHabitCard(c.item));
         frag.append(sec);
       }
       if (!frag.childNodes.length) {
