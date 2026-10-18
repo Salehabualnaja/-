@@ -4979,8 +4979,9 @@
           const i = document.createElement("input"); i.type = "text"; i.inputMode = "decimal"; i.value = fmtNum(val || 0);
           i.onchange = () => on(i.value); w.append(l, i); return w;
         };
-        nums.append(mkNum("المستهدف (" + unit + ")", g.target || 0, v => { g.target = suParseNum(v); g.done = g.target > 0 ? (goalCurrent(g) >= g.target) : g.done; touchDomain(planDomain(g)); save(); renderSetup(); }));
+        // الترتيب في RTL: المنجَز على اليمين (أول عنصر) ثم المستهدف على اليسار — ليُقرأ «المنجَز من المستهدف»
         nums.append(mkNum("المنجَز", g.current || 0, v => { g.current = suParseNum(v); if (g.type === "points") g.ptsAt = Date.now(); delete g._prevCurrent; g.done = g.target > 0 ? (goalCurrent(g) >= g.target) : g.done; touchDomain(planDomain(g)); save(); renderSetup(); }));
+        nums.append(mkNum("المستهدف (" + unit + ")", g.target || 0, v => { g.target = suParseNum(v); g.done = g.target > 0 ? (goalCurrent(g) >= g.target) : g.done; touchDomain(planDomain(g)); save(); renderSetup(); }));
         card.append(nums);
       } else if (g.type === "tasks") {
         const l = projectTasks(g.id); const row = document.createElement("div"); row.className = "su-taskline";
