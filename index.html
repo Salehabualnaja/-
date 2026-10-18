@@ -1299,6 +1299,7 @@
     .su-seg { display: flex; border: 1px solid var(--border-strong); border-radius: 9px; overflow: hidden; }
     .su-seg button { flex: 1; border: none; background: var(--panel-2); color: var(--muted); font-family: inherit; font-weight: 800; font-size: 12px; padding: 8px 2px; cursor: pointer; }
     .su-seg button.on { background: var(--accent); color: #fff; }
+    .su-seg4 button { font-size: 11px; padding: 8px 1px; }
     .su-seg button + button { border-inline-start: 1px solid var(--border-strong); }
     .su-dates { display: flex; gap: 7px; }
     .su-date { flex: 1; display: flex; flex-direction: column; gap: 3px; }
@@ -4866,6 +4867,23 @@
       const lab = document.createElement("span"); lab.className = "su-statl " + (st.color === "green" ? "ok" : st.color === "red" ? "bad" : "neutral"); lab.textContent = st.label;
       row.append(bar, lab); return row;
     }
+    // تحويل العنصر بين مشروع (ساعات/نقاط/مهام) وعادة — آلية موحّدة من بطاقة الضبط
+    function suConvert(item, isHabit, toType) {
+      const now = Date.now();
+      if (isHabit) {
+        if (toType === "habit") return;
+        const d = habitDomain(item);
+        const np = { id: uid(), name: item.name, programId: item.programId || "", domainId: "", type: toType, target: 0, current: 0, done: false, startDate: item.startDate || "", endDate: "", favorite: !!item.favorite, sessions: [], created: item.created || now };
+        state.habits = state.habits.filter(x => x.id !== item.id);
+        state.plans.push(np); touchDomain(d); touchDomain(planDomain(np));
+      } else if (toType === "habit") {
+        const d = planDomain(item);
+        const nh = { id: uid(), name: item.name, programId: item.programId || "", domainId: "", targetDays: 0, startDate: item.startDate || "", favorite: !!item.favorite, created: item.created || now, log: {} };
+        state.plans = state.plans.filter(x => x.id !== item.id);
+        state.habits.push(nh); touchDomain(d); touchDomain(habitDomain(nh));
+      } else if (item.type !== toType) { item.type = toType; touchDomain(planDomain(item)); }
+      save(); renderSetup();
+    }
     function suPlanCard(g) {
       const now = Date.now();
       const st = suStatus(g, now);
@@ -4882,10 +4900,10 @@
       del.onclick = () => { if (confirm("حذف المشروع «" + g.name + "»؟")) { const d = planDomain(g); state.plans = state.plans.filter(x => x.id !== g.id); touchDomain(d); save(); renderSetup(); } };
       top.append(fav, nmIn, del); card.append(top);
       const pr = document.createElement("div"); pr.className = "su-prog"; pr.textContent = prog ? ("📁 " + prog.name) : "🗂️ بلا برنامج"; card.append(pr);
-      const seg = document.createElement("div"); seg.className = "su-seg";
-      [["hours", "⏱️ ساعات"], ["points", "⭐ نقاط"], ["tasks", "✅ مهام"]].forEach(([t, lbl]) => {
+      const seg = document.createElement("div"); seg.className = "su-seg su-seg4";
+      [["hours", "⏱️ ساعات"], ["points", "⭐ نقاط"], ["tasks", "✅ مهام"], ["habit", "🔁 عادة"]].forEach(([t, lbl]) => {
         const bx = document.createElement("button"); bx.className = (g.type === t ? "on" : ""); bx.textContent = lbl;
-        bx.onclick = () => { if (g.type !== t) { g.type = t; touchDomain(planDomain(g)); save(); renderSetup(); } };
+        bx.onclick = () => suConvert(g, false, t);
         seg.append(bx);
       });
       card.append(seg);
@@ -4926,16 +4944,28 @@
       const card = document.createElement("div");
       card.className = "su-card su-" + st.color;
       const top = document.createElement("div"); top.className = "su-top";
-      const nm = document.createElement("span"); nm.className = "su-nm"; nm.textContent = "🔁 " + (h.favorite ? "★ " : "") + h.name;
-      const prog = habitProgramOf(h); const pr = document.createElement("span"); pr.className = "su-prog"; pr.textContent = prog ? ("📁 " + prog.name) : "عادة";
-      top.append(nm, pr); card.append(top);
+      const fav = document.createElement("button"); fav.className = "su-fav" + (h.favorite ? " on" : ""); fav.textContent = h.favorite ? "★" : "☆"; fav.title = "المفضلة";
+      fav.onclick = () => { h.favorite = !h.favorite; save(); renderSetup(); };
+      const nmIn = document.createElement("input"); nmIn.className = "su-nameinput"; nmIn.type = "text"; nmIn.value = h.name; nmIn.title = "اسم العادة";
+      nmIn.onchange = () => { const v = nmIn.value.trim(); if (v) { h.name = v; touchDomain(habitDomain(h)); save(); } };
+      const del = document.createElement("button"); del.className = "su-del"; del.textContent = "🗑️"; del.title = "حذف العادة";
+      del.onclick = () => { if (confirm("حذف العادة «" + h.name + "»؟")) { const d = habitDomain(h); state.habits = state.habits.filter(x => x.id !== h.id); touchDomain(d); save(); renderSetup(); } };
+      top.append(fav, nmIn, del); card.append(top);
+      const prog = habitProgramOf(h); const pr = document.createElement("div"); pr.className = "su-prog"; pr.textContent = prog ? ("📁 " + prog.name) : "🗂️ بلا برنامج"; card.append(pr);
+      const seg = document.createElement("div"); seg.className = "su-seg su-seg4";
+      [["hours", "⏱️ ساعات"], ["points", "⭐ نقاط"], ["tasks", "✅ مهام"], ["habit", "🔁 عادة"]].forEach(([t, lbl]) => {
+        const bx = document.createElement("button"); bx.className = (t === "habit" ? "on" : ""); bx.textContent = lbl;
+        bx.onclick = () => suConvert(h, true, t);
+        seg.append(bx);
+      });
+      card.append(seg);
       const dates = document.createElement("div"); dates.className = "su-dates";
-      const wd = document.createElement("div"); wd.className = "su-date";
+      const wd = document.createElement("div"); wd.className = "su-num";
       const wl = document.createElement("label"); wl.textContent = "مدة الاستمرار (أيام)";
       const wi = document.createElement("input"); wi.type = "text"; wi.inputMode = "numeric"; wi.value = tgt ? toArDigits(tgt) : "";
       wi.onchange = () => { let n = parseInt(wi.value.replace(/[٠-٩]/g, d => "٠١٢٣٤٥٦٧٨٩".indexOf(d)), 10); if (!isFinite(n) || n < 0) n = 0; h.targetDays = n; save(); renderSetup(); };
-      wd.append(wl, wi); dates.append(wd);
-      dates.append(suDateField("البداية", h.startDate, v => { h.startDate = v || ""; save(); renderSetup(); }));
+      wd.append(wl, wi);
+      dates.append(wd, suDateField("البداية", h.startDate, v => { h.startDate = v || ""; save(); renderSetup(); }));
       card.append(dates);
       card.append(suTrackRow(a, e, st, tgt > 0));
       const req = document.createElement("div"); req.className = "su-reqline";
