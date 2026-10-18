@@ -2679,10 +2679,16 @@
       if (now <= s) return 0;
       return (now - s) / (e - s);
     }
+    // بداية العادة: تاريخ البدء المحدَّد إن وُجد، وإلا تاريخ الإنشاء
+    function habitStartMs(h) {
+      if (h.startDate) { const t = dateInputToDayStart(h.startDate); if (isFinite(t)) return t; }
+      return dayStartOf(h.created || Date.now());
+    }
     function habitExpected(h, now) {
       const tgt = h.targetDays || 0;
       if (tgt > 0) {
-        const start = dayStartOf(h.created || now);
+        const start = habitStartMs(h);
+        // لم يبدأ وقتها بعد ⇒ لا مطلوب ولا تأخّر
         const elapsed = Math.max(0, Math.round((dayStartOf(now) - start) / DAY_MS));
         return Math.max(0, Math.min(1, elapsed / tgt));
       }
@@ -4887,6 +4893,7 @@
     function suHabitStatus(h, now) {
       const tgt = h.targetDays || 0;
       if (tgt <= 0) return { color: "gray", label: "عادة مفتوحة" };
+      if (dayStartOf(now) < habitStartMs(h)) return { color: "gray", label: "لم تبدأ بعد" };
       const a = habitProgress(h), e = Math.min(1, habitExpected(h, now));
       if (a >= 1) return { color: "green", label: "بلغت المدة ✓" };
       const gap = a - e;
@@ -5051,6 +5058,7 @@
       card.append(suTrackRow(a, e, st, tgt > 0));
       const req = document.createElement("div"); req.className = "su-reqline";
       if (tgt <= 0) req.textContent = "عادة مفتوحة — حدّد مدة استمرار لمعرفة المطلوب.";
+      else if (dayStartOf(now) < habitStartMs(h)) req.textContent = "تبدأ في " + fmtDateShort(h.startDate) + " — لم يبدأ وقتها بعد.";
       else req.innerHTML = "الاسترايك الحالي <b>" + toArDigits(habitStreak(h)) + "</b> من " + toArDigits(tgt) + " يوم (" + toArDigits(Math.round(a * 100)) + "٪ مقابل مطلوب " + toArDigits(Math.round(e * 100)) + "٪)";
       card.append(req);
       return card;
