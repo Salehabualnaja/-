@@ -1248,8 +1248,14 @@
     .tl-mstat { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; font-weight: 800; color: var(--muted); background: var(--panel-2); border: 1px solid var(--border); border-radius: 20px; padding: 2px 8px; font-variant-numeric: tabular-nums; }
     .tl-mstat i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
     .tl-mstat.behind i { background: var(--danger); }
-    .tl-mstat.ontrack i { background: var(--accent); }
+    .tl-mstat.gray i { background: var(--muted); }
     .tl-mstat.ahead i { background: var(--run); }
+    .tl-legend { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin: 2px 0 10px; }
+    .tl-legend span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--muted); }
+    .tl-legend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .tl-legend .lb i { background: var(--danger); }
+    .tl-legend .lg i { background: var(--muted); }
+    .tl-legend .la i { background: var(--run); }
     .tl-item { position: relative; margin: 0 0 12px; padding-inline-start: 74px; opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s ease; }
     .tl-item.tl-in { opacity: 1; transform: none; }
     .tl-node { position: absolute; inset-inline-start: 30px; top: 18px; z-index: 2; width: 23px; height: 23px; border-radius: 50%; background: var(--accent); border: 3px solid var(--bg); box-shadow: 0 0 0 2px var(--accent); display: grid; place-items: center; font-size: 11px; color: #fff; }
@@ -1403,6 +1409,11 @@
       <div class="tl-scope" id="tlScope">
         <button data-tlscope="all" class="active">كل المشاريع</button>
         <button data-tlscope="fav">⭐ المفضلة</button>
+      </div>
+      <div class="tl-legend">
+        <span class="lb"><i></i>متأخّرة</span>
+        <span class="lg"><i></i>لم تبدأ / بلا تاريخ</span>
+        <span class="la"><i></i>على المسار أو متقدّمة</span>
       </div>
       <div id="timelineBody" class="tl-body"></div>
     </section>
@@ -4744,25 +4755,19 @@
       t.innerHTML = "<div class='tl-today-line'></div><div class='tl-today-badge'>اليوم · " + fmtDayShort(Date.now()) + "</div>";
       return t;
     }
-    // تصنيف حالة المشروع للخط الزمني: متأخّر / على المسار / متقدّم
+    // تصنيف حالة المشروع للخط الزمني — نفس مخطّط ألوان الضبط للاتساق:
+    // أحمر متأخّر · رمادي لم يبدأ/بلا تاريخ · أخضر على المسار أو متقدّم
     function tlStatusClass(g, now) {
-      if (isComplete(g)) return "ahead";
-      if (!g.endDate) return "ontrack";
-      const a = goalProgress(g), e = expectedProgress(g, now);
-      if (e <= 0.0001) return "ontrack"; // لم يبدأ بعد — ليس متأخّراً
-      const gap = a - e;
-      if (gap >= 0.12) return "ahead";
-      if (gap >= -0.02) return "ontrack";
-      return "behind";
+      return suStatus(g, now).color; // "red" | "gray" | "green"
     }
     function tlMonthMarker(m, monthItems, now) {
       const el = document.createElement("div"); el.className = "tl-month";
-      let behind = 0, ontrack = 0, ahead = 0;
-      for (const z of monthItems) { const c = tlStatusClass(z.p, now); if (c === "behind") behind++; else if (c === "ahead") ahead++; else ontrack++; }
+      let behind = 0, gray = 0, ahead = 0;
+      for (const z of monthItems) { const c = tlStatusClass(z.p, now); if (c === "red") behind++; else if (c === "gray") gray++; else ahead++; }
       let html = "<span class='tl-month-nm'>" + AR_MONTHS[m] + "</span><span class='tl-mstats'>";
       if (behind) html += "<span class='tl-mstat behind' title='متأخّرة'><i></i>" + toArDigits(behind) + "</span>";
-      if (ontrack) html += "<span class='tl-mstat ontrack' title='على المسار'><i></i>" + toArDigits(ontrack) + "</span>";
-      if (ahead) html += "<span class='tl-mstat ahead' title='متقدّمة'><i></i>" + toArDigits(ahead) + "</span>";
+      if (gray) html += "<span class='tl-mstat gray' title='لم تبدأ / بلا تاريخ'><i></i>" + toArDigits(gray) + "</span>";
+      if (ahead) html += "<span class='tl-mstat ahead' title='على المسار أو متقدّمة'><i></i>" + toArDigits(ahead) + "</span>";
       html += "</span>";
       el.innerHTML = html;
       return el;
