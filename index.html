@@ -1636,6 +1636,7 @@
     <button class="navbtn active" data-mode="stats"><span class="bi">📊</span><span class="bl">الإحصاءات</span></button>
     <button class="navbtn" data-mode="projects"><span class="bi">📁</span><span class="bl">الإدخال</span></button>
     <button class="navbtn" data-mode="challenges"><span class="bi">✅</span><span class="bl">المهام</span></button>
+    <button class="navbtn" data-mode="setup"><span class="bi">🎛️</span><span class="bl">الضبط</span></button>
   </nav>
 
   <!-- ورقة إجراء الإضافة -->
@@ -4826,7 +4827,7 @@
     const suDoms = new Set(); // المجالات المفتوحة في صفحة الضبط (قوائم منسدلة)
     function openSetup() {
       appMode = "setup";
-      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.remove("active"));
+      document.querySelectorAll(".bottomnav button[data-mode]").forEach(b => b.classList.toggle("active", b.dataset.mode === "setup"));
       saveUI(); render(); window.scrollTo(0, 0);
     }
     document.getElementById("openSetup").onclick = openSetup;
