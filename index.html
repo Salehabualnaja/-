@@ -3000,6 +3000,7 @@
     }
     function fuOpen(b) { if (b.kind === "plan") openItem(b.ref); else goFollowupHabits(); }
     let _fuScroll = 0;
+    const _habitStripScroll = {}; // موضع تمرير شريط أيام كل عادة — يُحفظ ليبقى ثابتاً بعد إعادة الرسم
     // ═══ جولة في البرامج: استعراض سريع + تحديث + تأجيل ═══
     function renderFollowup() {
       els.dayLabel.textContent = "جولة في البرامج — استعرض · حدّث · أجّل";
@@ -6063,21 +6064,25 @@
         dot.textContent = on ? "✓" : "";
         dot.title = fmtDayLong(dayMs);
         if (isFuture) { dot.disabled = true; }
-        else dot.onclick = () => { const k = habitKey(dayMs); if (!h.log) h.log = {}; if (h.log[k]) delete h.log[k]; else h.log[k] = true; touchDomain(habitDomain(h)); save(); refreshViews(); };
+        else dot.onclick = () => { const k = habitKey(dayMs); if (!h.log) h.log = {}; if (h.log[k]) delete h.log[k]; else h.log[k] = true; touchDomain(habitDomain(h)); save(); _habitStripScroll[h.id] = days.scrollLeft; refreshViews(); };
         const lbl = document.createElement("div"); lbl.className = "hd-lbl"; lbl.textContent = AR_WD[d.getDay()];
         const dnum = document.createElement("div"); dnum.className = "hd-date"; dnum.textContent = toArDigits(d.getDate()) + "/" + toArDigits(d.getMonth() + 1);
         cell.append(dot, lbl, dnum); days.append(cell);
       }
       card.append(days);
-      // أظهر اليوم عند الطرف الأيمن (والأيام القادمة إلى يساره)
-      requestAnimationFrame(() => { const t = days.querySelector(".is-today"); if (t) { const cr = days.getBoundingClientRect(), tr = t.getBoundingClientRect(); days.scrollLeft += (tr.right - cr.right); } });
+      // حافظ على موضع التمرير بعد إعادة الرسم (عند وسم اليوم) بدل القفز إلى اليوم في كل مرة؛
+      // الموضع يُحفَظ لحظة النقر (حفظاً موثوقاً لا يعتمد على أحداث التمرير). وأول مرة يُعرض اليوم يميناً.
+      requestAnimationFrame(() => {
+        if (h.id in _habitStripScroll) { days.scrollLeft = _habitStripScroll[h.id]; return; }
+        const t = days.querySelector(".is-today"); if (t) { const cr = days.getBoundingClientRect(), tr = t.getBoundingClientRect(); days.scrollLeft += (tr.right - cr.right); }
+      });
 
       const foot = document.createElement("div"); foot.className = "habit-foot";
       const check = document.createElement("button");
       const doneToday = habitDoneToday(h);
       check.className = "habit-check" + (doneToday ? " on" : "");
       check.innerHTML = doneToday ? "✓ تمّت اليوم" : "وسّم اليوم كمُنجَز";
-      check.onclick = () => { toggleHabitToday(h); touchDomain(habitDomain(h)); save(); refreshViews(); };
+      check.onclick = () => { toggleHabitToday(h); touchDomain(habitDomain(h)); save(); _habitStripScroll[h.id] = days.scrollLeft; refreshViews(); };
       const best = document.createElement("div"); best.className = "habit-best"; best.textContent = "أطول استرايك: " + habitBest(h) + " يوم";
       foot.append(check, best);
       card.append(foot);
