@@ -2631,7 +2631,9 @@
     }
     function domainDone(domainId) {
       const list = domainPlans(domainId);
-      return { done: list.filter(isComplete).length, total: list.length };
+      const habs = domainHabits(domainId); // العادات تُحتسب كمشاريع
+      const done = list.filter(isComplete).length + habs.filter(h => habitProgress(h) >= 1).length;
+      return { done, total: list.length + habs.length };
     }
     function weightOf(domainId) {
       const v = (state.domainWeights[domainId] || {}).w2030;
@@ -3334,13 +3336,15 @@
     function domStatusCounts(domId) {
       const now = Date.now();
       let red = 0, gray = 0, green = 0;
-      for (const g of domainPlans(domId)) { const c = suStatus(g, now).color; if (c === "red") red++; else if (c === "gray") gray++; else green++; }
+      const bump = (c) => { if (c === "red") red++; else if (c === "gray") gray++; else green++; };
+      for (const g of domainPlans(domId)) bump(suStatus(g, now).color);
+      for (const h of domainHabits(domId)) bump(suHabitStatus(h, now).color); // العادات تُحتسب كمشاريع
       return { red, gray, green, total: red + gray + green };
     }
     function renderDomainStatus() {
       const wrap = els.domainStatusWrap; if (!wrap) return;
       wrap.replaceChildren();
-      const doms = domainsOrdered().filter(d => domainPlans(d.id).length);
+      const doms = domainsOrdered().filter(d => domStatusCounts(d.id).total);
       const title = document.createElement("div"); title.className = "section-title"; title.textContent = "🧭 حالة المجالات ومشاريعها";
       wrap.append(title);
       if (!doms.length) { const e = document.createElement("div"); e.className = "perf-empty"; e.textContent = _favScope ? "لا مشاريع مفضّلة بعد." : "لا مشاريع بعد."; wrap.append(e); return; }
@@ -3384,18 +3388,31 @@
       row.append(nm, sbdBar(pct), pc);
       return row;
     }
+    function sbdHabitRow(h) {
+      const done = habitProgress(h) >= 1; const pct = Math.round(habitProgress(h) * 100);
+      const row = document.createElement("div"); row.className = "sbd-proj" + (done ? " done" : "");
+      const nm = document.createElement("span"); nm.className = "sbd-proj-nm";
+      nm.textContent = (done ? "✓ " : "") + (h.favorite ? "★ " : "") + "🔁 " + h.name;
+      const pc = document.createElement("span"); pc.className = "sbd-proj-pct"; pc.textContent = toArDigits(pct) + "٪";
+      row.append(nm, sbdBar(pct), pc);
+      return row;
+    }
     function sbdProgBlock(prog) {
       const list = _statPlans(prog.id);
+      const habs = programHabits(prog.id).filter(h => !_favScope || h.favorite); // العادات تُحتسب كمشاريع
       const block = document.createElement("div"); block.className = "sbd-prog";
       const pct = programPct(prog.id);
       const open = expandedStatsProgs.has(prog.id);
       const head = document.createElement("div"); head.className = "sbd-prog-head" + (open ? " open" : "");
       head.innerHTML = "<span class='sbd-chev'>▾</span><span class='sbd-prog-nm'>📁 " + escapeHtml(prog.name)
-        + "</span><span class='sbd-cnt'>" + toArDigits(list.length) + "</span><span class='sbd-prog-pct'>" + toArDigits(pct) + "٪</span>";
+        + "</span><span class='sbd-cnt'>" + toArDigits(list.length + habs.length) + "</span><span class='sbd-prog-pct'>" + toArDigits(pct) + "٪</span>";
       block.append(head);
       const box = document.createElement("div"); box.className = "sbd-projs"; box.hidden = !open;
-      if (!list.length) { const e = document.createElement("div"); e.className = "sbd-empty"; e.textContent = "لا مشاريع"; box.append(e); }
-      else for (const pl of list.slice().sort((a, b) => isComplete(a) - isComplete(b) || (b.created - a.created))) box.append(sbdProjRow(pl));
+      if (!list.length && !habs.length) { const e = document.createElement("div"); e.className = "sbd-empty"; e.textContent = "لا مشاريع"; box.append(e); }
+      else {
+        for (const pl of list.slice().sort((a, b) => isComplete(a) - isComplete(b) || (b.created - a.created))) box.append(sbdProjRow(pl));
+        for (const h of habs) box.append(sbdHabitRow(h));
+      }
       block.append(box);
       head.onclick = () => { if (expandedStatsProgs.has(prog.id)) expandedStatsProgs.delete(prog.id); else expandedStatsProgs.add(prog.id); head.classList.toggle("open"); box.hidden = !expandedStatsProgs.has(prog.id); };
       return block;
@@ -3408,20 +3425,22 @@
       for (const d of domainsOrdered()) {
         const progs = state.programs.filter(pr => (pr.domainId || "") === d.id && favP(pr));
         const noProg = state.plans.filter(pl => (pl.programId || "") === "" && (pl.domainId || "") === d.id && (!_favScope || pl.favorite));
-        if (!progs.length && !noProg.length) continue;
+        const noProgHabs = state.habits.filter(h => (h.programId || "") === "" && habitDomain(h) === d.id && (!_favScope || h.favorite)); // عادات المجال كمشاريع
+        if (!progs.length && !noProg.length && !noProgHabs.length) continue;
         shown++;
         const pct = Math.round(domainProgress(d.id, false) * 100);
         const sec = document.createElement("div"); sec.className = "dom-section" + (expandedStatsDoms.has(d.id) ? "" : " collapsed");
         sec.dataset.dom = d.id;
         sec.append(domSectionHead(sec, d.id, d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪", expandedStatsDoms));
         for (const prog of progs) sec.append(sbdProgBlock(prog));
-        if (noProg.length) {
+        if (noProg.length || noProgHabs.length) {
           const nb = document.createElement("div"); nb.className = "sbd-prog static";
           const hd = document.createElement("div"); hd.className = "sbd-prog-head open";
-          hd.innerHTML = "<span class='sbd-prog-nm'>🗂️ بلا برنامج</span><span class='sbd-cnt'>" + toArDigits(noProg.length) + "</span>";
+          hd.innerHTML = "<span class='sbd-prog-nm'>🗂️ بلا برنامج</span><span class='sbd-cnt'>" + toArDigits(noProg.length + noProgHabs.length) + "</span>";
           nb.append(hd);
           const bx = document.createElement("div"); bx.className = "sbd-projs";
           for (const pl of noProg.slice().sort((a, b) => isComplete(a) - isComplete(b) || (b.created - a.created))) bx.append(sbdProjRow(pl));
+          for (const h of noProgHabs) bx.append(sbdHabitRow(h));
           nb.append(bx); sec.append(nb);
         }
         frag.append(sec);
@@ -3487,7 +3506,9 @@
 
     function allDone() {
       const list = _favScope ? state.plans.filter(p => p.favorite) : state.plans;
-      return { done: list.filter(isComplete).length, total: list.length };
+      const habs = _favScope ? state.habits.filter(h => h.favorite) : state.habits; // العادات تُحتسب كمشاريع
+      const done = list.filter(isComplete).length + habs.filter(h => habitProgress(h) >= 1).length;
+      return { done, total: list.length + habs.length };
     }
 
     function domainName(id) { const d = DOMAINS.find(x => x.id === id); return d ? d.name : ""; }
