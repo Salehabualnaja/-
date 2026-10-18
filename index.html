@@ -4871,6 +4871,7 @@
       const w = document.createElement("div"); w.className = "su-date";
       const l = document.createElement("label"); l.textContent = lbl;
       const i = document.createElement("input"); i.type = "date"; i.value = val || "";
+      i.dir = "ltr"; i.style.direction = "ltr"; i.style.textAlign = "right";
       i.onchange = () => onSet(i.value);
       w.append(l, i); return w;
     }
@@ -4941,8 +4942,7 @@
       } else if (g.type === "tasks") {
         const l = projectTasks(g.id); const row = document.createElement("div"); row.className = "su-taskline";
         const s = document.createElement("span"); s.textContent = "✅ " + toArDigits(l.filter(c => c.done).length) + " / " + toArDigits(l.length) + " مهمة منجَزة";
-        const go = document.createElement("button"); go.className = "gt-go"; go.textContent = "📋 المهام"; go.onclick = () => gotoProjectTasks(g);
-        row.append(s, go); card.append(row);
+        row.append(s); card.append(row);
         // خانة مؤشّر النجاح لمشاريع المهام: ما الذي يدل على نجاح المشروع (غير إكمال المهام)
         const kpi = document.createElement("div"); kpi.className = "su-kpi";
         const kl = document.createElement("label"); kl.textContent = "مؤشر النجاح";
