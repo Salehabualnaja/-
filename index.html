@@ -2139,10 +2139,11 @@
         if (typeof w.w2030 !== "number") w.w2030 = 1;
         p.domainWeights[d.id] = w;
       }
-      // ترتيب يدوي للمجالات في صفحة الإدخال
+      // ترتيب المجالات: افتراضياً حسب عدد المشاريع (الأكثر فالأقل)، ويصير يدوياً بعد السحب
       if (!Array.isArray(p.domainOrder)) p.domainOrder = [];
       p.domainOrder = p.domainOrder.filter(id => DOMAINS.some(d => d.id === id));
       for (const d of DOMAINS) if (!p.domainOrder.includes(d.id)) p.domainOrder.push(d.id);
+      if (typeof p.domainOrderManual !== "boolean") p.domainOrderManual = false;
       return p;
     }
     function save() { try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {} }
@@ -3320,6 +3321,7 @@
         shown++;
         const pct = Math.round(domainProgress(d.id, false) * 100);
         const sec = document.createElement("div"); sec.className = "dom-section" + (expandedStatsDoms.has(d.id) ? "" : " collapsed");
+        sec.dataset.dom = d.id;
         sec.append(domSectionHead(sec, d.id, d.icon + " " + d.name + "</span><span class='dsh-pct'>" + toArDigits(pct) + "٪", expandedStatsDoms));
         for (const prog of progs) sec.append(sbdProgBlock(prog));
         if (noProg.length) {
@@ -3339,6 +3341,7 @@
         frag.append(e);
       }
       wrap.replaceChildren(frag);
+      if (typeof makeReorderable === "function") makeReorderable(wrap, ".dom-section[data-dom]", ".dom-section-head", "dom", ids => reorderDomains(ids));
     }
 
     // ═══ رسم توازن المجالات (رادار/مضلّع) وفق المستهدفات والأوزان ═══
@@ -3986,11 +3989,19 @@
       state.programs = result; save();
     }
     // المجالات مرتّبة حسب ترتيب المستخدم اليدوي
+    // عدد العناصر المنضمة للمجال (مشاريع + عادات) — أساس الترتيب الأوّلي
+    function domainItemCount(id) {
+      return state.plans.filter(p => planDomain(p) === id).length + state.habits.filter(h => habitDomain(h) === id).length;
+    }
     function domainsOrdered() {
       const map = new Map(DOMAINS.map(d => [d.id, d]));
-      const out = state.domainOrder.map(id => map.get(id)).filter(Boolean);
-      for (const d of DOMAINS) if (!out.includes(d)) out.push(d);
-      return out;
+      // بعد سحب المستخدم: احترام ترتيبه اليدوي. وإلا: الترتيب الأوّلي حسب عدد المشاريع (الأكثر فالأقل)
+      if (state.domainOrderManual) {
+        const out = state.domainOrder.map(id => map.get(id)).filter(Boolean);
+        for (const d of DOMAINS) if (!out.includes(d)) out.push(d);
+        return out;
+      }
+      return DOMAINS.slice().sort((a, b) => (domainItemCount(b.id) - domainItemCount(a.id)) || (DOMAINS.indexOf(a) - DOMAINS.indexOf(b)));
     }
     // إعادة ترتيب المجالات الظاهرة مع الحفاظ على مواضع المخفية بينها
     function reorderDomains(orderedIds) {
@@ -4002,6 +4013,7 @@
       const result = base.slice();
       positions.forEach((pos, k) => { if (reordered[k]) result[pos] = reordered[k]; });
       state.domainOrder = result;
+      state.domainOrderManual = true; // صار الترتيب يدوياً بعد السحب
       save();
     }
     function wireDomains(container) {
@@ -4991,6 +5003,7 @@
         if (!plans.length && !habits.length) continue;
         const open = suDoms.has(d.id);
         const sec = document.createElement("div"); sec.className = "dom-section su-domsec" + (open ? "" : " collapsed");
+        if (d.id !== "__nodom__") sec.dataset.dom = d.id;
         const head = document.createElement("div"); head.className = "dom-section-head";
         head.innerHTML = "<span class='dsh-nm'><span class='dsh-chev'>▾</span> " + d.icon + " " + escapeHtml(d.name) + "</span><span class='dsh-pct'>" + toArDigits(plans.length + habits.length) + "</span>";
         head.onclick = () => { if (suDoms.has(d.id)) suDoms.delete(d.id); else suDoms.add(d.id); sec.classList.toggle("collapsed"); updateExpandBtn(); };
@@ -5005,6 +5018,8 @@
         frag.append(e);
       }
       body.replaceChildren(frag);
+      // المجالات قابلة للسحب (الترتيب الأوّلي حسب عدد المشاريع)
+      if (typeof makeReorderable === "function") makeReorderable(body, ".su-domsec[data-dom]", ".dom-section-head", "dom", ids => reorderDomains(ids));
       const sub = document.getElementById("suHeadSub");
       if (sub) sub.textContent = suScope === "nodate" ? "مشاريع بلا مدة — حدّد تاريخ الإنجاز" : suScope === "behind" ? "مشاريع متأخّرة عن المطلوب حتى اليوم" : "اضبط النوع والمدة · والمطلوب حتى اليوم";
     }
@@ -5609,12 +5624,8 @@
         makeReorderable(body, ".chtree-prog[data-prog]", ".chtree-proghead", "prog", ids => reorderProgramsSubset(ids)); // سحب البرامج
         sec.append(head, body); tree.append(sec);
       };
-      const baseList = (typeof domainsOrdered === "function" ? domainsOrdered() : DOMAINS);
-      const known = new Set(baseList.map(d => d.id));
-      // ترتيب المجالات حسب عدد المهام غير المنجَزة فيها (الأكثر فالأقل)
-      const domTaskN = (id) => state.challenges.filter(c => challengeDomain(c) === id && !c.done).length;
-      const domList = baseList.map((d, i) => ({ d, i, n: domTaskN(d.id) }))
-        .sort((a, b) => (b.n - a.n) || (a.i - b.i)).map(x => x.d);
+      const domList = (typeof domainsOrdered === "function" ? domainsOrdered() : DOMAINS);
+      const known = new Set(domList.map(d => d.id));
       for (const d of domList) buildDom(d.id, d.icon, d.name,
         state.plans.filter(p => planDomain(p) === d.id),
         state.challenges.filter(c => challengeDomain(c) === d.id));
@@ -5626,7 +5637,8 @@
         e.textContent = "لا مهام بعد.\nاكتب مهمة في الأعلى وحدّد مشروعها لتظهر هنا.";
         tree.append(e);
       }
-      // المجالات هنا مرتّبة تلقائياً حسب عدد المهام (الأكثر أولاً)، فلا سحب لإعادة ترتيبها في هذه الصفحة
+      // المجالات قابلة للسحب (الترتيب الأوّلي حسب عدد المشاريع)
+      if (typeof makeReorderable === "function") makeReorderable(tree, ".chtree-dom[data-dom]", ".chtree-domhead", "dom", ids => reorderDomains(ids));
     }
 
     // ── نافذة مهام المشروع/المجموعة (تُفتح من الصندوق) ──
@@ -6419,6 +6431,7 @@
       const section = (key, title, rems) => {
         if (!rems.length) return;
         const sec = document.createElement("div"); sec.className = "dom-section" + (expandedRemDoms.has(key) ? "" : " collapsed");
+        if (key !== "__nodom__") sec.dataset.dom = key;
         sec.append(domSectionHead(sec, key, title + "</span><span class='dsh-pct'>" + toArDigits(rems.length), expandedRemDoms));
         const box = document.createElement("div"); box.className = "rem-domlist";
         for (const r of remsByTime(rems)) box.append(remChip(r, true));
@@ -6581,6 +6594,7 @@
       else if (reminderView === "domain") frag.append(buildRemByDomain());
       else frag.append(buildRemYearly());
       els.remindersList.replaceChildren(frag);
+      if (reminderView === "domain" && typeof makeReorderable === "function") makeReorderable(els.remindersList, ".dom-section[data-dom]", ".dom-section-head", "dom", ids => reorderDomains(ids));
     }
 
     // تبويبات عرض التذكيرات
