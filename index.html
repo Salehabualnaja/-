@@ -1298,6 +1298,9 @@
     .su-num label { font-size: 10px; color: var(--muted); font-weight: 800; }
     .su-num input { width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 8px; font-size: 14px; font-weight: 800; font-family: inherit; box-sizing: border-box; text-align: center; font-variant-numeric: tabular-nums; }
     .su-taskline { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 800; color: var(--accent-ink); }
+    .su-kpi { display: flex; flex-direction: column; gap: 3px; }
+    .su-kpi label { font-size: 10px; color: var(--muted); font-weight: 800; }
+    .su-kpi input { width: 100%; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 8px 9px; font-size: 13px; font-family: inherit; box-sizing: border-box; }
     .su-seg { display: flex; border: 1px solid var(--border-strong); border-radius: 9px; overflow: hidden; }
     .su-seg button { flex: 1; border: none; background: var(--panel-2); color: var(--muted); font-family: inherit; font-weight: 800; font-size: 12px; padding: 8px 2px; cursor: pointer; }
     .su-seg button.on { background: var(--accent); color: #fff; }
@@ -4940,6 +4943,12 @@
         const s = document.createElement("span"); s.textContent = "✅ " + toArDigits(l.filter(c => c.done).length) + " / " + toArDigits(l.length) + " مهمة منجَزة";
         const go = document.createElement("button"); go.className = "gt-go"; go.textContent = "📋 المهام"; go.onclick = () => gotoProjectTasks(g);
         row.append(s, go); card.append(row);
+        // خانة مؤشّر النجاح لمشاريع المهام: ما الذي يدل على نجاح المشروع (غير إكمال المهام)
+        const kpi = document.createElement("div"); kpi.className = "su-kpi";
+        const kl = document.createElement("label"); kl.textContent = "مؤشر النجاح";
+        const ki = document.createElement("input"); ki.type = "text"; ki.value = g.successMetric || ""; ki.placeholder = "ما الذي يدل على نجاح المشروع؟";
+        ki.onchange = () => { g.successMetric = ki.value.trim(); touchDomain(planDomain(g)); save(); };
+        kpi.append(kl, ki); card.append(kpi);
       }
       const dates = document.createElement("div"); dates.className = "su-dates";
       dates.append(suDateField("من", g.startDate, v => { g.startDate = v || ""; save(); renderSetup(); }));
