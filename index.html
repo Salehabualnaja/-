@@ -1256,6 +1256,23 @@
     .tl-legend .lb i { background: var(--danger); }
     .tl-legend .lg i { background: var(--muted); }
     .tl-legend .la i { background: var(--run); }
+    /* حالة المجالات ومشاريعها */
+    .ds-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; gap: 11px; }
+    .ds-legend { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; padding-bottom: 2px; border-bottom: 1px dashed var(--border); }
+    .ds-legend span { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; color: var(--muted); }
+    .ds-legend i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .ds-legend .db i { background: var(--danger); }
+    .ds-legend .dg i { background: var(--muted); }
+    .ds-legend .da i { background: var(--run); }
+    .ds-row { display: flex; flex-direction: column; gap: 5px; }
+    .ds-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .ds-nm { font-size: 13px; font-weight: 800; color: var(--text); }
+    .ds-cnt { font-size: 11px; font-weight: 700; color: var(--muted); }
+    .ds-bar { display: flex; height: 20px; border-radius: 7px; overflow: hidden; background: var(--track); gap: 2px; }
+    .ds-seg { display: flex; align-items: center; justify-content: center; min-width: 20px; font-size: 11px; font-weight: 800; color: #fff; }
+    .ds-seg.behind { background: var(--danger); }
+    .ds-seg.gray { background: var(--muted); }
+    .ds-seg.ahead { background: var(--run); }
     .tl-item { position: relative; margin: 0 0 12px; padding-inline-start: 74px; opacity: 0; transform: translateY(18px); transition: opacity .55s ease, transform .55s ease; }
     .tl-item.tl-in { opacity: 1; transform: none; }
     .tl-node { position: absolute; inset-inline-start: 30px; top: 18px; z-index: 2; width: 23px; height: 23px; border-radius: 50%; background: var(--accent); border: 3px solid var(--bg); box-shadow: 0 0 0 2px var(--accent); display: grid; place-items: center; font-size: 11px; color: #fff; }
@@ -1394,6 +1411,8 @@
 
       <div class="section-title">المجالات الثمانية</div>
       <div class="domains-grid" id="domainsGrid"></div>
+
+      <div id="domainStatusWrap"></div>
 
       <div class="section-title">تفصيل حسب المجال</div>
       <div id="statsByDomain" class="sbd-wrap"></div>
@@ -2023,7 +2042,7 @@
     const expandedRemDoms = new Set(); // حالة طيّ مجالات صفحة التذكيرات
     // فلاتر لوحة أداء الإحصاءات
     const PERF_TYPE_KEY = "ptt.ui.perftype", PERF_PERIOD_KEY = "ptt.ui.perfperiod", PERF_DOM_KEY = "ptt.ui.perfdom";
-    let perfType = readUI(PERF_TYPE_KEY, ["hours", "points", "habits", "composite"], "hours");
+    let perfType = readUI(PERF_TYPE_KEY, ["hours", "points", "composite"], "hours");
     let perfPeriod = readUI(PERF_PERIOD_KEY, ["day", "week", "month", "quarter"], "week");
     let perfDomain = "";
     let formulaOpen = false;
@@ -2376,6 +2395,7 @@
       setupSection: document.getElementById("setupSection"),
       statsTabs: document.getElementById("statsTabs"),
       domainsGrid: document.getElementById("domainsGrid"),
+      domainStatusWrap: document.getElementById("domainStatusWrap"),
       statsByDomain: document.getElementById("statsByDomain"),
       balanceWrap: document.getElementById("balanceWrap"),
       pct2030: document.getElementById("pct2030"),
@@ -2772,7 +2792,7 @@
 
       // ── الفلاتر: النوع · الفترة · المجال ──
       const fil = document.createElement("div"); fil.className = "perf-filters";
-      fil.append(mkSeg([["hours", "⏱️ ساعات"], ["points", "⭐ نقاط"], ["habits", "🔁 عادات"], ["composite", "🎯 مجمل الأداء"]], perfType, v => { perfType = v; try { localStorage.setItem(PERF_TYPE_KEY, v); } catch (_) {} renderPerformance(); }));
+      fil.append(mkSeg([["hours", "⏱️ ساعات"], ["points", "⭐ نقاط"], ["composite", "🎯 مجمل الأداء"]], perfType, v => { perfType = v; try { localStorage.setItem(PERF_TYPE_KEY, v); } catch (_) {} renderPerformance(); }));
       fil.append(mkSeg([["day", "يوم"], ["week", "أسبوع"], ["month", "شهر"], ["quarter", "ربع"]], perfPeriod, v => { perfPeriod = v; try { localStorage.setItem(PERF_PERIOD_KEY, v); } catch (_) {} renderPerformance(); }));
       const domSel = document.createElement("select"); domSel.className = "perf-dom";
       const optAll = document.createElement("option"); optAll.value = ""; optAll.textContent = "🗂️ كل المجالات"; domSel.append(optAll);
@@ -3305,8 +3325,43 @@
         frag.append(card);
       }
       els.domainsGrid.replaceChildren(frag);
+      renderDomainStatus();
       buildStatsByDomain();
       _favScope = false;
+    }
+
+    // ═══ رسم حالة كل مجال مع حالات مشاريعه (متأخّر/لم يبدأ/على المسار) ═══
+    function domStatusCounts(domId) {
+      const now = Date.now();
+      let red = 0, gray = 0, green = 0;
+      for (const g of domainPlans(domId)) { const c = suStatus(g, now).color; if (c === "red") red++; else if (c === "gray") gray++; else green++; }
+      return { red, gray, green, total: red + gray + green };
+    }
+    function renderDomainStatus() {
+      const wrap = els.domainStatusWrap; if (!wrap) return;
+      wrap.replaceChildren();
+      const doms = domainsOrdered().filter(d => domainPlans(d.id).length);
+      const title = document.createElement("div"); title.className = "section-title"; title.textContent = "🧭 حالة المجالات ومشاريعها";
+      wrap.append(title);
+      if (!doms.length) { const e = document.createElement("div"); e.className = "perf-empty"; e.textContent = _favScope ? "لا مشاريع مفضّلة بعد." : "لا مشاريع بعد."; wrap.append(e); return; }
+      const card = document.createElement("div"); card.className = "ds-card";
+      const legend = document.createElement("div"); legend.className = "ds-legend";
+      legend.innerHTML = "<span class='db'><i></i>متأخّرة</span><span class='dg'><i></i>لم تبدأ</span><span class='da'><i></i>على المسار / متقدّمة</span>";
+      card.append(legend);
+      for (const d of doms) {
+        const c = domStatusCounts(d.id);
+        const row = document.createElement("div"); row.className = "ds-row";
+        const head = document.createElement("div"); head.className = "ds-head";
+        head.innerHTML = "<span class='ds-nm'>" + d.icon + " " + escapeHtml(d.name) + "</span><span class='ds-cnt'>" + toArDigits(c.total) + " مشروع</span>";
+        const bar = document.createElement("div"); bar.className = "ds-bar";
+        const seg = (n, cls) => { if (!n) return; const s = document.createElement("div"); s.className = "ds-seg " + cls; s.style.flex = n; s.textContent = toArDigits(n); s.title = toArDigits(n); bar.append(s); };
+        seg(c.red, "behind"); seg(c.gray, "gray"); seg(c.green, "ahead");
+        row.append(head, bar);
+        row.style.cursor = "pointer";
+        row.onclick = () => openDomain(d);
+        card.append(row);
+      }
+      wrap.append(card);
     }
 
     // عرض تفصيلي للمشاريع/البرامج منسّق على هيئة المجالات (كصفحة المفضلة في الإدخال) — إحصائي للقراءة
