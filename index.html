@@ -1288,6 +1288,8 @@
     .su-nameinput { flex: 1; min-width: 0; border: 1px solid var(--border-strong); background: var(--panel-2); color: var(--text); border-radius: 8px; padding: 7px 9px; font-size: 14px; font-weight: 800; font-family: inherit; }
     .su-fav { flex: none; border: none; background: none; font-size: 18px; color: var(--muted); cursor: pointer; padding: 0; line-height: 1; }
     .su-fav.on { color: var(--dial-gold); }
+    .su-bell { flex: none; border: none; background: none; font-size: 15px; cursor: pointer; padding: 0 1px; line-height: 1; opacity: .8; }
+    .su-bell:active { transform: scale(.9); }
     .su-del { flex: none; border: none; background: none; font-size: 15px; cursor: pointer; opacity: .7; padding: 2px; }
     .su-del:active { transform: scale(.9); }
     .su-prog { font-size: 10.5px; color: var(--muted); font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -4906,11 +4908,13 @@
       const prog = programOf(g);
       const fav = document.createElement("button"); fav.className = "su-fav" + (g.favorite ? " on" : ""); fav.textContent = g.favorite ? "★" : "☆"; fav.title = "المفضلة";
       fav.onclick = () => { g.favorite = !g.favorite; save(); renderSetup(); };
+      const bell = document.createElement("button"); bell.className = "su-bell"; bell.textContent = "🔔"; bell.title = "تنبيه وتذكير للمشروع";
+      bell.onclick = () => openReminder("project:" + g.id);
       const nmIn = document.createElement("input"); nmIn.className = "su-nameinput"; nmIn.type = "text"; nmIn.value = g.name; nmIn.title = "اسم المشروع";
       nmIn.onchange = () => { const v = nmIn.value.trim(); if (v) { g.name = v; touchDomain(planDomain(g)); save(); } };
       const del = document.createElement("button"); del.className = "su-del"; del.textContent = "🗑️"; del.title = "حذف المشروع";
       del.onclick = () => { if (confirm("حذف المشروع «" + g.name + "»؟")) { const d = planDomain(g); state.plans = state.plans.filter(x => x.id !== g.id); touchDomain(d); save(); renderSetup(); } };
-      top.append(fav, nmIn, del); card.append(top);
+      top.append(fav, bell, nmIn, del); card.append(top);
       const pr = document.createElement("div"); pr.className = "su-prog"; pr.textContent = prog ? ("📁 " + prog.name) : "🗂️ بلا برنامج"; card.append(pr);
       const seg = document.createElement("div"); seg.className = "su-seg su-seg4";
       [["hours", "⏱️ ساعات"], ["points", "⭐ نقاط"], ["tasks", "✅ مهام"], ["habit", "🔁 عادة"]].forEach(([t, lbl]) => {
