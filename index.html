@@ -876,8 +876,15 @@
     /* قسم المهام العاجلة */
     .churg-wrap { margin-bottom: 14px; border: 1px solid color-mix(in srgb, var(--danger) 35%, transparent); border-radius: 14px; background: color-mix(in srgb, var(--danger) 7%, var(--panel)); box-shadow: var(--shadow); padding: 12px; }
     .churg-title { margin: 0 2px 10px; }
-    .churg-list { display: flex; flex-direction: column; gap: 6px; }
+    .churg-list { display: flex; flex-direction: column; gap: 10px; }
     .churg-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 6px; font-weight: 700; }
+    /* تجميع المهام العاجلة حسب المجال */
+    .urg-domsec { display: flex; flex-direction: column; gap: 6px; }
+    .urg-domhead { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 2px; cursor: grab; }
+    .urg-domhead:active { cursor: grabbing; }
+    .urg-dom-nm { font-size: 12px; font-weight: 900; color: var(--accent-ink); }
+    .urg-cnt { font-size: 11px; font-weight: 800; color: var(--muted); background: var(--panel-2); border-radius: 20px; padding: 1px 9px; }
+    .urg-dombody { display: flex; flex-direction: column; gap: 6px; }
     /* زر الشعلة (عاجل) في صف المهمة */
     .ch-grip { flex: 0 0 auto; color: var(--muted); font-size: 13px; line-height: 1; cursor: grab; opacity: .55; padding: 0 2px; user-select: none; touch-action: none; }
     .ch-grip:active { cursor: grabbing; }
@@ -5074,7 +5081,7 @@
         const ok = document.createElement("button"); ok.type = "button"; ok.className = "su-addtask-ok"; ok.textContent = "إضافة";
         const commitTask = () => {
           const t = ti.value.trim(); if (!t) return;
-          state.challenges.push({ id: uid(), text: t, projectId: g.id, programId: "", domainId: planDomain(g), done: false, urgent: urg, created: Date.now() });
+          state.challenges.unshift({ id: uid(), text: t, projectId: g.id, programId: "", domainId: planDomain(g), done: false, urgent: urg, created: Date.now() });
           save();
           ti.value = ""; urg = false; fire.classList.remove("on"); fire.title = "تعيين كعاجل";
           const l2 = projectTasks(g.id); s.textContent = "✅ " + toArDigits(l2.filter(c => c.done).length) + " / " + toArDigits(l2.length) + " مهمة منجَزة";
@@ -5847,7 +5854,7 @@
       if (ptTarget.kind === "project") { projectId = ptTarget.id; const pl = state.plans.find(p => p.id === projectId); domainId = pl ? planDomain(pl) : ""; }
       else if (ptTarget.kind === "program" || ptTarget.kind === "progdirect") { programId = ptTarget.id; const pr = state.programs.find(p => p.id === programId); domainId = pr ? (pr.domainId || "") : ""; }
       else { domainId = ptTarget.domainId || ""; }
-      state.challenges.push({ id: uid(), text: t, projectId, programId, domainId, done: false, urgent: ptUrgentNew, created: Date.now() });
+      state.challenges.unshift({ id: uid(), text: t, projectId, programId, domainId, done: false, urgent: ptUrgentNew, created: Date.now() });
       save(); ptInput.value = ""; setPtUrgentNew(false); refreshChallengeViews(); ptInput.focus();
     }
     let ptUrgentNew = false; // حالة الشعلة في نافذة مهام المشروع
@@ -5879,11 +5886,26 @@
       const wrap = document.getElementById("chUrgWrap");
       const listEl = document.getElementById("chUrgList");
       if (!wrap || !listEl) return;
-      const urgent = chSortTasks(state.challenges.filter(c => c.urgent && !c.done));
+      const urgent = state.challenges.filter(c => c.urgent && !c.done);
       if (!urgent.length) { wrap.hidden = true; listEl.replaceChildren(); return; }
       wrap.hidden = false; listEl.replaceChildren();
-      for (const c of urgent) listEl.append(chTaskRow(c, false));
-      makeReorderable(listEl, ".ch-task[data-cid]", ".ch-grip", "cid", ids => reorderChallengesSubset(ids));
+      // مجمّعة حسب المجالات (ترتيب المجالات)، والمهمة الجديدة تظهر أعلى مجالها
+      const domList = (typeof domainsOrdered === "function" ? domainsOrdered() : DOMAINS);
+      const known = new Set(domList.map(d => d.id));
+      const groups = domList.map(d => ({ id: d.id, icon: d.icon, name: d.name })).concat([{ id: "__nodom__", icon: "📌", name: "بلا مجال" }]);
+      for (const d of groups) {
+        const items = urgent.filter(c => d.id === "__nodom__" ? !known.has(challengeDomain(c)) : challengeDomain(c) === d.id);
+        if (!items.length) continue;
+        const sec = document.createElement("div"); sec.className = "urg-domsec";
+        if (d.id !== "__nodom__") sec.dataset.dom = d.id;
+        const head = document.createElement("div"); head.className = "urg-domhead";
+        head.innerHTML = "<span class='urg-dom-nm'>" + d.icon + " " + escapeHtml(d.name) + "</span><span class='urg-cnt'>" + toArDigits(items.length) + "</span>";
+        const box = document.createElement("div"); box.className = "urg-dombody";
+        for (const c of items) box.append(chTaskRow(c, false));
+        sec.append(head, box); listEl.append(sec);
+        makeReorderable(box, ".ch-task[data-cid]", ".ch-grip", "cid", ids => reorderChallengesSubset(ids));
+      }
+      if (typeof makeReorderable === "function") makeReorderable(listEl, ".urg-domsec[data-dom]", ".urg-domhead", "dom", ids => reorderDomains(ids));
     }
     // ⭐ المفضلة أولاً: صناديق وصول سريع للبرامج والمشاريع المفضّلة
     function renderChFavorites() {
@@ -5916,7 +5938,7 @@
         if (c) { c.text = t; c.projectId = projectId; c.programId = programId; c.domainId = domainId; c.urgent = chUrgentNew; if (c.done) logDoneTask(c); }
         save(); exitChEdit(); refreshChallengeViews(); return;
       }
-      state.challenges.push({ id: uid(), text: t, projectId: projectId, programId: programId, domainId: domainId, done: false, urgent: chUrgentNew, created: Date.now() });
+      state.challenges.unshift({ id: uid(), text: t, projectId: projectId, programId: programId, domainId: domainId, done: false, urgent: chUrgentNew, created: Date.now() });
       save(); chInput.value = ""; fillChProjects(""); setChUrgentNew(false); refreshChallengeViews(); chInput.focus();
     }
     chAdd.onclick = addChallenge;
