@@ -1,7 +1,7 @@
 "use client";
 import { useQuery } from "@tanstack/react-query";
 import type { ChangeEventDto } from "@/server/repository";
-import { useWorkspace } from "../store";
+import { isStandalone, useWorkspace } from "../store";
 
 const OP_LABEL: Record<string, string> = { create: "إنشاء", update: "تعديل", delete: "حذف" };
 const KIND_LABEL: Record<string, string> = { entity: "الكيان", relationship: "علاقة", placement: "الموضع", canvas: "اللوحة" };
@@ -17,7 +17,9 @@ export function History({ id, related }: { id: string; related?: boolean }) {
       return (await res.json()) as ChangeEventDto[];
     },
     staleTime: 5000,
+    enabled: !isStandalone(),
   });
+  if (isStandalone()) return <div className="text-xs text-[var(--fg-subtle)]">سجل التعديلات متاح في النسخة المثبّتة على الخادم.</div>;
   if (isLoading) return <div className="text-xs text-[var(--fg-subtle)]">جارٍ التحميل…</div>;
   if (isError) return <div className="text-xs text-red-500">تعذّر تحميل السجل (قد تكون غير متصل).</div>;
   if (!data?.length) return <div className="text-xs text-[var(--fg-subtle)]">لا توجد تعديلات محفوظة بعد.</div>;

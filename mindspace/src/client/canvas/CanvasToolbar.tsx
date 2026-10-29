@@ -62,7 +62,7 @@ export function CanvasToolbar({ flowPointAt }: { flowPointAt: (x?: number, y?: n
 
   return (
     <>
-      <div className="absolute left-1/2 top-3 z-10 flex -translate-x-1/2 items-center gap-0.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1 shadow-lg">
+      <div className="absolute left-1/2 top-3 z-10 flex max-w-[calc(100%-24px)] -translate-x-1/2 items-center gap-0.5 overflow-x-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1 shadow-lg">
         <IconButton label="أداة التحريك (اسحب لتحريك اللوحة)" active={tool === "pan"} onClick={() => set({ tool: "pan" })}>
           <Hand size={16} />
         </IconButton>

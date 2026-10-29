@@ -26,7 +26,8 @@ export function App() {
   const loadError = useWorkspace((s) => s.loadError);
   const view = useWorkspace((s) => s.view);
   const offlineStart = useWorkspace((s) => s.offlineStart);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Sidebar starts hidden on phones, where it opens as an overlay.
+  const [sidebarOpen, setSidebarOpen] = useState(() => typeof window === "undefined" || window.innerWidth >= 768);
 
   useEffect(() => {
     void useWorkspace.getState().load();
@@ -72,7 +73,7 @@ export function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="flex h-dvh flex-col">
+      <div className="flex h-dvh flex-col overflow-hidden">
         <TopBar sidebarOpen={sidebarOpen} onToggleSidebar={() => setSidebarOpen(!sidebarOpen)} />
         {offlineStart && (
           <div className="bg-amber-500/15 px-3 py-1 text-center text-xs text-amber-700 dark:text-amber-300">
@@ -80,7 +81,14 @@ export function App() {
           </div>
         )}
         <div className="relative flex min-h-0 flex-1">
-          {sidebarOpen && <Sidebar />}
+          {sidebarOpen && (
+            <>
+              <div className="absolute inset-0 z-20 bg-black/30 md:hidden" onClick={() => setSidebarOpen(false)} />
+              <div className="absolute inset-y-0 start-0 z-30 shadow-xl md:static md:z-auto md:shadow-none">
+                <Sidebar />
+              </div>
+            </>
+          )}
           <main className="relative min-w-0 flex-1">
             {view === "canvas" && <CanvasView />}
             {view === "table" && <TableView />}

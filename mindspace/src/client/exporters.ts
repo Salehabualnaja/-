@@ -2,7 +2,15 @@
 import type { Snapshot } from "@/core/model";
 import { formatFieldValue } from "@/core/fields";
 
+type Saver = (name: string, mime: string, content: string) => void;
+let saver: Saver | null = null;
+/** Replace the browser download (e.g. where `<a download>` is blocked). */
+export function setFileSaver(s: Saver) {
+  saver = s;
+}
+
 function download(name: string, mime: string, content: string) {
+  if (saver) return saver(name, mime, content);
   const url = URL.createObjectURL(new Blob([content], { type: mime }));
   const a = document.createElement("a");
   a.href = url;

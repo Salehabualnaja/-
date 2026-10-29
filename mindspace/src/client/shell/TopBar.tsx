@@ -34,14 +34,14 @@ export function TopBar({ sidebarOpen, onToggleSidebar }: { sidebarOpen: boolean;
   const view = useWorkspace((s) => s.view);
   const set = useWorkspace((s) => s.set);
   return (
-    <header className="flex h-12 shrink-0 items-center gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-2">
+    <header className="flex h-12 min-w-0 shrink-0 items-center gap-1 sm:gap-2 border-b border-[var(--border)] bg-[var(--surface)] px-2">
       <IconButton label={sidebarOpen ? "إخفاء الشريط الجانبي" : "إظهار الشريط الجانبي"} onClick={onToggleSidebar}>
         <PanelRight size={17} />
       </IconButton>
-      <span className="px-1 font-bold tracking-wide" dir="ltr">
+      <span className="hidden px-1 font-bold tracking-wide sm:inline" dir="ltr">
         MINDSPACE
       </span>
-      <nav className="ms-2 flex items-center gap-0.5 overflow-x-auto" aria-label="المناظير">
+      <nav className="flex min-w-0 items-center gap-0.5 overflow-x-auto sm:ms-2" aria-label="المناظير">
         {VIEWS.map((v) => (
           <button
             key={v.id}
@@ -56,7 +56,7 @@ export function TopBar({ sidebarOpen, onToggleSidebar }: { sidebarOpen: boolean;
           </button>
         ))}
       </nav>
-      <div className="ms-auto flex items-center gap-1">
+      <div className="ms-auto flex shrink-0 items-center gap-1">
         <SyncBadge />
         <button
           type="button"
@@ -71,7 +71,7 @@ export function TopBar({ sidebarOpen, onToggleSidebar }: { sidebarOpen: boolean;
         <IconButton label="التقاط سريع" onClick={() => set({ captureOpen: true })}>
           <Inbox size={17} />
         </IconButton>
-        <IconButton label="الوضع الليلي" onClick={toggleTheme}>
+        <IconButton label="الوضع الليلي" className="hidden sm:inline-flex" onClick={toggleTheme}>
           <Moon size={17} />
         </IconButton>
         <Popover

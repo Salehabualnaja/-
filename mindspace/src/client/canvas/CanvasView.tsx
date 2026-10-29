@@ -59,6 +59,7 @@ function CanvasInner({ canvasId, initialViewport }: { canvasId: string; initialV
   const [picker, setPicker] = useState<PickerRequest | null>(null);
   const [menu, setMenu] = useState<MenuRequest | null>(null);
   const showMinimap = useWorkspace((s) => s.showMinimap);
+  const [narrow] = useState(() => typeof window !== "undefined" && window.innerWidth < 640);
   const tool = useWorkspace((s) => s.tool);
   const cameraRequest = useWorkspace((s) => s.cameraRequest);
   const frameDrag = useRef<{ frameId: string; start: { x: number; y: number }; members: Map<string, { x: number; y: number }> } | null>(null);
@@ -382,7 +383,7 @@ function CanvasInner({ canvasId, initialViewport }: { canvasId: string; initialV
         proOptions={proOptions}
       >
         <Background variant={BackgroundVariant.Dots} gap={22} size={1.4} color="var(--canvas-dot)" />
-        {showMinimap && (
+        {showMinimap && !narrow && (
           <MiniMap
             pannable
             zoomable

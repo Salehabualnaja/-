@@ -95,6 +95,21 @@ const SNAPSHOT_CACHE_KEY = "mindspace:snapshot-cache:v1";
 const UI_KEY = "mindspace:ui:v1";
 const HISTORY_LIMIT = 200;
 
+/**
+ * Persistence for builds that run without the Next.js server (the hosted
+ * trial). When set, it replaces the API and the sync queue entirely.
+ */
+export interface StandaloneBackend {
+  load(): Promise<Snapshot>;
+  /** Persist the difference between two snapshots (called after every change). */
+  persist(before: Snapshot, after: Snapshot): void;
+}
+let standalone: StandaloneBackend | null = null;
+export function setStandaloneBackend(b: StandaloneBackend) {
+  standalone = b;
+}
+export const isStandalone = () => standalone !== null;
+
 let toastSeq = 0;
 let cameraSeq = 0;
 
@@ -184,6 +199,10 @@ export const useWorkspace = create<WorkspaceState>()((set, get) => {
       }
     }
     set(patch);
+    if (standalone) {
+      standalone.persist(before, after);
+      return true;
+    }
     sync?.enqueue(ops);
     cacheSnapshot(after);
     return true;
@@ -216,6 +235,25 @@ export const useWorkspace = create<WorkspaceState>()((set, get) => {
 
     async load() {
       set({ status: get().status === "ready" ? "ready" : "loading", loadError: null });
+      if (standalone) {
+        try {
+          const snap = await standalone.load();
+          const ui = readUi();
+          const first = Object.values(snap.canvases).sort((a, b) => a.sortOrder - b.sortOrder)[0]?.id ?? null;
+          set({
+            snap,
+            status: "ready",
+            activeCanvasId: ui.activeCanvasId && snap.canvases[ui.activeCanvasId] ? ui.activeCanvasId : first,
+            view: ui.view ?? "canvas",
+            showMinimap: ui.showMinimap ?? true,
+            tool: ui.tool ?? "pan",
+            filters: ui.filters ?? { hiddenEntityTypes: [], hiddenRelationshipTypes: [] },
+          });
+        } catch (err) {
+          set({ status: "error", loadError: errorText(err) });
+        }
+        return;
+      }
       const leftover = sync?.restore() ?? [];
       if (leftover.length) await sync?.flushNow();
       try {
