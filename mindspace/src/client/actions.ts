@@ -5,6 +5,7 @@
  */
 import {
   type AnnotationKind,
+  type EntityType,
   type Entity,
   type Placement,
   type Relationship,
@@ -21,6 +22,7 @@ import type { Op } from "@/core/ops";
 import { typeByKey, buildAdjacency, neighborhood, impactAnalysis, shortestPath } from "@/core/graph";
 import { QUICK_CAPTURE_TYPE_KEY } from "@/core/presets";
 import { demoScenarioOps } from "@/core/demo";
+import { slugKey } from "@/core/fields";
 import { useWorkspace } from "./store";
 
 const st = () => useWorkspace.getState();
@@ -70,6 +72,39 @@ export function createEntityAt(pos: { x: number; y: number }, typeId?: string, t
     { label: "إنشاء كيان" },
   );
   return ok ? { entity, placement } : null;
+}
+
+/**
+ * Define a new entity type on the fly (the "أخرى" choice) and place its first
+ * entity at a flow position, as one undoable step.
+ */
+export function createTypeWithEntityAt(input: { name: string; icon: string; color: string }, pos: { x: number; y: number }) {
+  const s = st().snap;
+  const canvasId = st().activeCanvasId;
+  if (!canvasId) return null;
+  const types = Object.values(s.entityTypes);
+  const type: EntityType = {
+    id: newId(),
+    key: slugKey(input.name, types.map((t) => t.key)),
+    name: input.name,
+    nameEn: "",
+    icon: input.icon,
+    color: input.color,
+    description: "",
+    sortOrder: Math.max(0, ...types.map((t) => t.sortOrder)) + 1,
+  };
+  const entity = makeEntity({ typeId: type.id });
+  const placement = makePlacement({ canvasId, entityId: entity.id, x: pos.x, y: pos.y, z: topZ(canvasId) });
+  const ok = st().dispatch(
+    [
+      { op: "create", kind: "entityType", value: type },
+      { op: "create", kind: "entity", value: entity },
+      { op: "create", kind: "placement", value: placement },
+    ],
+    { label: "صنف جديد" },
+  );
+  if (ok) st().set({ editingNodeId: placement.id, selectedNodes: [placement.id], selectedEdges: [], newTypeAt: null });
+  return ok ? { type, entity, placement } : null;
 }
 
 export function createAnnotationAt(kind: AnnotationKind, pos: { x: number; y: number }) {

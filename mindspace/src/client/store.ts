@@ -63,6 +63,8 @@ export interface WorkspaceState {
   tool: "pan" | "select";
   paletteOpen: boolean;
   captureOpen: boolean;
+  /** Flow position where a card of a new, user-defined type will be created (dialog open when set). */
+  newTypeAt: { x: number; y: number } | null;
 
   undoStack: HistoryEntry[];
   redoStack: HistoryEntry[];
@@ -227,6 +229,7 @@ export const useWorkspace = create<WorkspaceState>()((set, get) => {
     tool: "pan",
     paletteOpen: false,
     captureOpen: false,
+    newTypeAt: null,
     undoStack: [],
     redoStack: [],
     syncState: "saved",

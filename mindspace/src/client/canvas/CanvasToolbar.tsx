@@ -91,6 +91,17 @@ export function CanvasToolbar({ flowPointAt }: { flowPointAt: (x?: number, y?: n
                   {t.name}
                 </MenuItem>
               ))}
+              <div className="col-span-2 border-t border-[var(--border)] pt-0.5">
+                <MenuItem
+                  icon={<Plus size={14} />}
+                  onSelect={() => {
+                    close();
+                    set({ newTypeAt: offset(center(), -110, -30) });
+                  }}
+                >
+                  أخرى… (صنف تحدّده أنت)
+                </MenuItem>
+              </div>
             </div>
           )}
         </Popover>

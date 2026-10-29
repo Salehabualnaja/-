@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
-import { ClipboardPaste, Copy, Crosshair, Eye, Frame, Layers, Palette, StickyNote, Trash2, Type, Unlink, X, Zap } from "lucide-react";
+import { ClipboardPaste, Copy, Plus, Crosshair, Eye, Frame, Layers, Palette, StickyNote, Trash2, Type, Unlink, X, Zap } from "lucide-react";
 import type { Op } from "@/core/ops";
 import { useWorkspace } from "../store";
 import {
@@ -91,6 +91,10 @@ export function ContextMenu({ req, onClose }: { req: MenuRequest; onClose: () =>
                   {t.name}
                 </MenuItem>
               ))}
+            <MenuSeparator />
+            <MenuItem icon={<Plus size={14} />} onSelect={run(() => st().set({ newTypeAt: req.flow }))}>
+              أخرى… (صنف تحدّده أنت)
+            </MenuItem>
           </div>
         ) : (
           <>

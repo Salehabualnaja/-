@@ -131,3 +131,22 @@ test("search moves the camera to an entity", async ({ page }) => {
   await expect(page.getByTestId("inspector").getByLabel("العنوان")).toHaveValue("خالد");
   await expect(card(page, "خالد")).toBeInViewport();
 });
+
+test("'Other' in the entity menu defines a new type and creates its first card", async ({ page }) => {
+  await openApp(page);
+  await page.getByRole("button", { name: "كيان", exact: true }).click();
+  await page.getByText("أخرى… (صنف تحدّده أنت)").click();
+  await page.getByPlaceholder(/مثل: كتاب/).fill("كتاب");
+  await page.getByRole("button", { name: "إنشاء" }).click();
+  const editor = page.locator(".react-flow__node textarea");
+  await expect(editor).toBeFocused();
+  await page.keyboard.type("فن الحرب");
+  await page.keyboard.press("Enter");
+  await expect(card(page, "فن الحرب")).toContainText("كتاب");
+  await waitSaved(page);
+
+  // The new type is now a regular choice everywhere.
+  await page.reload();
+  await page.getByRole("button", { name: "كيان", exact: true }).click();
+  await expect(page.getByRole("button", { name: "كتاب", exact: true })).toBeVisible();
+});

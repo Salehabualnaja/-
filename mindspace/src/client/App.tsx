@@ -8,6 +8,7 @@ import { InspectorPanel } from "./shell/InspectorPanel";
 import { CommandPalette } from "./shell/CommandPalette";
 import { QuickCapture } from "./shell/QuickCapture";
 import { Toasts } from "./shell/Toasts";
+import { NewTypeDialog } from "./canvas/NewTypeDialog";
 import { CanvasView } from "./canvas/CanvasView";
 import { TableView } from "./views/TableView";
 import { DashboardsView } from "./views/DashboardsView";
@@ -100,6 +101,7 @@ export function App() {
       </div>
       <CommandPalette />
       <QuickCapture />
+      <NewTypeDialog />
       <Toasts />
     </QueryClientProvider>
   );
