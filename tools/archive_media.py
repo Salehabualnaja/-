@@ -1,7 +1,6 @@
-"""أرشيف تراث الشيخ سلطان في Google Drive لحساب الشيخ: تنزيل المقاطع (يوتيوب وغيره) وحفظ الملفات المرسلة.
+"""أرشيف تراث الشيخ سلطان في درايف «فريق السحابة»: تنزيل المقاطع (يوتيوب وغيره) وحفظ الملفات المرسلة.
 
-يكتب الملفات في مجلد الأرشيف على الحاسوب (Google Drive for desktop)، فيرفعها Drive بنفسه
-إلى حساب الشيخ وتُحسب من مساحته. يعتمد على yt-dlp وffmpeg، ويتخطّى ما نُزّل من قبل.
+يكتب الملفات في مجلد الأرشيف على الحاسوب (Google Drive for desktop)، فيرفعها Drive بنفسه. يعتمد على yt-dlp وffmpeg، ويتخطّى ما نُزّل من قبل.
 
 الإعداد مرة واحدة (PowerShell):
     winget install yt-dlp.yt-dlp
@@ -27,7 +26,7 @@ import string
 import subprocess
 import sys
 
-ARCHIVE_NAME = "تراث الشيخ سلطان"
+ARCHIVE_NAME = "02-تراث الشيخ سلطان"
 FOLDERS = [
     "00-وارد",
     "01-مرئيات",
@@ -53,16 +52,20 @@ def find_root() -> str | None:
     env = os.environ.get("SULTAN_ARCHIVE_DIR")
     if env:
         return env if os.path.isdir(env) else None
-    bases = ["My Drive", "ملفاتي", "drive saya"]
-    candidates = []
-    if os.name == "nt":
-        for letter in string.ascii_uppercase[3:]:  # من D إلى Z
-            for base in bases:
-                candidates.append(f"{letter}:\\{base}\\{ARCHIVE_NAME}")
-    home = os.path.expanduser("~")
-    for base in bases:
-        candidates.append(os.path.join(home, "Google Drive", base, ARCHIVE_NAME))
-    return next((c for c in candidates if os.path.isdir(c)), None)
+    bases = []
+    for base in ["My Drive", "ملفاتي", "drive saya"]:
+        if os.name == "nt":
+            bases += [f"{letter}:\\{base}" for letter in string.ascii_uppercase[3:]]  # من D إلى Z
+        bases.append(os.path.join(os.path.expanduser("~"), "Google Drive", base))
+    # المجلد داخل «فريق السحابة» بعدة مستويات، فيُبحث عنه حتى عمق 4
+    for base in filter(os.path.isdir, bases):
+        root_depth = base.rstrip(os.sep).count(os.sep)
+        for path, dirs, _ in os.walk(base):
+            if os.path.basename(path) == ARCHIVE_NAME:
+                return path
+            if path.count(os.sep) - root_depth >= 4:
+                dirs[:] = []
+    return None
 
 
 def safe_name(name: str) -> str:
