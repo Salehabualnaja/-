@@ -1,0 +1,45 @@
+/* هوية سكن — مستند A4 (من الدليل الإرشادي والملف التعريفي 3.1) */
+@font-face{font-family:"Plex";src:url("IBMPlexSansArabic-Regular.ttf");font-weight:400}
+@font-face{font-family:"Plex";src:url("IBMPlexSansArabic-Medium.ttf");font-weight:500}
+@font-face{font-family:"Plex";src:url("IBMPlexSansArabic-SemiBold.ttf");font-weight:600}
+@font-face{font-family:"Plex";src:url("IBMPlexSansArabic-Bold.ttf");font-weight:700}
+:root{--ink:#2f3324;--olive-900:#4f5a3e;--olive-700:#66744a;--olive:#7e8c5a;--sage:#a5a97b;--cream:#fefcf3;--mist:#f9f9f9;--accent:#983830}
+@page{size:A4;margin:18mm 16mm 18mm}
+@page full{margin:0}
+html{background:var(--cream)}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:"Plex",sans-serif;direction:rtl;color:var(--ink);background:var(--cream);font-size:10.5pt;line-height:1.75;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.cover{page:full;height:297mm;background:var(--olive);color:#fff;position:relative;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;page-break-after:always}
+.cover .mark{position:absolute;width:150mm;left:-40mm;bottom:-35mm;opacity:.09}
+.cover .mark2{position:absolute;width:110mm;right:-30mm;top:-25mm;opacity:.07}
+.cover .logo{width:62mm;margin-bottom:10mm}
+.cover h1{font-size:30pt;font-weight:700;margin:0 0 3mm;color:#fff}
+.cover .sub{font-size:13pt;font-weight:500;color:var(--cream);opacity:.9}
+.cover .chips{margin-top:9mm;display:flex;gap:3mm;justify-content:center}
+.cover .chip{border:1px solid rgba(254,252,243,.55);border-radius:20px;padding:1.2mm 5mm;font-size:9.5pt;color:var(--cream)}
+.cover .meta{position:absolute;bottom:16mm;font-size:9pt;color:var(--cream);opacity:.85}
+.page{padding:0;position:relative}
+.toplogo{height:11mm;margin-bottom:4mm}
+h1,h2,h3{color:var(--ink);font-weight:700;line-height:1.35}
+h1{font-size:19pt;margin:0 0 4mm}
+h2{font-size:14pt;margin:9mm 0 3mm;padding-bottom:1.6mm;border-bottom:2px solid var(--sage);page-break-after:avoid}
+h2 .num{color:var(--olive);margin-left:2mm}
+h3{font-size:11.5pt;margin:5mm 0 2mm;color:var(--olive-900)}
+p{margin:0 0 2.6mm}
+strong{font-weight:700;color:var(--olive-900)}
+ul,ol{margin:0 0 3mm;padding-right:6mm}
+li{margin-bottom:1mm}
+table{width:100%;border-collapse:separate;border-spacing:0;margin:2mm 0 5mm;font-size:9.5pt;border:1px solid #d9dbc4;border-radius:8px;overflow:hidden;page-break-inside:auto}
+thead th{background:var(--olive-900);color:#fff;font-weight:600;text-align:right;padding:2.4mm 3mm}
+td{padding:2.2mm 3mm;border-top:1px solid #e6e7d6;vertical-align:top}
+tbody tr:nth-child(odd) td{background:#fff}
+tbody tr:nth-child(even) td{background:var(--mist)}
+tr{page-break-inside:avoid}
+.alert{color:var(--accent);font-weight:600}
+blockquote{margin:3mm 0;padding:3mm 4mm;background:#fff;border-right:4px solid var(--olive);border-radius:6px}
+hr{border:none;border-top:1px solid var(--sage);margin:6mm 0}
+.closing{page:full;height:297mm;background:var(--olive);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;page-break-before:always;position:relative;overflow:hidden}
+.closing .logo{width:52mm;margin-bottom:6mm}
+.closing .tag{font-size:16pt;font-weight:600;color:#fff}
+.closing .site{margin-top:6mm;border:1px solid rgba(254,252,243,.55);border-radius:20px;padding:1.2mm 6mm;font-size:10pt;color:var(--cream)}
