@@ -104,8 +104,10 @@
       font-family: var(--f-sans);
       background: var(--bg);
       color: var(--text);
-      line-height: 1.5;
-      -webkit-font-smoothing: antialiased;
+      line-height: 1.55;
+      /* خط Markazi خفيف وصغير الظهور: نكبّره ونثخّن حروفه في كامل التطبيق */
+      zoom: 1.12;
+      -webkit-text-stroke: 0.42px currentColor;
       padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
     }
     .wrap { max-width: 620px; margin: 0 auto; padding: 20px 16px calc(150px + env(safe-area-inset-bottom)); }
